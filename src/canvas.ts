@@ -1,22 +1,18 @@
 import { Colors } from '@blueprintjs/colors';
 import {
   Color,
-  IcosahedronGeometry,
-  InstancedMesh,
-  MathUtils,
   Mesh,
-  MeshBasicMaterial,
-  MeshStandardMaterial,
-  Object3D,
   PerspectiveCamera,
-  PlaneGeometry,
   PMREMGenerator,
   Scene,
+  ShaderMaterial,
+  SphereGeometry,
   Timer,
-  Vector2,
   WebGLRenderer,
 } from 'three';
-import { EffectComposer, OrbitControls, OutputPass, RenderPass, UnrealBloomPass } from 'three/examples/jsm/Addons.js';
+import { OrbitControls } from 'three/examples/jsm/Addons.js';
+import fragmentShader from './shader/test/fragment.glsl?raw';
+import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
 
 const colors = [
@@ -61,54 +57,17 @@ const timer = new Timer();
 const pmrem = new PMREMGenerator(renderer);
 pmrem.compileEquirectangularShader();
 
-const composer = new EffectComposer(renderer);
-
-const bloomPass = new UnrealBloomPass(new Vector2(sizes.width, sizes.height), 0.5, 0.5, 0);
-
-composer.addPass(new RenderPass(scene, camera));
-composer.addPass(bloomPass);
-composer.addPass(new OutputPass());
+const ballSphere = new SphereGeometry(1, 64, 64);
+const ballMaterial = new ShaderMaterial({
+  vertexShader,
+  fragmentShader,
+});
+const ball = new Mesh(ballSphere, ballMaterial);
+scene.add(ball);
 
 /**
  * World
  */
-
-const positions = Array.from({ length: 50 }, () => ({
-  x: MathUtils.randFloatSpread(10),
-  y: MathUtils.randFloatSpread(10),
-  z: MathUtils.randFloatSpread(10),
-}));
-
-const ballGeometry = new IcosahedronGeometry(0.5, 3);
-const ballMaterial = new MeshStandardMaterial({
-  metalness: 0.2,
-  roughness: 0.7,
-  color: 'white',
-});
-const ball = new Mesh(ballGeometry, ballMaterial);
-scene.add(ball);
-
-const planeGeometry = new PlaneGeometry(1.61803398875, 0.5);
-const planeMaterial = new MeshBasicMaterial({});
-const plane = new InstancedMesh(planeGeometry, planeMaterial, 50);
-
-const obj = new Object3D();
-
-function updatePlane() {
-  for (let i = 0; i < 50; i++) {
-    obj.position.copy(positions[i]);
-
-    obj.lookAt(scene.position);
-    obj.updateMatrix();
-
-    plane.instanceMatrix.needsUpdate = true;
-    plane.setMatrixAt(i, obj.matrix);
-    plane.setColorAt(i, new Color(colors[i % colors.length]));
-  }
-}
-updatePlane();
-
-scene.add(plane);
 
 function render() {
   // Update
@@ -116,12 +75,11 @@ function render() {
   controls.update();
 
   const dt = timer.getDelta();
-  plane.rotation.y += dt / 5;
 
   scene.environment = pmrem.fromScene(scene).texture;
 
   // Render
-  composer.render();
+  renderer.render(scene, camera);
   // Animation
   requestAnimationFrame(render);
 }

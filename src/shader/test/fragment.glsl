@@ -1,20 +1,12 @@
-uniform vec3 uColor;
-uniform vec3 uDirection;
-
 varying vec3 vNormal;
 
-void main() {
-  vec3 color          = uColor;
-  vec3 normal         = normalize(vNormal);
-  vec3 sunOrientation = normalize(uDirection);
+void main(){
+  vec3  color          = vec3(0.0);
+  vec3  normal         = normalize(vNormal);
+  vec3  lightDirection = normalize(vec3(3.0));
+  float orientation    = dot(normal, lightDirection);
 
-  float light = dot(normal, sunOrientation);
-        light = max(light, 0.35);
-
-  color *= light;
+  color = vec3(orientation);
 
   gl_FragColor = vec4(color, 1.0);
-
-  #include <tonemapping_fragment>
-  #include <colorspace_fragment>
 }
