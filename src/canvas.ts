@@ -81,8 +81,8 @@ const positions = Array.from({ length: 50 }, () => ({
 
 const ballGeometry = new IcosahedronGeometry(0.5, 3);
 const ballMaterial = new MeshStandardMaterial({
-  metalness: 0.8,
-  roughness: 0.1,
+  metalness: 0.2,
+  roughness: 0.7,
   color: 'white',
 });
 const ball = new Mesh(ballGeometry, ballMaterial);
