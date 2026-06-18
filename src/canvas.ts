@@ -10,7 +10,7 @@ import {
   Timer,
   WebGLRenderer,
 } from 'three';
-import { OrbitControls } from 'three/examples/jsm/Addons.js';
+import { EffectComposer, OrbitControls } from 'three/examples/jsm/Addons.js';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
@@ -36,7 +36,6 @@ const el = document.querySelector('#root');
 const renderer = new WebGLRenderer({
   antialias: true,
   alpha: true,
-  powerPreference: 'high-performance',
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(sizes.pixelRatio);
@@ -56,6 +55,8 @@ const timer = new Timer();
 
 const pmrem = new PMREMGenerator(renderer);
 pmrem.compileEquirectangularShader();
+
+const composer = new EffectComposer(renderer);
 
 const ballSphere = new SphereGeometry(1, 64, 64);
 const ballMaterial = new ShaderMaterial({
