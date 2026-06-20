@@ -2,6 +2,7 @@ import { Colors } from '@blueprintjs/colors';
 import {
   Color,
   Mesh,
+  MeshStandardMaterial,
   PerspectiveCamera,
   PMREMGenerator,
   Scene,
@@ -10,7 +11,7 @@ import {
   Timer,
   WebGLRenderer,
 } from 'three';
-import { EffectComposer, OrbitControls } from 'three/examples/jsm/Addons.js';
+import { EffectComposer, OrbitControls, RoundedBoxGeometry } from 'three/examples/jsm/Addons.js';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
@@ -64,7 +65,12 @@ const ballMaterial = new ShaderMaterial({
   fragmentShader,
 });
 const ball = new Mesh(ballSphere, ballMaterial);
-scene.add(ball);
+// scene.add(ball);
+
+const geometry = new RoundedBoxGeometry(1, 1, 1, 6, 0.11);
+const material = new MeshStandardMaterial({ emissive: 0x00ff00, wireframe: true });
+const cube = new Mesh(geometry, material);
+scene.add(cube);
 
 /**
  * World
