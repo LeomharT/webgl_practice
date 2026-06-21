@@ -18,7 +18,7 @@
     "vite-plugin-wasm": "^3.6.0"
   },
   "dependencies": {
-    "@babel/runtime": "^7.29.7",
+    "@babel/runtime": "^8.0.0",
     "@blueprintjs/colors": "^5.1.16",
     "@dimforge/rapier3d": "^0.19.3",
     "@tweakpane/plugin-essentials": "^0.2.1",
