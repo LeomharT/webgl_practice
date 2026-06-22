@@ -1,93 +1,117 @@
 import { Colors } from '@blueprintjs/colors';
 import {
   Color,
+  IcosahedronGeometry,
   Mesh,
-  MeshStandardMaterial,
+  MeshBasicMaterial,
   PerspectiveCamera,
-  PMREMGenerator,
   Scene,
   ShaderMaterial,
   SphereGeometry,
-  Timer,
+  Spherical,
+  SRGBColorSpace,
+  TextureLoader,
+  Uniform,
+  Vector3,
   WebGLRenderer,
 } from 'three';
-import { EffectComposer, OrbitControls, RoundedBoxGeometry } from 'three/examples/jsm/Addons.js';
+import { OrbitControls } from 'three/examples/jsm/Addons.js';
+import { Pane } from 'tweakpane';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
 
-const colors = [
-  Colors.BLUE1,
-  Colors.RED1,
-  Colors.FOREST1,
-  Colors.CERULEAN3,
-  Colors.GOLD4,
-  Colors.VIOLET1,
-  Colors.INDIGO4,
-];
+const textureLoader = new TextureLoader();
+
+const dayMap = textureLoader.load('2k_earth_daymap.jpg');
+dayMap.colorSpace = SRGBColorSpace;
+dayMap.anisotropy = 8;
+
+const nightMap = textureLoader.load('2k_earth_nightmap.jpg');
+nightMap.colorSpace = SRGBColorSpace;
+dayMap.anisotropy = 8;
+
+const specularCloudTexture = textureLoader.load('specularClouds.jpg');
 
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
-  pixelRatio: Math.min(2, window.devicePixelRatio),
+  piexelRatio: Math.min(2, window.devicePixelRatio),
 };
 
 const el = document.querySelector('#root');
 
 const renderer = new WebGLRenderer({
-  antialias: true,
   alpha: true,
+  antialias: true,
 });
 renderer.setSize(sizes.width, sizes.height);
-renderer.setPixelRatio(sizes.pixelRatio);
+renderer.setPixelRatio(sizes.piexelRatio);
 el?.append(renderer.domElement);
 
 const scene = new Scene();
 scene.background = new Color(Colors.BLACK);
 
-const camera = new PerspectiveCamera(35, sizes.width / sizes.height, 1, 1100);
-camera.position.set(3, 3, 3);
+const camera = new PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 1000);
+camera.position.set(2, 0, 2);
 camera.lookAt(scene.position);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-const timer = new Timer();
+//
+const uniforms = {
+  uSunDirection: new Uniform(new Vector3()),
 
-const pmrem = new PMREMGenerator(renderer);
-pmrem.compileEquirectangularShader();
+  uDayMapTexture: new Uniform(dayMap),
+  uNightMapTexture: new Uniform(nightMap),
+  uSpecularCloudTexture: new Uniform(specularCloudTexture),
+};
 
-const composer = new EffectComposer(renderer);
+const sunSpherical = new Spherical(1, Math.PI / 2, 0.5);
+const sunDirection = new Vector3();
 
-const ballSphere = new SphereGeometry(1, 64, 64);
-const ballMaterial = new ShaderMaterial({
+const sun = new Mesh(new IcosahedronGeometry(0.1, 3), new MeshBasicMaterial({ color: 'yellow' }));
+scene.add(sun);
+
+function updateSun() {
+  sunDirection.setFromSpherical(sunSpherical);
+
+  uniforms.uSunDirection.value.copy(sunDirection);
+
+  sun.position.copy(sunDirection.clone().multiplyScalar(3));
+}
+updateSun();
+
+const earchGeometry = new SphereGeometry(1, 64, 64);
+const earchMaterial = new ShaderMaterial({
+  uniforms,
   vertexShader,
   fragmentShader,
 });
-const ball = new Mesh(ballSphere, ballMaterial);
-// scene.add(ball);
+const earth = new Mesh(earchGeometry, earchMaterial);
 
-const geometry = new RoundedBoxGeometry(1, 1, 1, 6, 0.11);
-const material = new MeshStandardMaterial({ emissive: 0x00ff00, wireframe: true });
-const cube = new Mesh(geometry, material);
-scene.add(cube);
+scene.add(earth);
 
-/**
- * World
- */
+const pane = new Pane({ title: 'debug' });
+pane
+  .addBinding(sunSpherical, 'theta', {
+    max: Math.PI,
+    min: -Math.PI,
+  })
+  .on('change', updateSun);
+pane
+  .addBinding(sunSpherical, 'phi', {
+    max: Math.PI,
+    min: 0,
+  })
+  .on('change', updateSun);
 
 function render() {
-  // Update
-  timer.update();
   controls.update();
-
-  const dt = timer.getDelta();
-
-  scene.environment = pmrem.fromScene(scene).texture;
-
-  // Render
+  //
   renderer.render(scene, camera);
-  // Animation
+  //
   requestAnimationFrame(render);
 }
 render();

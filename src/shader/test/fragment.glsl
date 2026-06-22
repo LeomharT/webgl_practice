@@ -1,35 +1,38 @@
-precision mediump float;
-
 varying vec3 vNormal;
-varying vec3 vPosition;
+varying vec2 vUv;
 
-void main(){
-  vec3 color          = vec3(0.0);
-  vec3 normal         = normalize(vNormal);
-  vec3 lightDirection = normalize(vec3(3.0));
-  vec3 viewDirection  = normalize(vPosition - cameraPosition);
+uniform vec3 uSunDirection;
+uniform sampler2D uDayMapTexture;
+uniform sampler2D uNightMapTexture;
+uniform sampler2D uSpecularCloudTexture;
 
-  float orientation = dot(normal, lightDirection);
-        orientation = smoothstep(-0.25, 1.0, orientation);
+void main() {
+  vec2 uv     = vUv;
+  vec3 color  = vec3(0.0);
+  vec3 normal = normalize(vNormal);
 
-  if(!gl_FrontFacing) discard;
-  
-  float fresnel = 1.0 + dot(viewDirection, normal);
-        fresnel = pow(fresnel, 2.0);
+  vec3 sunDirection = uSunDirection;
+
+  vec4 dayMapColor   = texture2D(uDayMapTexture, uv);
+  vec4 nightMapColor = texture2D(uNightMapTexture, uv);
+  vec4 specularColor = texture2D(uSpecularCloudTexture, uv);
+
+  float dayMix = dot(sunDirection, normal);
+        dayMix = smoothstep(-0.25, 0.5, dayMix);
 
   color = mix(
-      vec3(1.0),
-      vec3(1.0, 0.95, 0.32),
-      fresnel
+    nightMapColor.rgb,
+    dayMapColor.rgb,
+    dayMix
   );
 
-  vec3 reflection = reflect(-lightDirection, normal);
+  float cloudMix = smoothstep(0.3, 1.0, specularColor.g);
 
-  float specular = dot(reflection, -viewDirection);
-        specular = max(0.0, specular);
-        specular = pow(specular, 20.0);
-
-  color *= specular;
+  color = mix(
+    color,
+    vec3(1.0),
+    cloudMix * dayMix
+  );
 
   gl_FragColor = vec4(color, 1.0);
 
