@@ -96,6 +96,16 @@ const earth = new Mesh(earchGeometry, earchMaterial);
 
 scene.add(earth);
 
+const marker = document.createElement('div');
+marker.style.width = '150px';
+marker.style.height = '150px';
+marker.style.position = 'absolute';
+marker.style.top = '-75px';
+marker.style.left = '-75px';
+marker.style.background = 'rgb(255, 215, 246)';
+
+document.body.append(marker);
+
 const pane = new Pane({ title: 'debug' });
 pane
   .addBinding(sunSpherical, 'theta', {
@@ -112,6 +122,16 @@ pane
 
 function render() {
   controls.update();
+
+  const p = sunDirection.clone().multiplyScalar(2).project(camera);
+  p.x = (p.x + 1.0) / 2.0;
+  p.y = -(p.y - 1.0) / 2.0;
+
+  const x = p.x * sizes.width;
+  const y = p.y * sizes.height;
+
+  marker.style.transform = `translate(${x}px, ${y}px)`;
+
   //
   renderer.render(scene, camera);
   //
