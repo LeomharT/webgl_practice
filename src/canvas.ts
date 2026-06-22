@@ -66,6 +66,9 @@ const uniforms = {
   uDayMapTexture: new Uniform(dayMap),
   uNightMapTexture: new Uniform(nightMap),
   uSpecularCloudTexture: new Uniform(specularCloudTexture),
+
+  uAtmosphereDayColor: new Uniform(new Color('#00aaff')),
+  uAtmosphereTwilightColor: new Uniform(new Color('#ff6600')),
 };
 
 const sunSpherical = new Spherical(1, Math.PI / 2, 0.5);
