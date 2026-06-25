@@ -1,37 +1,23 @@
 import { Colors } from '@blueprintjs/colors';
 import {
+  AxesHelper,
+  BoxGeometry,
+  BufferGeometry,
+  CatmullRomCurve3,
   Color,
-  IcosahedronGeometry,
+  CurvePath,
+  Line,
+  LineBasicMaterial,
   Mesh,
   MeshBasicMaterial,
   PerspectiveCamera,
   Scene,
-  ShaderMaterial,
-  SphereGeometry,
-  Spherical,
-  SRGBColorSpace,
-  TextureLoader,
-  Uniform,
+  Timer,
   Vector3,
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
-import { Pane } from 'tweakpane';
-import fragmentShader from './shader/test/fragment.glsl?raw';
-import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
-
-const textureLoader = new TextureLoader();
-
-const dayMap = textureLoader.load('2k_earth_daymap.jpg');
-dayMap.colorSpace = SRGBColorSpace;
-dayMap.anisotropy = 8;
-
-const nightMap = textureLoader.load('2k_earth_nightmap.jpg');
-nightMap.colorSpace = SRGBColorSpace;
-dayMap.anisotropy = 8;
-
-const specularCloudTexture = textureLoader.load('specularClouds.jpg');
 
 const sizes = {
   width: window.innerWidth,
@@ -59,78 +45,45 @@ camera.lookAt(scene.position);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
+const timer = new Timer();
+
 //
-const uniforms = {
-  uSunDirection: new Uniform(new Vector3()),
 
-  uDayMapTexture: new Uniform(dayMap),
-  uNightMapTexture: new Uniform(nightMap),
-  uSpecularCloudTexture: new Uniform(specularCloudTexture),
+const cube = new Mesh(new BoxGeometry(0.5, 0.5, 0.5), new MeshBasicMaterial({ color: Colors.VIOLET3 }));
+scene.add(cube);
 
-  uAtmosphereDayColor: new Uniform(new Color('#00aaff')),
-  uAtmosphereTwilightColor: new Uniform(new Color('#ff6600')),
-};
+const lineMaterial = new LineBasicMaterial({ color: 'red', linewidth: 3 });
 
-const sunSpherical = new Spherical(1, Math.PI / 2, 0.5);
-const sunDirection = new Vector3();
+const curevPath = new CurvePath<Vector3>();
+// curevPath.add(new LineCurve3(new Vector3(2, 2, 2), new Vector3(0, 0, 0)));
+// curevPath.add(new LineCurve3(new Vector3(0, 0, 0), new Vector3(-3, 3, -3)));
+// curevPath.add(new LineCurve3(new Vector3(-3, 3, -3), new Vector3(6, 4, 3)));
 
-const sun = new Mesh(new IcosahedronGeometry(0.1, 3), new MeshBasicMaterial({ color: 'yellow' }));
-scene.add(sun);
+curevPath.add(
+  new CatmullRomCurve3([new Vector3(2, 2, 2), new Vector3(0, 0, 0), new Vector3(-3, 3, -3), new Vector3(6, 4, 3)]),
+);
 
-function updateSun() {
-  sunDirection.setFromSpherical(sunSpherical);
+const lineGeometry = new BufferGeometry();
+lineGeometry.setFromPoints(curevPath.getPoints(50));
+const line = new Line(lineGeometry, lineMaterial);
+scene.add(line);
 
-  uniforms.uSunDirection.value.copy(sunDirection);
+scene.add(new AxesHelper(1));
 
-  sun.position.copy(sunDirection.clone().multiplyScalar(3));
-}
-updateSun();
-
-const earchGeometry = new SphereGeometry(1, 64, 64);
-const earchMaterial = new ShaderMaterial({
-  uniforms,
-  vertexShader,
-  fragmentShader,
-});
-const earth = new Mesh(earchGeometry, earchMaterial);
-
-scene.add(earth);
-
-const marker = document.createElement('div');
-marker.style.width = '150px';
-marker.style.height = '150px';
-marker.style.position = 'absolute';
-marker.style.top = '-75px';
-marker.style.left = '-75px';
-marker.style.background = 'rgb(255, 215, 246)';
-
-document.body.append(marker);
-
-const pane = new Pane({ title: 'debug' });
-pane
-  .addBinding(sunSpherical, 'theta', {
-    max: Math.PI,
-    min: -Math.PI,
-  })
-  .on('change', updateSun);
-pane
-  .addBinding(sunSpherical, 'phi', {
-    max: Math.PI,
-    min: 0,
-  })
-  .on('change', updateSun);
+let i = 0;
 
 function render() {
+  timer.update();
   controls.update();
 
-  const p = sunDirection.clone().multiplyScalar(2).project(camera);
-  p.x = (p.x + 1.0) / 2.0;
-  p.y = -(p.y - 1.0) / 2.0;
+  i += timer.getDelta() * 0.1;
+  i %= 1;
 
-  const x = p.x * sizes.width;
-  const y = p.y * sizes.height;
+  const position = curevPath.getPointAt(i);
+  const direction = curevPath.getTangentAt(i);
 
-  marker.style.transform = `translate(${x}px, ${y}px)`;
+  cube.position.copy(position);
+  cube.lookAt(position.add(direction));
 
   //
   renderer.render(scene, camera);
