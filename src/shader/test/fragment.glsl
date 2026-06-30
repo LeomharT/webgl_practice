@@ -10,28 +10,23 @@ void main() {
   vec3 color = vec3(1.0);
   vec2 uv = vUv;
   vec3 normal = normalize(vNormal);
-  float roughness = 1.0;
+  float r = 1.0;
 
-  vec4 reflectionColor = texture2DProj(uReflectorTexture, vReflection);
+  float roughness = texture2D(uRoughness, uv).g;
 
-  float roughnessSample = texture2D(uRoughness, uv).g;
-  float finalRoughness = roughnessSample * roughness;
+  vec3 N = texture2D(uNormal, uv).rgb * 2.0 - 1.0;
 
-  float alpha = finalRoughness * finalRoughness;
-
-  vec3 normalColor = texture2D(uNormal, uv).rgb;
-  vec3 distortion = normalColor.xyz * 2.0 - 1.0;
-
-  float amount = 0.32;
-
-  vec3 finalNormal = normalize(mix(normal, distortion, amount));
-
-  float diffuse = max(dot(finalNormal, normalize(vec3(0.0, 1.25, 1.0))), 0.0);
+  float diffuse = max(dot(N, normalize(vec3(0.0, 1.25, 1.0))), 0.0);
   vec3 finalColor = color * diffuse;
 
-  vec3 baseColor = vec3(1.0, 0.25, 0.485);
+  vec3 baseColor = vec3(0.125, 0.001, 0.0285);
 
-  color = baseColor + reflectionColor.rgb;
+  vec2 reflectUV = vReflection.xy / vReflection.w;
+  vec2 finalUV = reflectUV + N.xy * 0.5;
+
+  vec4 reflectionColor = texture2D(uReflectorTexture, finalUV, roughness);
+
+  color = reflectionColor.rgb;
 
   gl_FragColor = vec4(color, 1.0);
 

@@ -82,8 +82,8 @@ const plane = new Mesh(planeGeometry, planeMaterial);
 plane.rotation.x = -Math.PI / 2;
 scene.add(plane);
 
-const ball = new Mesh(new IcosahedronGeometry(0.05, 3), new MeshBasicMaterial({ color: 'blue' }));
-ball.position.y = 0.5;
+const ball = new Mesh(new IcosahedronGeometry(0.1, 3), new MeshBasicMaterial({ color: 'blue' }));
+ball.position.y = 0.2;
 scene.add(ball);
 
 const directionalLight = new DirectionalLight(0xffffff);
