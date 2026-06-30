@@ -1,7 +1,9 @@
 import { Colors } from '@blueprintjs/colors';
 import {
   Color,
+  DirectionalLight,
   Mesh,
+  MeshStandardMaterial,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
@@ -46,10 +48,12 @@ controls.enableDamping = true;
 
 const timer = new Timer();
 
-const normalTexture = textureLoader.load('/brick-normal2.jpg');
+const normalTexture = textureLoader.load('/normal.png');
+const roughnessTexture = textureLoader.load('/roughness.jpg');
 
 const uniforms = {
   uNormal: new Uniform(normalTexture),
+  uRoughness: new Uniform(roughnessTexture),
 };
 
 const planeGeometry = new PlaneGeometry(3, 3, 64, 64);
@@ -58,8 +62,18 @@ const planeMaterial = new ShaderMaterial({
   vertexShader,
   fragmentShader,
 });
+const planeMaterial2 = new MeshStandardMaterial({
+  normalMap: normalTexture,
+  roughnessMap: roughnessTexture,
+  roughness: 1.0,
+});
+
 const plane = new Mesh(planeGeometry, planeMaterial);
 scene.add(plane);
+
+const directionalLight = new DirectionalLight(0xffffff);
+directionalLight.position.set(0.0, 1.25, 1.0);
+scene.add(directionalLight);
 
 function render() {
   timer.update();
