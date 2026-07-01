@@ -3,6 +3,8 @@ import {
   Color,
   DirectionalLight,
   IcosahedronGeometry,
+  LinearFilter,
+  LinearMipMapLinearFilter,
   Mesh,
   MeshBasicMaterial,
   PerspectiveCamera,
@@ -15,6 +17,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls, Reflector } from 'three/examples/jsm/Addons.js';
+import { Pane } from 'tweakpane';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
@@ -68,9 +71,12 @@ const uniforms = {
   uRoughness: new Uniform(roughnessTexture),
   uReflectorTexture: new Uniform(planeMirrow.getRenderTarget().texture),
   uTextureMatrix: (planeMirrow.material as ShaderMaterial).uniforms.textureMatrix,
+  uNormalBias: new Uniform(0.2),
+  uLevel: new Uniform(3.0),
 };
-
-console.log(uniforms);
+uniforms.uReflectorTexture.value.generateMipmaps = true;
+uniforms.uReflectorTexture.value.minFilter = LinearMipMapLinearFilter;
+uniforms.uReflectorTexture.value.magFilter = LinearFilter;
 
 const planeMaterial = new ShaderMaterial({
   uniforms,
@@ -89,6 +95,21 @@ scene.add(ball);
 const directionalLight = new DirectionalLight(0xffffff);
 directionalLight.position.set(0.0, 1.25, 1.0);
 scene.add(directionalLight);
+
+const pane = new Pane({ title: 'Debug' });
+pane.element.parentElement!.style.width = '380px';
+pane.addBinding(uniforms.uNormalBias, 'value', {
+  label: 'Normal Bias',
+  step: 0.01,
+  min: 0,
+  max: 1,
+});
+pane.addBinding(uniforms.uLevel, 'value', {
+  label: 'Level of detail',
+  step: 0.01,
+  min: 0,
+  max: 20,
+});
 
 function render() {
   timer.update();
