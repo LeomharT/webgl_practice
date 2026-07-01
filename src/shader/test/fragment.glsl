@@ -1,27 +1,30 @@
 varying vec2 vUv;
-varying vec4 vReflection;
+varying vec4 vTextureMatrix;
 
-uniform sampler2D uNormal;
-uniform sampler2D uRoughness;
-uniform sampler2D uReflectorTexture;
-uniform float uNormalBias;
-uniform float uLevel;
+uniform sampler2D uReflectTexture;
+uniform sampler2D uNormalMap;
+uniform sampler2D uRoughnessMap;
+
+uniform float uDistortionAmount;
+uniform float uBlurStrength;
+
 
 void main() {
-  vec3 color = vec3(1.0);
-  vec2 uv    = vUv;
+  vec3 color         = vec3(0.0);
+  vec2 uv            = vUv;
+  vec4 textureMatrix = vTextureMatrix;
 
-  float roughness = texture2D(uRoughness, uv).g;
-  vec3  N         = texture2D(uNormal, uv).rgb * 2.0 - 1.0;
+  float roughness = texture2D(uRoughnessMap, uv).g;
+  vec3  normal    = texture2D(uNormalMap, uv).rgb * 2.0 - 1.0;
 
-  vec2  reflectUV = vReflection.xy / vReflection.w;
-  vec2  finalUV   = reflectUV + N.xy * uNormalBias;
-  float level     = roughness * uLevel;
+  vec2  reflectUV = textureMatrix.xy / textureMatrix.w;
+  vec2  finalUV   = reflectUV + normal.xy * uDistortionAmount;
+  float level     = roughness * uBlurStrength;
 
-  vec4 reflectionColor = texture2D(uReflectorTexture, finalUV, level);
+  vec4 reflectColor = texture2D(uReflectTexture, finalUV, level);
 
-  color = reflectionColor.rgb;
- 
+  color = reflectColor.rgb;
+
   gl_FragColor = vec4(color, 1.0);
 
   #include <tonemapping_fragment>

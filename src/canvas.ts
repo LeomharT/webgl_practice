@@ -1,10 +1,9 @@
 import { Colors } from '@blueprintjs/colors';
 import {
   Color,
-  DirectionalLight,
   IcosahedronGeometry,
   LinearFilter,
-  LinearMipMapLinearFilter,
+  LinearMipmapLinearFilter,
   Mesh,
   MeshBasicMaterial,
   PerspectiveCamera,
@@ -12,7 +11,6 @@ import {
   Scene,
   ShaderMaterial,
   TextureLoader,
-  Timer,
   Uniform,
   WebGLRenderer,
 } from 'three';
@@ -27,9 +25,8 @@ const textureLoader = new TextureLoader();
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
-  piexelRatio: Math.min(2, window.devicePixelRatio),
+  pixelRatio: Math.min(2, window.devicePixelRatio),
 };
-
 const el = document.querySelector('#root');
 
 const renderer = new WebGLRenderer({
@@ -37,84 +34,96 @@ const renderer = new WebGLRenderer({
   antialias: true,
 });
 renderer.setSize(sizes.width, sizes.height);
-renderer.setPixelRatio(sizes.piexelRatio);
+renderer.setPixelRatio(sizes.pixelRatio);
 el?.append(renderer.domElement);
 
 const scene = new Scene();
 scene.background = new Color(Colors.BLACK);
 
 const camera = new PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 1000);
-camera.position.set(0, 1, 1);
+camera.position.set(0, 0.5, 0.5);
 camera.lookAt(scene.position);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-const timer = new Timer();
+const normalMap = textureLoader.load('/normal.png');
+const roughnessMap = textureLoader.load('/roughness.jpg');
 
-const normalTexture = textureLoader.load('/normal.png');
-const roughnessTexture = textureLoader.load('/roughness.jpg');
+const planeGeometry = new PlaneGeometry(1, 1, 32, 32);
 
-const planeGeometry = new PlaneGeometry(1, 1, 64, 64);
-
-const planeMirrow = new Reflector(planeGeometry, {
+const planeReflector = new Reflector(planeGeometry, {
   textureWidth: sizes.width,
   textureHeight: sizes.height,
-  clipBias: 0.003,
 });
-planeMirrow.rotation.x = -Math.PI / 2;
-planeMirrow.position.y = -0.0001;
-scene.add(planeMirrow);
+planeReflector.rotation.x = -Math.PI / 2;
+planeReflector.position.y = -0.0001;
+scene.add(planeReflector);
 
 const uniforms = {
-  uNormal: new Uniform(normalTexture),
-  uRoughness: new Uniform(roughnessTexture),
-  uReflectorTexture: new Uniform(planeMirrow.getRenderTarget().texture),
-  uTextureMatrix: (planeMirrow.material as ShaderMaterial).uniforms.textureMatrix,
-  uNormalBias: new Uniform(0.2),
-  uLevel: new Uniform(3.0),
+  // Matrix
+  uReflectTexture: new Uniform(planeReflector.getRenderTarget().texture),
+
+  // Texture
+  uTextureMatrix: (planeReflector.material as ShaderMaterial).uniforms.textureMatrix,
+  uNormalMap: new Uniform(normalMap),
+  uRoughnessMap: new Uniform(roughnessMap),
+
+  // Float
+  uDistortionAmount: new Uniform(0.058),
+  uBlurStrength: new Uniform(4.42),
 };
-uniforms.uReflectorTexture.value.generateMipmaps = true;
-uniforms.uReflectorTexture.value.minFilter = LinearMipMapLinearFilter;
-uniforms.uReflectorTexture.value.magFilter = LinearFilter;
+uniforms.uReflectTexture.value.generateMipmaps = true;
+uniforms.uReflectTexture.value.minFilter = LinearMipmapLinearFilter;
+uniforms.uReflectTexture.value.magFilter = LinearFilter;
 
 const planeMaterial = new ShaderMaterial({
   uniforms,
   vertexShader,
   fragmentShader,
 });
-
 const plane = new Mesh(planeGeometry, planeMaterial);
 plane.rotation.x = -Math.PI / 2;
 scene.add(plane);
 
-const ball = new Mesh(new IcosahedronGeometry(0.1, 3), new MeshBasicMaterial({ color: 'blue' }));
-ball.position.y = 0.2;
+const ballGeometry = new IcosahedronGeometry(0.07, 5);
+const ballMaterial = new MeshBasicMaterial({
+  color: new Color(Colors.VIOLET4),
+});
+const ball = new Mesh(ballGeometry, ballMaterial);
+ball.position.y = 0.14;
 scene.add(ball);
 
-const directionalLight = new DirectionalLight(0xffffff);
-directionalLight.position.set(0.0, 1.25, 1.0);
-scene.add(directionalLight);
-
-const pane = new Pane({ title: 'Debug' });
+const pane = new Pane({ title: 'Debug Params' });
 pane.element.parentElement!.style.width = '380px';
-pane.addBinding(uniforms.uNormalBias, 'value', {
-  label: 'Normal Bias',
-  step: 0.01,
+
+const f_plane = pane.addFolder({ title: '⬜ Plane' });
+f_plane.addBinding(uniforms.uDistortionAmount, 'value', {
+  label: 'Distortion Amount',
+  step: 0.001,
   min: 0,
   max: 1,
 });
-pane.addBinding(uniforms.uLevel, 'value', {
-  label: 'Level of detail',
-  step: 0.01,
+f_plane.addBinding(uniforms.uBlurStrength, 'value', {
+  label: 'Blur Strength',
+  step: 0.001,
   min: 0,
   max: 20,
 });
 
-function render() {
-  timer.update();
-  controls.update();
+const f_ball = pane.addFolder({ title: '⚪ Ball' });
+f_ball.addBinding(ball.position, 'y', {
+  step: 0.01,
+  min: 0,
+  max: 1,
+});
+f_ball.addBinding(ballMaterial, 'color', {
+  color: { type: 'float' },
+});
 
+function render() {
+  //
+  controls.update();
   //
   renderer.render(scene, camera);
   //
