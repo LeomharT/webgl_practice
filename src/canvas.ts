@@ -11,7 +11,9 @@ import {
   Scene,
   ShaderMaterial,
   TextureLoader,
+  Timer,
   Uniform,
+  Vector2,
   WebGLRenderer,
 } from 'three';
 import { OrbitControls, Reflector } from 'three/examples/jsm/Addons.js';
@@ -47,8 +49,11 @@ camera.lookAt(scene.position);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
+const timer = new Timer();
+
 const normalMap = textureLoader.load('/normal.png');
 const roughnessMap = textureLoader.load('/roughness.jpg');
+const opacityMap = textureLoader.load('/opacity.jpg');
 
 const planeGeometry = new PlaneGeometry(1, 1, 32, 32);
 
@@ -68,10 +73,14 @@ const uniforms = {
   uTextureMatrix: (planeReflector.material as ShaderMaterial).uniforms.textureMatrix,
   uNormalMap: new Uniform(normalMap),
   uRoughnessMap: new Uniform(roughnessMap),
+  uOpacityMap: new Uniform(opacityMap),
 
   // Float
+  uTime: new Uniform(0),
   uDistortionAmount: new Uniform(0.058),
   uBlurStrength: new Uniform(4.42),
+  uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
+  uRippleScale: new Uniform(10.0),
 };
 uniforms.uReflectTexture.value.generateMipmaps = true;
 uniforms.uReflectTexture.value.minFilter = LinearMipmapLinearFilter;
@@ -110,6 +119,12 @@ f_plane.addBinding(uniforms.uBlurStrength, 'value', {
   min: 0,
   max: 20,
 });
+f_plane.addBinding(uniforms.uRippleScale, 'value', {
+  label: 'Ripple Scale',
+  step: 0.001,
+  min: 0,
+  max: 20,
+});
 
 const f_ball = pane.addFolder({ title: '⚪ Ball' });
 f_ball.addBinding(ball.position, 'y', {
@@ -123,6 +138,11 @@ f_ball.addBinding(ballMaterial, 'color', {
 
 function render() {
   //
+  timer.update();
+
+  const dt = timer.getDelta();
+  uniforms.uTime.value += dt;
+
   controls.update();
   //
   renderer.render(scene, camera);
@@ -134,6 +154,7 @@ render();
 window.addEventListener('resize', () => {
   sizes.width = window.innerWidth;
   sizes.height = window.innerHeight;
+  uniforms.uResolution.value.set(sizes.width, sizes.height);
 
   renderer.setSize(sizes.width, sizes.height);
 
