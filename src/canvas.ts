@@ -16,7 +16,14 @@ import {
   Vector2,
   WebGLRenderer,
 } from 'three';
-import { OrbitControls, Reflector } from 'three/examples/jsm/Addons.js';
+import {
+  EffectComposer,
+  OrbitControls,
+  OutputPass,
+  Reflector,
+  RenderPass,
+  UnrealBloomPass,
+} from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
@@ -50,6 +57,18 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
 const timer = new Timer();
+
+const composer = new EffectComposer(renderer);
+composer.setSize(sizes.width, sizes.height);
+composer.setPixelRatio(sizes.pixelRatio);
+
+const renderPass = new RenderPass(scene, camera);
+const bloomPass = new UnrealBloomPass(new Vector2(sizes.width, sizes.height), 0.5, 0.5, 0.0);
+const outputPass = new OutputPass();
+
+composer.addPass(renderPass);
+composer.addPass(bloomPass);
+composer.addPass(outputPass);
 
 const normalMap = textureLoader.load('/normal.png');
 const roughnessMap = textureLoader.load('/roughness.jpg');
@@ -135,6 +154,21 @@ f_ball.addBinding(ball.position, 'y', {
 f_ball.addBinding(ballMaterial, 'color', {
   color: { type: 'float' },
 });
+f_ball.addBinding(bloomPass, 'radius', {
+  step: 0.001,
+  min: 0,
+  max: 1,
+});
+f_ball.addBinding(bloomPass, 'strength', {
+  step: 0.001,
+  min: 0,
+  max: 1,
+});
+f_ball.addBinding(bloomPass, 'threshold', {
+  step: 0.001,
+  min: 0,
+  max: 1,
+});
 
 function render() {
   //
@@ -145,7 +179,7 @@ function render() {
 
   controls.update();
   //
-  renderer.render(scene, camera);
+  composer.render(dt);
   //
   requestAnimationFrame(render);
 }
