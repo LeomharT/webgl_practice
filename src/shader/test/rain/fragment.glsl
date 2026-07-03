@@ -10,9 +10,9 @@ void main() {
     vec2 ndc = vNDC;
          ndc = ndc * 0.5 + 0.5;
 
-    vec4 frame = texture2D(uFrameTexture, ndc);
+    vec4 frame = texture2D(uFrameTexture, ndc += 0.01);
 
-    color = frame.rgb + vec3(0.049, 0.025, 0.059);
+    color = frame.rgb;
     
     gl_FragColor = vec4(color, 1.0);
 
