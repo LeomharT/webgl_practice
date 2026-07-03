@@ -15,6 +15,7 @@ import {
   Uniform,
   Vector2,
   WebGLRenderer,
+  WebGLRenderTarget,
 } from 'three';
 import {
   EffectComposer,
@@ -26,9 +27,10 @@ import {
 } from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
 import fragmentShader from './shader/test/fragment.glsl?raw';
+import rainFragmentShader from './shader/test/rain/fragment.glsl?raw';
+import rainVertexShader from './shader/test/rain/vertex.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
-
 const textureLoader = new TextureLoader();
 
 const sizes = {
@@ -69,6 +71,12 @@ const outputPass = new OutputPass();
 composer.addPass(renderPass);
 composer.addPass(bloomPass);
 composer.addPass(outputPass);
+
+const frameTexture = new WebGLRenderTarget(sizes.width, sizes.height, {
+  generateMipmaps: true,
+  minFilter: LinearMipmapLinearFilter,
+  magFilter: LinearFilter,
+});
 
 const normalMap = textureLoader.load('/normal.png');
 const roughnessMap = textureLoader.load('/roughness.jpg');
@@ -122,6 +130,19 @@ const ball = new Mesh(ballGeometry, ballMaterial);
 ball.position.y = 0.14;
 scene.add(ball);
 
+const rainGrometry = new PlaneGeometry(0.2, 0.2, 32, 32);
+const rainMaterial = new ShaderMaterial({
+  uniforms: {
+    uFrameTexture: new Uniform(frameTexture.texture),
+  },
+  vertexShader: rainVertexShader,
+  fragmentShader: rainFragmentShader,
+});
+const rain = new Mesh(rainGrometry, rainMaterial);
+rain.position.set(0, 0.25, 0.25);
+rain.layers.set(1);
+scene.add(rain);
+
 const pane = new Pane({ title: 'Debug Params' });
 pane.element.parentElement!.style.width = '380px';
 
@@ -170,6 +191,16 @@ f_ball.addBinding(bloomPass, 'threshold', {
   max: 1,
 });
 
+function updateFrameBuffer() {
+  camera.layers.disable(1);
+
+  renderer.setRenderTarget(frameTexture);
+  renderer.render(scene, camera);
+  renderer.setRenderTarget(null);
+
+  camera.layers.enable(1);
+}
+
 function render() {
   //
   timer.update();
@@ -178,6 +209,8 @@ function render() {
   uniforms.uTime.value += dt;
 
   controls.update();
+
+  updateFrameBuffer();
   //
   composer.render(dt);
   //
