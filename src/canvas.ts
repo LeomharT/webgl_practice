@@ -1,5 +1,7 @@
 import { Colors } from '@blueprintjs/colors';
+import { BloomEffect, EffectComposer, EffectPass, RenderPass } from 'postprocessing';
 import {
+  ACESFilmicToneMapping,
   AxesHelper,
   Color,
   IcosahedronGeometry,
@@ -41,13 +43,15 @@ const renderer = new WebGLRenderer({
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(sizes.pixelRatio);
+renderer.toneMapping = ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.725;
 el?.append(renderer.domElement);
 
 const scene = new Scene();
 scene.background = new Color(0x000000);
 
-const camera = new PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 1000);
-camera.position.set(0, 0.45, 0.45);
+const camera = new PerspectiveCamera(75, sizes.width / sizes.height, 0.01, 1000);
+camera.position.set(0, 0.1, 0.35);
 camera.lookAt(scene.position);
 
 const controls1 = new OrbitControls(camera, renderer.domElement);
@@ -55,9 +59,25 @@ controls1.enableDamping = true;
 
 const timer = new Timer();
 
+const composer = new EffectComposer(renderer, { multisampling: 8 });
+composer.setSize(sizes.width, sizes.height);
+
+const renderPass = new RenderPass(scene, camera);
+const bloomPass = new BloomEffect({
+  width: window.innerWidth,
+  height: window.innerHeight,
+  radius: 0.5,
+  intensity: 0.5,
+  luminanceThreshold: 0.0,
+});
+composer.addPass(renderPass);
+composer.addPass(new EffectPass(camera, bloomPass));
+
 // Texture
 const normalTexture = textureLoader.load('normal.png');
 const roughnessTexture = textureLoader.load('roughness.jpg');
+roughnessTexture.anisotropy = 8;
+const opacityTexture = textureLoader.load('opacity.jpg');
 
 // World
 
@@ -76,6 +96,7 @@ const uniforms = {
   uReflectorTexture: new Uniform(floorReflector.getRenderTarget().texture),
   uNormalTexture: new Uniform(normalTexture),
   uRoughnessTexture: new Uniform(roughnessTexture),
+  uOpacityTexture: new Uniform(opacityTexture),
 
   // Matrix
   uTextureMatrix: (floorReflector.material as ShaderMaterial).uniforms.textureMatrix,
@@ -84,8 +105,10 @@ const uniforms = {
   uResolution: new Uniform(sizes.resolution),
 
   // Float
-  uNormalBais: new Uniform(0.123),
-  uBlurStrength: new Uniform(4.6),
+  uTime: new Uniform(0),
+  uRainScale: new Uniform(16.0),
+  uNormalBais: new Uniform(0.274),
+  uBlurStrength: new Uniform(3.7),
 };
 uniforms.uReflectorTexture.value.generateMipmaps = true;
 uniforms.uReflectorTexture.value.minFilter = NearestMipMapLinearFilter;
@@ -100,12 +123,12 @@ const plane = new Mesh(planeGeometry, planeMaterial);
 plane.rotation.x = -Math.PI / 2;
 scene.add(plane);
 
-const ballGeometry = new IcosahedronGeometry(0.08, 5);
+const ballGeometry = new IcosahedronGeometry(0.06, 5);
 const ballMaterial = new MeshBasicMaterial({
   color: new Color(Colors.ROSE3),
 });
 const ball = new Mesh(ballGeometry, ballMaterial);
-ball.position.y = 0.2;
+ball.position.y = 0.15;
 scene.add(ball);
 
 const axesHelper = new AxesHelper();
@@ -124,6 +147,12 @@ f_ball.addBinding(ballMaterial, 'color', {
 });
 
 const f_floor = pane.addFolder({ title: '⬜ Floor' });
+f_floor.addBinding(uniforms.uRainScale, 'value', {
+  label: 'Rain Scale',
+  step: 0.1,
+  min: 0,
+  max: 30,
+});
 f_floor.addBinding(uniforms.uNormalBais, 'value', {
   label: 'Normal bais',
   step: 0.001,
@@ -137,12 +166,22 @@ f_floor.addBinding(uniforms.uBlurStrength, 'value', {
   max: 20,
 });
 
+const f_bloom = pane.addFolder({ title: 'Bloom' });
+f_bloom.addBinding(bloomPass, 'intensity', {
+  step: 0.001,
+  min: 0,
+  max: 1,
+});
+
 function render() {
   // Update
   timer.update();
+  const dt = timer.getDelta();
+  uniforms.uTime.value += dt;
+
   controls1.update();
   // Render
-  renderer.render(scene, camera);
+  composer.render();
   // Animation
   requestAnimationFrame(render);
 }
