@@ -5,12 +5,16 @@ import {
   IcosahedronGeometry,
   Mesh,
   MeshBasicMaterial,
+  NearestFilter,
+  NearestMipMapLinearFilter,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
   ShaderMaterial,
+  TextureLoader,
   Timer,
   Uniform,
+  Vector2,
   WebGLRenderer,
 } from 'three';
 import { OrbitControls, Reflector } from 'three/examples/jsm/Addons.js';
@@ -23,9 +27,12 @@ const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
   pixelRatio: Math.min(2, window.devicePixelRatio),
+  resolution: new Vector2(window.innerWidth, window.innerHeight),
 };
 
 const el = document.querySelector('#root');
+
+const textureLoader = new TextureLoader();
 
 //
 const renderer = new WebGLRenderer({
@@ -48,6 +55,10 @@ controls1.enableDamping = true;
 
 const timer = new Timer();
 
+// Texture
+const normalTexture = textureLoader.load('normal.png');
+const roughnessTexture = textureLoader.load('roughness.jpg');
+
 // World
 
 const planeGeometry = new PlaneGeometry(1, 1, 64, 64);
@@ -61,9 +72,24 @@ floorReflector.position.y = -0.0001;
 scene.add(floorReflector);
 
 const uniforms = {
+  // Simpler2D
   uReflectorTexture: new Uniform(floorReflector.getRenderTarget().texture),
+  uNormalTexture: new Uniform(normalTexture),
+  uRoughnessTexture: new Uniform(roughnessTexture),
+
+  // Matrix
   uTextureMatrix: (floorReflector.material as ShaderMaterial).uniforms.textureMatrix,
+
+  // Vector
+  uResolution: new Uniform(sizes.resolution),
+
+  // Float
+  uNormalBais: new Uniform(0.123),
+  uBlurStrength: new Uniform(4.6),
 };
+uniforms.uReflectorTexture.value.generateMipmaps = true;
+uniforms.uReflectorTexture.value.minFilter = NearestMipMapLinearFilter;
+uniforms.uReflectorTexture.value.magFilter = NearestFilter;
 
 const planeMaterial = new ShaderMaterial({
   uniforms,
@@ -93,6 +119,23 @@ const f_axes = pane.addFolder({ title: '🧊 Axes Helper' });
 f_axes.addBinding(axesHelper, 'visible');
 
 const f_ball = pane.addFolder({ title: '⚪ Ball' });
+f_ball.addBinding(ballMaterial, 'color', {
+  color: { type: 'float' },
+});
+
+const f_floor = pane.addFolder({ title: '⬜ Floor' });
+f_floor.addBinding(uniforms.uNormalBais, 'value', {
+  label: 'Normal bais',
+  step: 0.001,
+  min: 0,
+  max: 1,
+});
+f_floor.addBinding(uniforms.uBlurStrength, 'value', {
+  label: 'Blur Strength',
+  step: 0.1,
+  min: 0,
+  max: 20,
+});
 
 function render() {
   // Update
@@ -108,6 +151,9 @@ render();
 window.addEventListener('resize', () => {
   sizes.width = window.innerWidth;
   sizes.height = window.innerHeight;
+
+  sizes.resolution.x = sizes.width;
+  sizes.resolution.y = sizes.height;
 
   renderer.setSize(sizes.width, sizes.height);
 
