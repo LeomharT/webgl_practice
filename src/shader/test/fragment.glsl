@@ -87,11 +87,14 @@ void main() {
     }
     circles /= float((MAX_RADIUS * 2 + 1) * (MAX_RADIUS * 2 + 1));
 
-    vec4  normal    = texture2D(uNormalTexture, vUv) * 2.0 - 1.0;
-    float roughness = texture2D(uRoughnessTexture, vUv).g;
-    float opacity   = texture2D(uOpacityTexture, vUv).r;
+    vec2 uv0 = vec2(vUv.x * 1.38, vUv.y * 4.07);
+         uv0 = fract(uv0);
 
-    float intensity = opacity * 0.125;
+    vec4  normal    = texture2D(uNormalTexture, uv0) * 2.0 - 1.0;
+    float roughness = texture2D(uRoughnessTexture, uv0).g;
+    float opacity   = texture2D(uOpacityTexture, uv0).r;
+
+    float intensity = opacity * 0.25;
     vec3  n         = vec3(circles, sqrt(1. - dot(circles, circles)));
 
     vec2  reflectUv = textureUv.xy / textureUv.w;

@@ -1,12 +1,11 @@
-import { Colors } from '@blueprintjs/colors';
 import { BloomEffect, EffectComposer, EffectPass, RenderPass } from 'postprocessing';
 import {
   ACESFilmicToneMapping,
   AxesHelper,
   Color,
-  IcosahedronGeometry,
   Mesh,
   MeshBasicMaterial,
+  MirroredRepeatWrapping,
   NearestFilter,
   NearestMipMapLinearFilter,
   PerspectiveCamera,
@@ -15,6 +14,7 @@ import {
   ShaderMaterial,
   TextureLoader,
   Timer,
+  TorusGeometry,
   Uniform,
   Vector2,
   WebGLRenderer,
@@ -75,9 +75,14 @@ composer.addPass(new EffectPass(camera, bloomPass));
 
 // Texture
 const normalTexture = textureLoader.load('normal.png');
+normalTexture.wrapT = normalTexture.wrapS = MirroredRepeatWrapping;
+
 const roughnessTexture = textureLoader.load('roughness.jpg');
 roughnessTexture.anisotropy = 8;
+roughnessTexture.wrapT = roughnessTexture.wrapS = MirroredRepeatWrapping;
+
 const opacityTexture = textureLoader.load('opacity.jpg');
+opacityTexture.wrapT = opacityTexture.wrapS = MirroredRepeatWrapping;
 
 // World
 
@@ -107,8 +112,8 @@ const uniforms = {
   // Float
   uTime: new Uniform(0),
   uRainScale: new Uniform(16.0),
-  uNormalBais: new Uniform(0.274),
-  uBlurStrength: new Uniform(3.7),
+  uNormalBais: new Uniform(0.1065),
+  uBlurStrength: new Uniform(6.3),
 };
 uniforms.uReflectorTexture.value.generateMipmaps = true;
 uniforms.uReflectorTexture.value.minFilter = NearestMipMapLinearFilter;
@@ -123,9 +128,9 @@ const plane = new Mesh(planeGeometry, planeMaterial);
 plane.rotation.x = -Math.PI / 2;
 scene.add(plane);
 
-const ballGeometry = new IcosahedronGeometry(0.06, 5);
+const ballGeometry = new TorusGeometry(0.2, 0.01);
 const ballMaterial = new MeshBasicMaterial({
-  color: new Color(Colors.ROSE3),
+  color: new Color('#ff5edc'),
 });
 const ball = new Mesh(ballGeometry, ballMaterial);
 ball.position.y = 0.15;
