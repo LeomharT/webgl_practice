@@ -97,7 +97,8 @@ void main() {
 
     vec4 reflectColor = packedTexture2DLOD(uReflectorTexture, finalUv, level, uResolution);
 
-    color = reflectColor.rgb;
+    color = texture2D(uReflectorTexture, finalUv, level).rgb;
+    // color = reflectColor.rgb;
 
     gl_FragColor = vec4(color, 1.0);
 

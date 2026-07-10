@@ -9,7 +9,6 @@ import {
   PlaneGeometry,
   Scene,
   ShaderMaterial,
-  Texture,
   TextureLoader,
   TorusGeometry,
   Uniform,
@@ -17,7 +16,7 @@ import {
   WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
-import { OrbitControls, Reflector } from 'three/examples/jsm/Addons.js';
+import { EffectComposer, OrbitControls, OutputPass, Reflector, RenderPass } from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
 import { PackedMipMapGenerator } from './lib/custom-mipmap-generation/PackedMipMapGenerator';
 import fragmentShader from './shader/test/fragment.glsl?raw';
@@ -47,7 +46,7 @@ el?.append(renderer.domElement);
 const scene = new Scene();
 scene.background = new Color(Colors.BLACK);
 
-const camera = new PerspectiveCamera(75, sizes.width / sizes.height, 0.01, 1000);
+const camera = new PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 1000);
 camera.position.set(0, 0.1, 0.2);
 camera.lookAt(scene.position);
 
@@ -55,7 +54,16 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.04;
 
-const linearTarget = new WebGLRenderTarget();
+const composer = new EffectComposer(renderer);
+composer.setSize(sizes.width, sizes.height);
+composer.setPixelRatio(sizes.pixelRatio);
+
+const renderPass = new RenderPass(scene, camera);
+const outputPass = new OutputPass();
+
+composer.addPass(renderPass);
+composer.addPass(outputPass);
+
 const nearestTarget = new WebGLRenderTarget();
 nearestTarget.texture.minFilter = NearestFilter;
 nearestTarget.texture.magFilter = NearestFilter;
@@ -68,16 +76,18 @@ const opacityTexture = textureLoader.load('opacity.jpg');
 const floorGeometry = new PlaneGeometry(1, 1, 32, 32);
 
 const floorReflector = new Reflector(floorGeometry, {
-  textureWidth: 2048,
-  textureHeight: 2048,
+  textureWidth: sizes.width,
+  textureHeight: sizes.height,
+  clipBias: 0.003,
 });
 floorReflector.rotation.x = -Math.PI / 2;
 floorReflector.position.y = -0.0001;
+floorReflector.getRenderTarget().texture.generateMipmaps = false;
 scene.add(floorReflector);
 
 const uniforms = {
   // Simpler
-  uReflectorTexture: new Uniform(new Texture()),
+  uReflectorTexture: new Uniform(floorReflector.getRenderTarget().texture),
   uNormalTexture: new Uniform(normalTexture),
   uRoughnessTexture: new Uniform(roughnessTexture),
   uOpacityTexture: new Uniform(opacityTexture),
@@ -138,7 +148,6 @@ const mipMapper = new PackedMipMapGenerator();
 function updateTexture() {
   // render mip pyramids
   mipMapper.update(floorReflector.getRenderTarget().texture, nearestTarget, renderer);
-  mipMapper.update(floorReflector.getRenderTarget().texture, linearTarget, renderer);
 
   // render original target
   const copyQuad = mipMapper._copyQuad;
@@ -149,8 +158,6 @@ function updateTexture() {
 
   // dipose
   mipMapper.dispose();
-
-  uniforms.uReflectorTexture.value = nearestTarget.texture;
 }
 
 function render() {
@@ -158,10 +165,10 @@ function render() {
 
   // Update
   updateTexture();
-
   controls.update();
+
   // Render
-  renderer.render(scene, camera);
+  composer.render();
   // Animation
   requestAnimationFrame(render);
 
