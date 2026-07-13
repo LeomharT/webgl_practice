@@ -16,7 +16,14 @@ import {
   Vector2,
   WebGLRenderer,
 } from 'three';
-import { EffectComposer, OrbitControls, OutputPass, Reflector, RenderPass } from 'three/examples/jsm/Addons.js';
+import {
+  EffectComposer,
+  OrbitControls,
+  OutputPass,
+  Reflector,
+  RenderPass,
+  UnrealBloomPass,
+} from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
@@ -61,7 +68,10 @@ composer.renderToScreen = true;
 const renderScene = new RenderPass(scene, camera);
 const outputPass = new OutputPass();
 
+const bloomPass = new UnrealBloomPass(new Vector2(sizes.width, sizes.height), 0.93, 0.44, 0.15);
+
 composer.addPass(renderScene);
+composer.addPass(bloomPass);
 composer.addPass(outputPass);
 
 // TEXTURE
@@ -111,9 +121,9 @@ floor.rotation.x = -Math.PI / 2;
 scene.add(floor);
 
 // Ring
-const ringGeometry = new TorusGeometry(0.1, 0.005, 12, 64);
+const ringGeometry = new TorusGeometry(0.1, 0.003, 12, 64);
 const ringMaterial = new MeshBasicMaterial({
-  color: new Color(Colors.VIOLET3),
+  color: new Color(Colors.TURQUOISE3),
 });
 const ring = new Mesh(ringGeometry, ringMaterial);
 scene.add(ring);
@@ -149,6 +159,28 @@ f_floor.addBinding(uniforms.uBlurStrength, 'value', {
   step: 0.001,
   min: 0,
   max: 15,
+});
+
+const f_bloom = pane.addFolder({ title: 'Bloom' });
+f_bloom.addBinding(bloomPass, 'strength', {
+  min: 0,
+  max: 3,
+  step: 0.01,
+});
+f_bloom.addBinding(bloomPass, 'radius', {
+  min: 0,
+  max: 1,
+  step: 0.01,
+});
+f_bloom.addBinding(bloomPass, 'threshold', {
+  min: 0,
+  max: 1,
+  step: 0.01,
+});
+
+const f_ring = pane.addFolder({ title: 'Ring' });
+f_ring.addBinding(ringMaterial, 'color', {
+  color: { type: 'float' },
 });
 
 function updateReflection() {
