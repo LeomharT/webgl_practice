@@ -48,7 +48,7 @@ renderer.setPixelRatio(sizes.pixelRatio);
 el?.append(renderer.domElement);
 
 const scene = new Scene();
-scene.background = new Color(Colors.BLACK);
+scene.background = new Color(0x000000);
 
 const camera = new PerspectiveCamera(75, sizes.width / sizes.height, 0.01, 1000);
 camera.position.set(0, 0.1, 0.2);
