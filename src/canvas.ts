@@ -62,9 +62,11 @@ controls.dampingFactor = 0.04;
 
 // World
 const uniforms = {
-  uSize: new Uniform(0.2),
+  uSize: new Uniform(0.4),
   uResolution: new Uniform(new Vector2(sizes.width * sizes.pixelRatio, sizes.height * sizes.pixelRatio)),
   uProgress: new Uniform(0),
+  uColorA: new Uniform(new Color('#ff7300')),
+  uColorB: new Uniform(new Color('#0091ff')),
 };
 
 const particles = {
@@ -122,8 +124,16 @@ gltfLoader.load('/models.glb', (data) => {
     particles.index = index;
   };
 
+  // Random Size
+  const sizeArray = new Float32Array(particles.maxCount);
+  for (let i = 0; i < particles.maxCount; i++) {
+    sizeArray[i] = Math.random();
+  }
+
   const pointGeometey = new BufferGeometry();
   pointGeometey.setAttribute('position', particles.positions[particles.index]);
+  pointGeometey.setAttribute('aPositionTarget', particles.positions[3]);
+  pointGeometey.setAttribute('aSize', new BufferAttribute(sizeArray, 1));
 
   const pointMaterial = new ShaderMaterial({
     uniforms,
@@ -134,6 +144,7 @@ gltfLoader.load('/models.glb', (data) => {
   });
 
   const point = new Points(pointGeometey, pointMaterial);
+  point.frustumCulled = false;
   scene.add(point);
 });
 
@@ -151,6 +162,15 @@ const p = f_point.addBinding(uniforms.uProgress, 'value', {
   step: 0.01,
   min: 0,
   max: 1,
+});
+
+f_point.addBinding(uniforms.uColorA, 'value', {
+  label: 'Color A',
+  color: { type: 'float' },
+});
+f_point.addBinding(uniforms.uColorB, 'value', {
+  label: 'Color B',
+  color: { type: 'float' },
 });
 
 f_point.addButton({ title: 'Morphing 0' }).on('click', () => particles.morph?.(0));

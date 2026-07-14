@@ -1,8 +1,12 @@
 attribute vec3 aPositionTarget;
+attribute float aSize;
 
 uniform float uSize;
 uniform vec2 uResolution;
 uniform float uProgress;
+
+uniform vec3 uColorA;
+uniform vec3 uColorB;
 
 varying vec3 vColor;
 
@@ -33,9 +37,9 @@ void main() {
 
     gl_Position = projectionPosition;
 
-    gl_PointSize  = uSize * uResolution.y;
+    gl_PointSize  = uSize * uResolution.y * aSize;
     gl_PointSize *= (1.0 / -viewPosition.z);
 
     // Varying
-    vColor = vec3(noise);
+    vColor = mix(uColorA, uColorB, noise);
 }
