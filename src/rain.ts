@@ -4,7 +4,7 @@ import {
   Color,
   Mesh,
   MeshBasicMaterial,
-  NearestMipMapNearestFilter,
+  NearestFilter,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
@@ -15,6 +15,7 @@ import {
   Uniform,
   Vector2,
   WebGLRenderer,
+  WebGLRenderTarget,
 } from 'three';
 import {
   EffectComposer,
@@ -25,6 +26,7 @@ import {
   UnrealBloomPass,
 } from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
+import { PackedMipMapGenerator } from './lib/custom-mipmap-generation/PackedMipMapGenerator';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
@@ -79,6 +81,13 @@ const normalTexture = textureLoader.load('normal.png');
 const roughnessTexture = textureLoader.load('roughness.jpg');
 const opacityTexture = textureLoader.load('opacity.jpg');
 
+// RT
+const nearestTarget = new WebGLRenderTarget();
+nearestTarget.texture.minFilter = NearestFilter;
+nearestTarget.texture.magFilter = NearestFilter;
+
+const mipMapper = new PackedMipMapGenerator();
+
 // WORLD
 const planeGeometry = new PlaneGeometry(1, 1, 64, 64);
 
@@ -87,13 +96,14 @@ const floorReflector = new Reflector(planeGeometry, {
   textureHeight: sizes.height,
   clipBias: 0.003,
 });
+floorReflector.getRenderTarget().texture.generateMipmaps = false;
 floorReflector.rotation.x = -Math.PI / 2;
 floorReflector.visible = false;
 scene.add(floorReflector);
 
 const uniforms = {
   // SIMPLER 2D
-  uReflectorTexture: new Uniform(floorReflector.getRenderTarget().texture),
+  uReflectorTexture: new Uniform(nearestTarget.texture),
   uNormalTexture: new Uniform(normalTexture),
   uRoughnessTexture: new Uniform(roughnessTexture),
   uOpacityTexture: new Uniform(opacityTexture),
@@ -107,8 +117,6 @@ const uniforms = {
   // Vector
   uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
 };
-uniforms.uReflectorTexture.value.generateMipmaps = true;
-uniforms.uReflectorTexture.value.minFilter = NearestMipMapNearestFilter;
 
 // Floor
 const planeMaterial = new ShaderMaterial({
@@ -189,6 +197,21 @@ function updateReflection() {
   floorReflector.visible = false;
 }
 
+function updateTexture() {
+  // render mip pyramids
+  mipMapper.update(floorReflector.getRenderTarget().texture, nearestTarget, renderer);
+
+  // render original target
+  const copyQuad = mipMapper._copyQuad;
+  (copyQuad.material as ShaderMaterial).uniforms.tDiffuse.value = floorReflector.getRenderTarget().texture;
+  copyQuad.camera.setViewOffset(1, 1, 0, 0, 1, 1);
+
+  renderer.setRenderTarget(null);
+
+  // dipose
+  mipMapper.dispose();
+}
+
 function render() {
   fpsGraph.begin();
 
@@ -199,6 +222,7 @@ function render() {
   uniforms.uTime.value += dt;
   controls.update();
   updateReflection();
+  updateTexture();
   // RENDER
   composer.render();
   // ANIMATION
