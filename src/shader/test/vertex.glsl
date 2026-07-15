@@ -1,10 +1,14 @@
 attribute vec3 aPositionTarget;
+attribute float aSize;
 
 uniform float uSize;
 uniform float uProgress;
 uniform vec2 uResolution;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
 
 varying vec2 vUv;
+varying vec3 vColor;
 
 #include <simplex3DNoise>
 
@@ -30,9 +34,10 @@ void main() {
 
     gl_Position = projectionPosition;
 
-    gl_PointSize  = uSize * uResolution.y;
+    gl_PointSize  = uSize * uResolution.y * aSize;
     gl_PointSize *= 1.0 / -viewPosition.z;
 
     // Varying
     vUv = uv;
+    vColor = mix(uColorA, uColorB, noise);
 }

@@ -1,4 +1,5 @@
 varying vec2 vUv;
+varying vec3 vColor;
 
 uniform sampler2D uDayMap;
 
@@ -10,11 +11,9 @@ void main() {
     float dist  = length(uv - center);
     float alpha = 0.05 / dist - 0.1;
 
-    vec4 mapColor = texture2D(uDayMap, vUv);
+    color = vColor;
 
-    color = vec3(alpha);
-
-    gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(color, alpha);
 
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
