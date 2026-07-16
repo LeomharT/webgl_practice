@@ -1,16 +1,17 @@
 import { Colors } from '@blueprintjs/colors';
+import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import {
   AdditiveBlending,
+  BufferAttribute,
   BufferGeometry,
   Color,
   Float32BufferAttribute,
+  Mesh,
   PerspectiveCamera,
-  PlaneGeometry,
   Points,
   Scene,
   ShaderChunk,
   ShaderMaterial,
-  SphereGeometry,
   SRGBColorSpace,
   TextureLoader,
   Uniform,
@@ -59,112 +60,112 @@ const scene = new Scene();
 scene.background = new Color(Colors.BLACK);
 
 const camera = new PerspectiveCamera(40, sizes.width / sizes.height, 0.01, 1000);
-camera.position.set(0, 0, 4);
+camera.position.set(10, 8, 10);
 camera.lookAt(scene.position);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.dampingFactor = 0.04;
 
-// World
-
-const geometry1 = new PlaneGeometry(2, 2, 128, 128);
-geometry1.scale(1.618, 1, 1);
-geometry1.setIndex(null);
-
-const geometry2 = new SphereGeometry(1, 128, 64);
-geometry2.setIndex(null);
-
-const particle = {
-  maxCount: Math.max(geometry1.getAttribute('position').count, geometry2.getAttribute('position').count),
-  positions: [] as Float32BufferAttribute[],
-};
-
-const positions = [geometry1.getAttribute('position'), geometry2.getAttribute('position')];
-
-for (const p of positions) {
-  const originArray = p.array;
-  const newArray = new Float32Array(particle.maxCount * 3);
-
-  for (let i = 0; i < particle.maxCount; i++) {
-    const i3 = i * 3;
-
-    if (i3 < originArray.length) {
-      newArray[i3 + 0] = originArray[i3 + 0];
-      newArray[i3 + 1] = originArray[i3 + 1];
-      newArray[i3 + 2] = originArray[i3 + 2];
-    } else {
-      const randomIndex = Math.floor(Math.random() * p.count) * 3;
-
-      newArray[i3 + 0] = originArray[randomIndex + 0];
-      newArray[i3 + 1] = originArray[randomIndex + 1];
-      newArray[i3 + 2] = originArray[randomIndex + 2];
-    }
-  }
-
-  particle.positions.push(new Float32BufferAttribute(newArray, 3));
-}
-
-// Size
-const sizeArray = new Float32Array(particle.maxCount);
-for (let i = 0; i < particle.maxCount; i++) {
-  sizeArray[i] = Math.random();
-}
-
-const geometry = new BufferGeometry();
-geometry.setAttribute('position', particle.positions[0]);
-geometry.setAttribute('aPositionTarget', particle.positions[1]);
-geometry.setAttribute('aSize', new Float32BufferAttribute(sizeArray, 1));
+// WORLD
 
 const uniforms = {
-  uSize: new Uniform(0.1),
+  // FLOAT
+  uSize: new Uniform(0.4),
   uProgress: new Uniform(0.0),
   uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
-  uDayMap: new Uniform(dayMap),
-  uColorA: new Uniform(new Color('#ff7300')),
-  uColorB: new Uniform(new Color('#0091ff')),
 };
 
-const pointMaterial = new ShaderMaterial({
-  uniforms,
-  vertexShader,
-  fragmentShader,
-  depthWrite: false,
-  blending: AdditiveBlending,
+const particle = {
+  maxCount: 0,
+  position: [] as Float32BufferAttribute[],
+};
+
+gltfLoader.load('models.glb', (data) => {
+  const positions: BufferAttribute[] = data.scene.children.map((value) => {
+    if (value instanceof Mesh) return value.geometry.attributes.position;
+  });
+
+  for (const p of positions) {
+    if (p.count > particle.maxCount) particle.maxCount = p.count;
+  }
+
+  for (const p of positions) {
+    const originArr = p.array;
+    const newArr = new Float32Array(particle.maxCount * 3);
+
+    for (let i = 0; i < particle.maxCount; i++) {
+      const i3 = i * 3;
+
+      if (i3 < originArr.length) {
+        newArr[i3 + 0] = originArr[i3 + 0];
+        newArr[i3 + 1] = originArr[i3 + 1];
+        newArr[i3 + 2] = originArr[i3 + 2];
+      } else {
+        const randomIndex = Math.floor(Math.random() * p.count) * 3;
+
+        newArr[i3 + 0] = originArr[randomIndex + 0];
+        newArr[i3 + 1] = originArr[randomIndex + 1];
+        newArr[i3 + 2] = originArr[randomIndex + 2];
+      }
+    }
+
+    particle.position.push(new Float32BufferAttribute(newArr, 3));
+  }
+
+  // Random Size
+  const sizes = new Float32Array(particle.maxCount);
+  for (let i = 0; i < particle.maxCount; i++) {
+    sizes[i] = Math.random();
+  }
+
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', particle.position[0]);
+  geometry.setAttribute('aTargetPosition', particle.position[1]);
+  geometry.setAttribute('aSize', new Float32BufferAttribute(sizes, 1));
+
+  const pointMaterial = new ShaderMaterial({
+    uniforms,
+    vertexShader,
+    fragmentShader,
+    depthWrite: false,
+    blending: AdditiveBlending,
+  });
+  const points = new Points(geometry, pointMaterial);
+  scene.add(points);
 });
-const points = new Points(geometry, pointMaterial);
 
-scene.add(points);
+const pane = new Pane({ title: 'Debug Pane' });
+// Register plugin to the pane
+pane.registerPlugin(EssentialsPlugin);
 
-const pane = new Pane({ title: 'Debug' });
+// Add a FPS graph
+const fpsGraph: any = pane.addBlade({
+  view: 'fpsgraph',
+  label: 'fps',
+});
+
 const f_point = pane.addFolder({ title: 'Point' });
-
 f_point.addBinding(uniforms.uSize, 'value', {
   label: 'Size',
-  step: 0.01,
-  max: 1,
   min: 0,
+  max: 1,
+  step: 0.01,
 });
 f_point.addBinding(uniforms.uProgress, 'value', {
   label: 'Progress',
-  step: 0.01,
   min: 0,
   max: 1,
+  step: 0.01,
 });
-f_point.addBinding(uniforms.uColorA, 'value', {
-  color: { type: 'float' },
-});
-f_point.addBinding(uniforms.uColorB, 'value', {
-  color: { type: 'float' },
-});
-
 function render() {
+  fpsGraph.begin();
   // Update
   controls.update();
   // Render
   renderer.render(scene, camera);
   // Animation
   requestAnimationFrame(render);
+  fpsGraph.end();
 }
 render();
 
