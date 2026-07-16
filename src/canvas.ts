@@ -57,7 +57,7 @@ renderer.setPixelRatio(sizes.pixelRatio);
 el?.append(renderer.domElement);
 
 const scene = new Scene();
-scene.background = new Color(Colors.BLACK);
+scene.background = new Color(Colors.VIOLET1).multiplyScalar(0.1);
 
 const camera = new PerspectiveCamera(40, sizes.width / sizes.height, 0.01, 1000);
 camera.position.set(10, 8, 10);
@@ -73,6 +73,8 @@ const uniforms = {
   uSize: new Uniform(0.4),
   uProgress: new Uniform(0.0),
   uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
+  uColorA: new Uniform(new Color(Colors.VIOLET2)),
+  uColorB: new Uniform(new Color(Colors.CERULEAN2)),
 };
 
 const particle = {

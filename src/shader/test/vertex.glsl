@@ -4,6 +4,8 @@ attribute float aSize;
 uniform float uSize;
 uniform float uProgress;
 uniform vec2 uResolution;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
 
 varying vec3 vColor;
 
@@ -38,5 +40,9 @@ void main() {
     gl_PointSize *= 1.0 / -viewPosition.z;
 
     // Varying
-    vColor = vec3(1.0);
+    vColor = mix(
+        uColorA,
+        uColorB,
+        noise
+    );
 }
