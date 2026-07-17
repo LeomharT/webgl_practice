@@ -67,7 +67,7 @@ const uniforms = {
   uSize: new Uniform(0.2),
   uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
 };
-const sphereGeometry = new SphereGeometry(3, 64, 64);
+const sphereGeometry = new SphereGeometry(3, 32, 32);
 
 const pointMaterial = new ShaderMaterial({
   uniforms,
