@@ -1,15 +1,20 @@
-varying vec3 vColor;
+varying vec3 vPosition;
+varying vec3 vNormal;
 
 void main() {
-    vec3 color = vColor;
-    vec2 uv = gl_PointCoord;
+  vec3 color = vec3(1.0);
+  vec3 normal = normalize(vNormal);
 
-    float dist = length(uv - 0.5);
+  vec3 viewDirection = normalize(vPosition - cameraPosition);
 
-    if(dist > 0.5) discard;
+  float fresnel = 1.0 + dot(normal, viewDirection);
+  fresnel = max(fresnel, 0.0);
+  fresnel = pow(fresnel, 2.0);
 
-    gl_FragColor = vec4(color, 1.0);
+  color = vec3(fresnel);
 
-    #include <tonemapping_fragment>
-    #include <colorspace_fragment>
+  gl_FragColor = vec4(color, 1.0);
+
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
 }

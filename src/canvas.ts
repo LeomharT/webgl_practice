@@ -2,8 +2,8 @@ import { Colors } from '@blueprintjs/colors';
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import {
   Color,
+  Mesh,
   PerspectiveCamera,
-  Points,
   Scene,
   ShaderChunk,
   ShaderMaterial,
@@ -56,7 +56,7 @@ const scene = new Scene();
 scene.background = new Color(Colors.VIOLET1).multiplyScalar(0.1);
 
 const camera = new PerspectiveCamera(40, sizes.width / sizes.height, 0.01, 1000);
-camera.position.set(10, 8, 10);
+camera.position.set(5, 5, 5);
 camera.lookAt(scene.position);
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -67,14 +67,14 @@ const uniforms = {
   uSize: new Uniform(0.2),
   uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
 };
-const sphereGeometry = new SphereGeometry(3, 32, 32);
+const sphereGeometry = new SphereGeometry(1, 32, 32);
 
 const pointMaterial = new ShaderMaterial({
   uniforms,
   vertexShader,
   fragmentShader,
 });
-const point = new Points(sphereGeometry, pointMaterial);
+const point = new Mesh(sphereGeometry, pointMaterial);
 scene.add(point);
 
 const pane = new Pane({ title: 'Debug Pane' });
