@@ -1,5 +1,6 @@
 import { Colors } from '@blueprintjs/colors';
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
+import gsap from 'gsap';
 import {
   ACESFilmicToneMapping,
   AdditiveBlending,
@@ -77,9 +78,16 @@ const uniforms = {
   uColorB: new Uniform(new Color(Colors.VIOLET4)),
 };
 
-const particles = {
+const particles: {
+  maxCount: number;
+  positions: Float32BufferAttribute[];
+  index: number;
+  morph?: (index: number) => void;
+} = {
   maxCount: 0,
-  positions: [] as Float32BufferAttribute[],
+  positions: [],
+  index: 0,
+  morph: undefined,
 };
 
 gltfLoader.load('/models.glb', (data) => {
@@ -120,6 +128,19 @@ gltfLoader.load('/models.glb', (data) => {
   geometry.setAttribute('position', particles.positions[0]);
   geometry.setAttribute('aPositionTarget', particles.positions[1]);
 
+  particles.morph = (index) => {
+    geometry.setAttribute('position', particles.positions[particles.index]);
+    geometry.setAttribute('aPositionTarget', particles.positions[index]);
+
+    gsap.fromTo(
+      uniforms.uProgress,
+      { value: 0 },
+      { value: 1, ease: 'circ', duration: 3, onUpdate: () => p_progress.refresh() },
+    );
+
+    particles.index = index;
+  };
+
   const material = new ShaderMaterial({
     uniforms,
     vertexShader,
@@ -128,6 +149,7 @@ gltfLoader.load('/models.glb', (data) => {
     depthWrite: false,
   });
   const points = new Points(geometry, material);
+  points.frustumCulled = false;
   scene.add(points);
 });
 
@@ -148,12 +170,16 @@ f_point.addBinding(uniforms.uSize, 'value', {
   min: 0,
   max: 1,
 });
-f_point.addBinding(uniforms.uProgress, 'value', {
+const p_progress = f_point.addBinding(uniforms.uProgress, 'value', {
   label: 'Progress',
   min: 0,
   max: 1,
   step: 0.01,
 });
+f_point.addButton({ title: 'Morph 0' }).on('click', () => particles.morph?.(0));
+f_point.addButton({ title: 'Morph 1' }).on('click', () => particles.morph?.(1));
+f_point.addButton({ title: 'Morph 2' }).on('click', () => particles.morph?.(2));
+f_point.addButton({ title: 'Morph 3' }).on('click', () => particles.morph?.(3));
 
 function render() {
   fpsGraph.begin();
