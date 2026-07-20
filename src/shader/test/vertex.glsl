@@ -3,16 +3,21 @@ attribute vec3 aPositionTarget;
 uniform float uSize;
 uniform vec2 uResolution;
 uniform float uProgress;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
 
 varying vec3 vColor;
 
 #include <simplex3DNoise>
 
 void main() {
-    float noise = snoise(position);
-    noise = (noise + 1.0) / 2.0;
+    float noiseO = snoise(position * 0.2);
+    float noiseT = snoise(aPositionTarget * 0.2);
 
-    float duration = 0.5;
+    float noise = mix(noiseO, noiseT, uProgress);
+          noise = (noise + 1.0) / 2.0;
+
+    float duration = 0.4;
     float delay    = (1.0 - duration) * noise;
     float end      = duration + delay;
     float progress = smoothstep(delay, end, uProgress);
@@ -32,5 +37,5 @@ void main() {
     gl_PointSize  = uSize * uResolution.y;
     gl_PointSize *= 1.0 / -viewPosition.z;
 
-    vColor = vec3(1.0);
+    vColor = mix(uColorA, uColorB, noise);
 }

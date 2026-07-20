@@ -1,6 +1,7 @@
 import { Colors } from '@blueprintjs/colors';
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import {
+  ACESFilmicToneMapping,
   AdditiveBlending,
   BufferAttribute,
   BufferGeometry,
@@ -54,6 +55,7 @@ const renderer = new WebGLRenderer({
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(sizes.pixelRatio);
+renderer.toneMapping = ACESFilmicToneMapping;
 el?.append(renderer.domElement);
 
 const scene = new Scene();
@@ -71,6 +73,8 @@ const uniforms = {
   uSize: new Uniform(0.22),
   uProgress: new Uniform(0),
   uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
+  uColorA: new Uniform(new Color(Colors.GOLD3)),
+  uColorB: new Uniform(new Color(Colors.VIOLET4)),
 };
 
 const particles = {
