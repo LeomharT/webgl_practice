@@ -1,6 +1,7 @@
 import { Colors } from '@blueprintjs/colors';
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import {
+  AxesHelper,
   Color,
   Mesh,
   PerspectiveCamera,
@@ -12,6 +13,7 @@ import {
   TextureLoader,
   Uniform,
   Vector2,
+  Vector3,
   WebGLRenderer,
 } from 'three';
 import { DRACOLoader, GLTFLoader, OrbitControls } from 'three/examples/jsm/Addons.js';
@@ -66,8 +68,9 @@ controls.enableDamping = true;
 const uniforms = {
   uSize: new Uniform(0.2),
   uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
+  uSunPosition: new Uniform(new Vector3(3, 3, 3)),
 };
-const sphereGeometry = new SphereGeometry(1, 32, 32);
+const sphereGeometry = new SphereGeometry(1, 128, 128);
 
 const pointMaterial = new ShaderMaterial({
   uniforms,
@@ -76,6 +79,8 @@ const pointMaterial = new ShaderMaterial({
 });
 const point = new Mesh(sphereGeometry, pointMaterial);
 scene.add(point);
+
+scene.add(new AxesHelper(5));
 
 const pane = new Pane({ title: 'Debug Pane' });
 // Register plugin to the pane
