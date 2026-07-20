@@ -1,29 +1,13 @@
-varying vec3 vPosition;
-varying vec3 vNormal;
-
-uniform vec3 uSunPosition;
+varying vec3 vColor;
 
 void main() {
-  vec3 color        = vec3(1.0);
-  vec3 normal       = normalize(vNormal);
-  vec3 sunDirection = normalize(uSunPosition);
+  vec3 color  = vColor;
+  vec2 uv     = gl_PointCoord;
+  vec2 center = vec2(0.5);
 
-  vec3 viewDirection = normalize(vPosition - cameraPosition);
+  float dist = distance(uv, center);
 
-  float fresnel = 1.0 + dot(normal, viewDirection);
-  fresnel = max(fresnel, 0.0);
-  fresnel = pow(fresnel, 2.0);
+  float alpha = 0.05 / dist - 0.1;
 
-  vec3  reflection = reflect(-sunDirection, normal);
-
-  float specular = -dot(reflection, viewDirection);
-        specular = max(0.0, specular);
-        specular = pow(specular, 20.0);
-
-  color = vec3(specular);
-
-  gl_FragColor = vec4(color, 1.0);
-
-  #include <tonemapping_fragment>
-  #include <colorspace_fragment>
+  gl_FragColor = vec4(color, alpha);
 }

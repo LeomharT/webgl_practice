@@ -1,14 +1,36 @@
-varying vec3 vPosition;
-varying vec3 vNormal;
+attribute vec3 aPositionTarget;
+
+uniform float uSize;
+uniform vec2 uResolution;
+uniform float uProgress;
+
+varying vec3 vColor;
+
+#include <simplex3DNoise>
 
 void main() {
-  vec4 modelPosition = modelMatrix * vec4(position, 1.0);
-  vec3 modelNormal = transpose(inverse(mat3(modelMatrix))) * normal;
-  vec4 viewPosition = viewMatrix * modelPosition;
-  vec4 projectionPosition = projectionMatrix * viewPosition;
+    float noise = snoise(position);
+    noise = (noise + 1.0) / 2.0;
 
-  gl_Position = projectionPosition;
+    float duration = 0.5;
+    float delay    = (1.0 - duration) * noise;
+    float end      = duration + delay;
+    float progress = smoothstep(delay, end, uProgress);
 
-  vPosition = modelPosition.xyz;
-  vNormal = modelNormal;
+    vec3 p = mix(
+        position,
+        aPositionTarget,
+        progress
+    );
+
+    vec4 modelPosition = modelMatrix * vec4(p, 1.0);
+    vec4 viewPosition = viewMatrix * modelPosition;
+    vec4 projectionPosition = projectionMatrix * viewPosition;
+
+    gl_Position = projectionPosition;
+
+    gl_PointSize  = uSize * uResolution.y;
+    gl_PointSize *= 1.0 / -viewPosition.z;
+
+    vColor = vec3(1.0);
 }
