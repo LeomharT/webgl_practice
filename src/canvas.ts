@@ -1,7 +1,6 @@
 import { Colors } from '@blueprintjs/colors';
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import {
-  ACESFilmicToneMapping,
   Color,
   IcosahedronGeometry,
   Mesh,
@@ -45,6 +44,9 @@ const el = document.querySelector('#root');
 const dayMap = textureLoader.load('2k_earth_daymap.jpg');
 dayMap.colorSpace = SRGBColorSpace;
 
+const normalTexture = textureLoader.load('normal.png');
+const roughnessTexture = textureLoader.load('roughness.jpg');
+
 // Basic
 const renderer = new WebGLRenderer({
   antialias: true,
@@ -52,11 +54,10 @@ const renderer = new WebGLRenderer({
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(sizes.pixelRatio);
-renderer.toneMapping = ACESFilmicToneMapping;
 el?.append(renderer.domElement);
 
 const scene = new Scene();
-scene.background = new Color(Colors.VIOLET1).multiplyScalar(0.1);
+scene.background = new Color(0x000000);
 
 const camera = new PerspectiveCamera(70, sizes.width / sizes.height, 0.01, 1000);
 camera.position.set(0, 0.5, 1);
@@ -78,6 +79,8 @@ scene.add(floorReflector);
 const uniforms = {
   uReflectorTexture: new Uniform(floorReflector.getRenderTarget().texture),
   uTextureMatrix: (floorReflector.material as ShaderMaterial).uniforms.textureMatrix,
+
+  uNormalTexture: new Uniform(normalTexture),
 };
 
 const planeMaterial = new ShaderMaterial({
