@@ -5,6 +5,7 @@ import {
   IcosahedronGeometry,
   Mesh,
   MeshBasicMaterial,
+  NearestMipMapNearestFilter,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
@@ -81,7 +82,13 @@ const uniforms = {
   uTextureMatrix: (floorReflector.material as ShaderMaterial).uniforms.textureMatrix,
 
   uNormalTexture: new Uniform(normalTexture),
+  uRoughnessTexture: new Uniform(roughnessTexture),
+
+  uDisturbedAmount: new Uniform(0.125),
+  uBlurStrength: new Uniform(6.125),
 };
+uniforms.uReflectorTexture.value.generateMipmaps = true;
+uniforms.uReflectorTexture.value.minFilter = NearestMipMapNearestFilter;
 
 const planeMaterial = new ShaderMaterial({
   uniforms,
@@ -106,6 +113,17 @@ const fpsGraph: any = pane.addBlade({
   label: undefined,
 });
 
+const p_floor = pane.addFolder({ title: 'Floor' });
+p_floor.addBinding(uniforms.uDisturbedAmount, 'value', {
+  min: 0,
+  max: 1,
+  step: 0.001,
+});
+p_floor.addBinding(uniforms.uBlurStrength, 'value', {
+  min: 0,
+  max: 20,
+  step: 0.01,
+});
 function renderReflection() {
   floorReflector.visible = true;
   renderer.render(scene, camera);
