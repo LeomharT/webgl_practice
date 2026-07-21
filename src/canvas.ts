@@ -1,26 +1,22 @@
 import { Colors } from '@blueprintjs/colors';
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
-import gsap from 'gsap';
 import {
   ACESFilmicToneMapping,
-  AdditiveBlending,
-  BufferAttribute,
-  BufferGeometry,
   Color,
-  Float32BufferAttribute,
+  IcosahedronGeometry,
   Mesh,
+  MeshBasicMaterial,
   PerspectiveCamera,
-  Points,
+  PlaneGeometry,
   Scene,
   ShaderChunk,
   ShaderMaterial,
   SRGBColorSpace,
   TextureLoader,
   Uniform,
-  Vector2,
   WebGLRenderer,
 } from 'three';
-import { DRACOLoader, GLTFLoader, OrbitControls } from 'three/examples/jsm/Addons.js';
+import { DRACOLoader, GLTFLoader, OrbitControls, Reflector } from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
 import simplex3DNoise from './shader/include/simplex3DNoise.glsl?raw';
 import fragmentShader from './shader/test/fragment.glsl?raw';
@@ -62,96 +58,40 @@ el?.append(renderer.domElement);
 const scene = new Scene();
 scene.background = new Color(Colors.VIOLET1).multiplyScalar(0.1);
 
-const camera = new PerspectiveCamera(40, sizes.width / sizes.height, 0.01, 1000);
-camera.position.set(10, 8, 10);
+const camera = new PerspectiveCamera(70, sizes.width / sizes.height, 0.01, 1000);
+camera.position.set(0, 0.5, 1);
 camera.lookAt(scene.position);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
 // WORLD
-const uniforms = {
-  uSize: new Uniform(0.22),
-  uProgress: new Uniform(0),
-  uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
-  uColorA: new Uniform(new Color(Colors.GOLD3)),
-  uColorB: new Uniform(new Color(Colors.VIOLET4)),
-};
-
-const particles: {
-  maxCount: number;
-  positions: Float32BufferAttribute[];
-  index: number;
-  morph?: (index: number) => void;
-} = {
-  maxCount: 0,
-  positions: [],
-  index: 0,
-  morph: undefined,
-};
-
-gltfLoader.load('/models.glb', (data) => {
-  const models = data.scene;
-
-  const positions: BufferAttribute[] = models.children.map((value) => {
-    if (value instanceof Mesh) {
-      return value.geometry.attributes.position;
-    }
-  });
-
-  for (const p of positions) particles.maxCount = Math.max(particles.maxCount, p.count);
-
-  for (const p of positions) {
-    const originArray = p.array;
-    const newArray = new Float32Array(particles.maxCount * 3);
-
-    for (let i = 0; i < particles.maxCount; i++) {
-      const i3 = i * 3;
-
-      if (i3 < originArray.length) {
-        newArray[i3 + 0] = originArray[i3 + 0];
-        newArray[i3 + 1] = originArray[i3 + 1];
-        newArray[i3 + 2] = originArray[i3 + 2];
-      } else {
-        const randomIndex = Math.floor(Math.random() * p.count) * 3;
-
-        newArray[i3 + 0] = originArray[randomIndex + 0];
-        newArray[i3 + 1] = originArray[randomIndex + 1];
-        newArray[i3 + 2] = originArray[randomIndex + 2];
-      }
-    }
-
-    particles.positions.push(new Float32BufferAttribute(newArray, 3));
-  }
-
-  const geometry = new BufferGeometry();
-  geometry.setAttribute('position', particles.positions[0]);
-  geometry.setAttribute('aPositionTarget', particles.positions[1]);
-
-  particles.morph = (index) => {
-    geometry.setAttribute('position', particles.positions[particles.index]);
-    geometry.setAttribute('aPositionTarget', particles.positions[index]);
-
-    gsap.fromTo(
-      uniforms.uProgress,
-      { value: 0 },
-      { value: 1, ease: 'circ', duration: 3, onUpdate: () => p_progress.refresh() },
-    );
-
-    particles.index = index;
-  };
-
-  const material = new ShaderMaterial({
-    uniforms,
-    vertexShader,
-    fragmentShader,
-    blending: AdditiveBlending,
-    depthWrite: false,
-  });
-  const points = new Points(geometry, material);
-  points.frustumCulled = false;
-  scene.add(points);
+const planeGeometry = new PlaneGeometry(1, 1, 32, 32);
+const floorReflector = new Reflector(planeGeometry, {
+  textureWidth: sizes.width,
+  textureHeight: sizes.height,
 });
+floorReflector.rotation.x = -Math.PI / 2;
+floorReflector.visible = false;
+scene.add(floorReflector);
+
+const uniforms = {
+  uReflectorTexture: new Uniform(floorReflector.getRenderTarget().texture),
+  uTextureMatrix: (floorReflector.material as ShaderMaterial).uniforms.textureMatrix,
+};
+
+const planeMaterial = new ShaderMaterial({
+  uniforms,
+  vertexShader,
+  fragmentShader,
+});
+const floor = new Mesh(planeGeometry, planeMaterial);
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+
+const ball = new Mesh(new IcosahedronGeometry(0.05, 5), new MeshBasicMaterial({ color: Colors.VIOLET1 }));
+ball.position.y = 0.1;
+scene.add(ball);
 
 const pane = new Pane({ title: 'Debug Pane' });
 // Register plugin to the pane
@@ -163,29 +103,18 @@ const fpsGraph: any = pane.addBlade({
   label: undefined,
 });
 
-const f_point = pane.addFolder({ title: 'Point' });
-f_point.addBinding(uniforms.uSize, 'value', {
-  label: 'size',
-  step: 0.01,
-  min: 0,
-  max: 1,
-});
-const p_progress = f_point.addBinding(uniforms.uProgress, 'value', {
-  label: 'Progress',
-  min: 0,
-  max: 1,
-  step: 0.01,
-});
-f_point.addButton({ title: 'Morph 0' }).on('click', () => particles.morph?.(0));
-f_point.addButton({ title: 'Morph 1' }).on('click', () => particles.morph?.(1));
-f_point.addButton({ title: 'Morph 2' }).on('click', () => particles.morph?.(2));
-f_point.addButton({ title: 'Morph 3' }).on('click', () => particles.morph?.(3));
+function renderReflection() {
+  floorReflector.visible = true;
+  renderer.render(scene, camera);
+  floorReflector.visible = false;
+}
 
 function render() {
   fpsGraph.begin();
   // Update
   controls.update();
   // Render
+  renderReflection();
   renderer.render(scene, camera);
   // Animation
   requestAnimationFrame(render);
@@ -197,7 +126,6 @@ window.addEventListener('resize', () => {
   sizes.width = window.innerWidth;
   sizes.height = window.innerHeight;
 
-  uniforms.uResolution.value.set(sizes.width, sizes.height);
   renderer.setSize(sizes.width, sizes.height);
 
   camera.aspect = sizes.width / sizes.height;

@@ -1,15 +1,17 @@
-varying vec3 vColor;
+uniform sampler2D uReflectorTexture;
+
+varying vec4 vTextureUv;
+varying vec2 vUv;
 
 void main() {
-  vec3 color  = vColor;
-  vec2 uv     = gl_PointCoord;
-  vec2 center = vec2(0.5);
+  vec3 color = vec3(0.0);
+  vec2 uv    = vUv;
 
-  float dist = distance(uv, center);
+  vec4 reflectColor = texture2D(uReflectorTexture, vTextureUv.xy / vTextureUv.w);
 
-  float alpha = 0.05 / dist - 0.1;
+  color = reflectColor.rgb;
 
-  gl_FragColor = vec4(color, alpha);
+  gl_FragColor = vec4(color, 1.0);
 
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
