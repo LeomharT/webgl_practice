@@ -92,7 +92,7 @@ const floor = new Mesh(planeGeometry, planeMaterial);
 floor.rotation.x = -Math.PI / 2;
 scene.add(floor);
 
-const ball = new Mesh(new IcosahedronGeometry(0.05, 5), new MeshBasicMaterial({ color: Colors.VIOLET1 }));
+const ball = new Mesh(new IcosahedronGeometry(0.05, 5), new MeshBasicMaterial({ color: Colors.VIOLET3 }));
 ball.position.y = 0.1;
 scene.add(ball);
 
