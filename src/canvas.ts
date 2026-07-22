@@ -20,7 +20,11 @@ import { DRACOLoader, GLTFLoader, OrbitControls, Reflector } from 'three/example
 import { Pane } from 'tweakpane';
 import simplex3DNoise from './shader/include/simplex3DNoise.glsl?raw';
 import fragmentShader from './shader/test/fragment.glsl?raw';
+import rainFragmentShader from './shader/test/rain/fragment.glsl?raw';
+import rainVertexShader from './shader/test/rain/vertex.glsl?raw';
+
 import vertexShader from './shader/test/vertex.glsl?raw';
+
 import './style.css';
 
 (ShaderChunk as any)['simplex3DNoise'] = simplex3DNoise;
@@ -58,7 +62,7 @@ renderer.setPixelRatio(sizes.pixelRatio);
 el?.append(renderer.domElement);
 
 const scene = new Scene();
-scene.background = new Color(0x000000);
+scene.background = new Color(Colors.DARK_GRAY1);
 
 const camera = new PerspectiveCamera(70, sizes.width / sizes.height, 0.01, 1000);
 camera.position.set(0, 0.5, 1);
@@ -103,6 +107,16 @@ const ball = new Mesh(new IcosahedronGeometry(0.05, 5), new MeshBasicMaterial({ 
 ball.position.y = 0.1;
 scene.add(ball);
 
+const rain = new Mesh(
+  new PlaneGeometry(0.2, 0.2, 32, 32),
+  new ShaderMaterial({
+    vertexShader: rainVertexShader,
+    fragmentShader: rainFragmentShader,
+  }),
+);
+rain.position.set(0.2, 0.2, 0.2);
+scene.add(rain);
+
 const pane = new Pane({ title: 'Debug Pane' });
 // Register plugin to the pane
 pane.registerPlugin(EssentialsPlugin);
@@ -126,7 +140,9 @@ p_floor.addBinding(uniforms.uBlurStrength, 'value', {
 });
 function renderReflection() {
   floorReflector.visible = true;
+  rain.visible = false;
   renderer.render(scene, camera);
+  rain.visible = true;
   floorReflector.visible = false;
 }
 
