@@ -15,6 +15,7 @@ import {
   TextureLoader,
   Uniform,
   WebGLRenderer,
+  WebGLRenderTarget,
 } from 'three';
 import { DRACOLoader, GLTFLoader, OrbitControls, Reflector } from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
@@ -71,6 +72,11 @@ camera.lookAt(scene.position);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
+const frameRT = new WebGLRenderTarget(sizes.width, sizes.height, {
+  generateMipmaps: true,
+  minFilter: NearestMipMapNearestFilter,
+});
+
 // WORLD
 const planeGeometry = new PlaneGeometry(1, 1, 32, 32);
 const floorReflector = new Reflector(planeGeometry, {
@@ -79,6 +85,8 @@ const floorReflector = new Reflector(planeGeometry, {
 });
 floorReflector.rotation.x = -Math.PI / 2;
 floorReflector.visible = false;
+(floorReflector.material as ShaderMaterial).polygonOffset = true;
+(floorReflector.material as ShaderMaterial).polygonOffsetFactor = 0.01;
 scene.add(floorReflector);
 
 const uniforms = {
@@ -110,6 +118,9 @@ scene.add(ball);
 const rain = new Mesh(
   new PlaneGeometry(0.2, 0.2, 32, 32),
   new ShaderMaterial({
+    uniforms: {
+      uFrameTexture: new Uniform(frameRT.texture),
+    },
     vertexShader: rainVertexShader,
     fragmentShader: rainFragmentShader,
   }),
@@ -141,7 +152,11 @@ p_floor.addBinding(uniforms.uBlurStrength, 'value', {
 function renderReflection() {
   floorReflector.visible = true;
   rain.visible = false;
+
+  renderer.setRenderTarget(frameRT);
   renderer.render(scene, camera);
+  renderer.setRenderTarget(null);
+
   rain.visible = true;
   floorReflector.visible = false;
 }
