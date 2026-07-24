@@ -1,9 +1,24 @@
 import { Colors } from '@blueprintjs/colors';
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
-import { Color, PerspectiveCamera, Scene, ShaderChunk, SRGBColorSpace, TextureLoader, WebGLRenderer } from 'three';
+import {
+  Color,
+  PerspectiveCamera,
+  Points,
+  Scene,
+  ShaderChunk,
+  ShaderMaterial,
+  SphereGeometry,
+  SRGBColorSpace,
+  TextureLoader,
+  Uniform,
+  Vector2,
+  WebGLRenderer,
+} from 'three';
 import { DRACOLoader, GLTFLoader, OrbitControls } from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
 import simplex3DNoise from './shader/include/simplex3DNoise.glsl?raw';
+import fragmentShader from './shader/test/fragment.glsl?raw';
+import vertexShader from './shader/test/vertex.glsl?raw';
 
 import './style.css';
 
@@ -42,16 +57,30 @@ renderer.setPixelRatio(sizes.pixelRatio);
 el?.append(renderer.domElement);
 
 const scene = new Scene();
-scene.background = new Color(Colors.DARK_GRAY1);
+scene.background = new Color(Colors.BLACK);
 
 const camera = new PerspectiveCamera(70, sizes.width / sizes.height, 0.01, 1000);
-camera.position.set(0, 0.5, 1);
+camera.position.set(3, 3, 3);
 camera.lookAt(scene.position);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
 // WORLD
+
+const uniforms = {
+  uSize: new Uniform(0.05),
+  uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
+};
+
+const sphereGeometry = new SphereGeometry(1, 32, 32);
+const pointMaterial = new ShaderMaterial({
+  uniforms,
+  vertexShader,
+  fragmentShader,
+});
+const point = new Points(sphereGeometry, pointMaterial);
+scene.add(point);
 
 const pane = new Pane({ title: 'Debug Pane' });
 // Register plugin to the pane
@@ -63,7 +92,13 @@ const fpsGraph: any = pane.addBlade({
   label: undefined,
 });
 
-const p_floor = pane.addFolder({ title: 'Floor' });
+const p_point = pane.addFolder({ title: 'Floor' });
+p_point.addBinding(uniforms.uSize, 'value', {
+  label: 'Size',
+  min: 0,
+  max: 1,
+  step: 0.01,
+});
 
 function render() {
   fpsGraph.begin();
@@ -82,6 +117,7 @@ window.addEventListener('resize', () => {
   sizes.height = window.innerHeight;
 
   renderer.setSize(sizes.width, sizes.height);
+  uniforms.uResolution.value.set(sizes.width, sizes.height);
 
   camera.aspect = sizes.width / sizes.height;
   camera.updateProjectionMatrix();
