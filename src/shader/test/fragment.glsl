@@ -1,5 +1,5 @@
 varying vec3 vColor;
-varying float uHeight;
+varying float vHeight;
 
 
 void main() {
@@ -12,7 +12,7 @@ void main() {
   color = mix(
     vec3(0.1, 0.25, 0.173),
     vec3(0.256, 0.07, 0.336),
-    uHeight
+    cos(vHeight)
   );
 
   gl_FragColor = vec4(color, alpha);

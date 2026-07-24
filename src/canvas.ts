@@ -2,13 +2,16 @@ import { Colors } from '@blueprintjs/colors';
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import {
   AdditiveBlending,
+  BufferAttribute,
+  BufferGeometry,
   Color,
+  Float32BufferAttribute,
+  Mesh,
   PerspectiveCamera,
   Points,
   Scene,
   ShaderChunk,
   ShaderMaterial,
-  SphereGeometry,
   SRGBColorSpace,
   TextureLoader,
   Uniform,
@@ -61,7 +64,7 @@ const scene = new Scene();
 scene.background = new Color(Colors.BLACK);
 
 const camera = new PerspectiveCamera(70, sizes.width / sizes.height, 0.01, 1000);
-camera.position.set(3, 3, 3);
+camera.position.set(8, 3, 8);
 camera.lookAt(scene.position);
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -70,20 +73,62 @@ controls.enableDamping = true;
 // WORLD
 
 const uniforms = {
-  uSize: new Uniform(0.05),
+  uSize: new Uniform(0.2),
   uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
 };
 
-const sphereGeometry = new SphereGeometry(1, 32, 32);
-const pointMaterial = new ShaderMaterial({
-  uniforms,
-  vertexShader,
-  fragmentShader,
-  blending: AdditiveBlending,
-  depthWrite: false,
+const particles = {
+  maxCount: 0,
+  positions: [] as Float32BufferAttribute[],
+};
+
+gltfLoader.load('/models.glb', (data) => {
+  const model = data.scene;
+
+  const positions: BufferAttribute[] = model.children.map((obj) => {
+    if (obj instanceof Mesh) return obj.geometry.attributes.position;
+  });
+
+  for (const position of positions) particles.maxCount = Math.max(particles.maxCount, position.count);
+
+  console.log(particles.maxCount);
+
+  for (const position of positions) {
+    const originArray = position.array;
+    const newArray = new Float32Array(particles.maxCount * 3);
+
+    for (let i = 0; i < particles.maxCount; i++) {
+      const i3 = i * 3;
+
+      if (i < position.count) {
+        newArray[i3 + 0] = originArray[i3 + 0];
+        newArray[i3 + 1] = originArray[i3 + 1];
+        newArray[i3 + 2] = originArray[i3 + 2];
+      } else {
+        const randomIndex = Math.floor(Math.random() * position.count) * 3;
+
+        newArray[i3 + 0] = originArray[randomIndex + 0];
+        newArray[i3 + 1] = originArray[randomIndex + 1];
+        newArray[i3 + 2] = originArray[randomIndex + 2];
+      }
+    }
+
+    particles.positions.push(new Float32BufferAttribute(newArray, 3));
+  }
+
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', particles.positions[0]);
+
+  const pointMaterial = new ShaderMaterial({
+    uniforms,
+    vertexShader,
+    fragmentShader,
+    blending: AdditiveBlending,
+    depthWrite: false,
+  });
+  const point = new Points(geometry, pointMaterial);
+  scene.add(point);
 });
-const point = new Points(sphereGeometry, pointMaterial);
-scene.add(point);
 
 const pane = new Pane({ title: 'Debug Pane' });
 // Register plugin to the pane
