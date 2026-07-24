@@ -1,6 +1,7 @@
 import { Colors } from '@blueprintjs/colors';
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import {
+  AdditiveBlending,
   Color,
   PerspectiveCamera,
   Points,
@@ -78,6 +79,8 @@ const pointMaterial = new ShaderMaterial({
   uniforms,
   vertexShader,
   fragmentShader,
+  blending: AdditiveBlending,
+  depthWrite: false,
 });
 const point = new Points(sphereGeometry, pointMaterial);
 scene.add(point);
