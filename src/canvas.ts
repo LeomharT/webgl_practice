@@ -74,6 +74,7 @@ controls.enableDamping = true;
 
 const uniforms = {
   uSize: new Uniform(0.2),
+  uProgress: new Uniform(0.0),
   uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
 };
 
@@ -90,8 +91,6 @@ gltfLoader.load('/models.glb', (data) => {
   });
 
   for (const position of positions) particles.maxCount = Math.max(particles.maxCount, position.count);
-
-  console.log(particles.maxCount);
 
   for (const position of positions) {
     const originArray = position.array;
@@ -116,8 +115,12 @@ gltfLoader.load('/models.glb', (data) => {
     particles.positions.push(new Float32BufferAttribute(newArray, 3));
   }
 
+  const sizeArray = new Float32Array(Array.from({ length: particles.maxCount }, () => Math.random()));
+
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', particles.positions[0]);
+  geometry.setAttribute('aPositionTarget', particles.positions[2]);
+  geometry.setAttribute('aSize', new Float32BufferAttribute(sizeArray, 1));
 
   const pointMaterial = new ShaderMaterial({
     uniforms,
@@ -143,6 +146,12 @@ const fpsGraph: any = pane.addBlade({
 const p_point = pane.addFolder({ title: 'Floor' });
 p_point.addBinding(uniforms.uSize, 'value', {
   label: 'Size',
+  min: 0,
+  max: 1,
+  step: 0.01,
+});
+p_point.addBinding(uniforms.uProgress, 'value', {
+  label: 'Progress',
   min: 0,
   max: 1,
   step: 0.01,
