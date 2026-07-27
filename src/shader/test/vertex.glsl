@@ -13,7 +13,7 @@ void main() {
     float noise = snoise(position);
     noise = (noise + 1.0) / 2.0;
 
-    float duration = 0.4;
+    float duration = 0.6;
     float delay    = (1.0 - duration) * noise;
     float end      = duration + delay;
     float progress = smoothstep(delay, end, uProgress);

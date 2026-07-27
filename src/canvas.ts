@@ -24,6 +24,7 @@ import simplex3DNoise from './shader/include/simplex3DNoise.glsl?raw';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 
+import gsap from 'gsap';
 import './style.css';
 
 (ShaderChunk as any)['simplex3DNoise'] = simplex3DNoise;
@@ -81,6 +82,8 @@ const uniforms = {
 const particles = {
   maxCount: 0,
   positions: [] as Float32BufferAttribute[],
+  morph: (_: number) => {},
+  index: 0,
 };
 
 gltfLoader.load('/models.glb', (data) => {
@@ -122,6 +125,28 @@ gltfLoader.load('/models.glb', (data) => {
   geometry.setAttribute('aPositionTarget', particles.positions[2]);
   geometry.setAttribute('aSize', new Float32BufferAttribute(sizeArray, 1));
 
+  particles.morph = (index: number) => {
+    geometry.setAttribute('position', particles.positions[particles.index]);
+    geometry.setAttribute('aPositionTarget', particles.positions[index]);
+
+    gsap
+      .fromTo(
+        uniforms.uProgress,
+        { value: 0 },
+        {
+          value: 1,
+          ease: 'circ',
+          duration: 2,
+          onUpdate: () => {
+            progress.refresh();
+          },
+        },
+      )
+      .play();
+
+    particles.index = index;
+  };
+
   const pointMaterial = new ShaderMaterial({
     uniforms,
     vertexShader,
@@ -150,12 +175,16 @@ p_point.addBinding(uniforms.uSize, 'value', {
   max: 1,
   step: 0.01,
 });
-p_point.addBinding(uniforms.uProgress, 'value', {
+const progress = p_point.addBinding(uniforms.uProgress, 'value', {
   label: 'Progress',
   min: 0,
   max: 1,
   step: 0.01,
 });
+p_point.addButton({ title: 'Morph 0' }).on('click', () => particles.morph(0));
+p_point.addButton({ title: 'Morph 1' }).on('click', () => particles.morph(1));
+p_point.addButton({ title: 'Morph 2' }).on('click', () => particles.morph(2));
+p_point.addButton({ title: 'Morph 3' }).on('click', () => particles.morph(3));
 
 function render() {
   fpsGraph.begin();
