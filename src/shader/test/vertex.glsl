@@ -1,12 +1,13 @@
-varying vec4 vTextureUv;
-varying vec2 vUv;
-
-uniform mat4 uTextureMatrix;
+uniform vec2 uResolution;
+uniform float uSize;
 
 void main() {
-  #include <begin_vertex>
-  #include <project_vertex>
+    vec4 modelPosition      = modelMatrix * vec4(position, 1.0);
+    vec4 viewPosition       = viewMatrix * modelPosition;
+    vec4 projectionPosition = projectionMatrix * viewPosition;
 
-  vUv        = uv;
-  vTextureUv = uTextureMatrix * vec4(position, 1.0);
+    gl_Position = projectionPosition;
+
+    gl_PointSize = uSize * uResolution.y;
+    gl_PointSize *= 1.0 / -viewPosition.z;
 }
