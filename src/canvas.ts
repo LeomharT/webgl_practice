@@ -2,6 +2,7 @@ import { Colors } from '@blueprintjs/colors';
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import {
   Color,
+  MathUtils,
   Mesh,
   MeshBasicMaterial,
   NearestMipMapNearestFilter,
@@ -98,7 +99,7 @@ const sphereMaterial = new MeshBasicMaterial({
   color: new Color(Colors.CERULEAN4),
 });
 const sphere = new Mesh(sphereGeometry, sphereMaterial);
-sphere.position.set(0, 0.1, 0);
+sphere.position.set(0, 0.5, 0);
 scene.add(sphere);
 
 const pane = new Pane({ title: 'Debug' });
@@ -137,7 +138,13 @@ function render() {
   timer.update();
   controls.update();
 
-  uniforms.uTime.value += timer.getDelta();
+  const delta = timer.getDelta();
+  const t = 1.0 - Math.exp(2.0 * -delta);
+
+  uniforms.uTime.value += delta;
+
+  sphere.position.y = MathUtils.lerp(sphere.position.y, 0.1, t);
+
   //
   renderer.render(scene, camera);
   //
