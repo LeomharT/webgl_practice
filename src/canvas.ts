@@ -1,5 +1,15 @@
 import { Colors } from '@blueprintjs/colors';
-import { Color, PerspectiveCamera, Points, Scene, ShaderMaterial, SphereGeometry, Uniform, WebGLRenderer } from 'three';
+import {
+  Color,
+  PerspectiveCamera,
+  Points,
+  Scene,
+  ShaderMaterial,
+  SphereGeometry,
+  Uniform,
+  Vector2,
+  WebGLRenderer,
+} from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
 import fragmentShader from './shader/test/fragment.glsl?raw';
@@ -36,6 +46,7 @@ controls.enableDamping = true;
 
 const uniforms = {
   uSize: new Uniform(0.02),
+  uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
 };
 
 const sphereGeometry = new SphereGeometry(1, 32, 32);
@@ -70,6 +81,7 @@ window.addEventListener('resize', () => {
   sizes.width = window.innerWidth;
   sizes.height = window.innerHeight;
 
+  uniforms.uResolution.value.set(sizes.width, sizes.height);
   renderer.setSize(sizes.width, sizes.height);
 
   camera.aspect = sizes.width / sizes.height;

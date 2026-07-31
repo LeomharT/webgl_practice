@@ -1,6 +1,7 @@
 varying vec3 vColor;
 
 uniform float uSize;
+uniform vec2 uResolution;
 
 void main() {
   vec4 modelPosition = modelMatrix * vec4(position, 1.0);
@@ -9,7 +10,8 @@ void main() {
 
   gl_Position = projectionPosition;
 
-  gl_PointSize = uSize;
+  gl_PointSize = uSize * uResolution.y;
+  gl_PointSize *= 1.0 / -viewPosition.z;
 
   vColor = vec3(1.0);
 }
