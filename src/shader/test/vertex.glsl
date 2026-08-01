@@ -1,4 +1,5 @@
 varying vec3 vColor;
+varying vec2 vUv;
 
 uniform float uSize;
 uniform vec2 uResolution;
@@ -14,4 +15,5 @@ void main() {
   gl_PointSize *= 1.0 / -viewPosition.z;
 
   vColor = vec3(1.0);
+  vUv = uv;
 }

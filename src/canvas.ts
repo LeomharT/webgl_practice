@@ -2,10 +2,11 @@ import { Colors } from '@blueprintjs/colors';
 import {
   Color,
   PerspectiveCamera,
+  PlaneGeometry,
   Points,
   Scene,
   ShaderMaterial,
-  SphereGeometry,
+  TextureLoader,
   Uniform,
   Vector2,
   WebGLRenderer,
@@ -15,6 +16,8 @@ import { Pane } from 'tweakpane';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
+
+const textureLoader = new TextureLoader();
 
 const sizes = {
   width: window.innerWidth,
@@ -36,20 +39,23 @@ const scene = new Scene();
 scene.background = new Color(Colors.BLACK);
 
 const camera = new PerspectiveCamera(75, sizes.width / sizes.height, 0.01, 1000);
-camera.position.set(2, 2, 2);
+camera.position.set(0, 0, 2);
 camera.lookAt(scene.position);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+
+const dayMapTexture = textureLoader.load('/2k_earth_daymap.jpg');
 
 // WORLD
 
 const uniforms = {
   uSize: new Uniform(0.02),
   uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
+  uDayMapTexture: new Uniform(dayMapTexture),
 };
 
-const sphereGeometry = new SphereGeometry(1, 32, 32);
+const sphereGeometry = new PlaneGeometry(2 * 1.678, 2, 64, 64);
 const pointMaterial = new ShaderMaterial({
   uniforms,
   vertexShader,
