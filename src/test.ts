@@ -1,21 +1,30 @@
 import { Colors } from '@blueprintjs/colors';
 import {
   AdditiveBlending,
+  BufferAttribute,
+  BufferGeometry,
   Color,
+  Float32BufferAttribute,
+  Mesh,
   PerspectiveCamera,
   Points,
   Scene,
   ShaderMaterial,
-  SphereGeometry,
   Uniform,
   Vector2,
   WebGLRenderer,
 } from 'three';
-import { OrbitControls } from 'three/examples/jsm/Addons.js';
+import { DRACOLoader, GLTFLoader, OrbitControls } from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
+
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath('/draco/');
+
+const gltfLoader = new GLTFLoader();
+gltfLoader.dracoLoader = dracoLoader;
 
 const sizes = {
   width: window.innerWidth,
@@ -37,7 +46,7 @@ const scene = new Scene();
 scene.background = new Color(Colors.BLACK);
 
 const camera = new PerspectiveCamera(75, sizes.width / sizes.height, 0.01, 1000);
-camera.position.set(3, 3, 3);
+camera.position.set(3, 3, 8);
 camera.lookAt(scene.position);
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -49,18 +58,54 @@ const uniforms = {
   uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
 };
 
-const sphereGeometry = new SphereGeometry(1, 32, 32);
-sphereGeometry.setIndex(null);
-const pointMaterial = new ShaderMaterial({
-  uniforms,
-  vertexShader,
-  fragmentShader,
-  depthWrite: false,
-  blending: AdditiveBlending,
-});
+const particles = {
+  count: 0,
+  positions: [] as Float32BufferAttribute[],
+};
 
-const point = new Points(sphereGeometry, pointMaterial);
-scene.add(point);
+gltfLoader.load('/models.glb', (data) => {
+  const model = data.scene;
+
+  const positions: BufferAttribute[] = model.children.map((value) => {
+    if (value instanceof Mesh) return value.geometry.attributes.position;
+  });
+
+  for (const p of positions) {
+    particles.count = Math.max(particles.count, p.count);
+  }
+
+  for (const p of positions) {
+    const originArr = p.array;
+    const newArr = new Float32Array(particles.count * 3);
+
+    for (let i = 0; i < particles.count; i++) {
+      const i3 = i * 3;
+
+      if (i3 < originArr.length) {
+        newArr[i3 + 0] = originArr[i3 + 0];
+        newArr[i3 + 1] = originArr[i3 + 1];
+        newArr[i3 + 2] = originArr[i3 + 2];
+      }
+    }
+
+    particles.positions.push(new Float32BufferAttribute(newArr, 3));
+  }
+
+  const geometry = new BufferGeometry();
+
+  geometry.setAttribute('position', particles.positions[0]);
+
+  const pointMaterial = new ShaderMaterial({
+    uniforms,
+    vertexShader,
+    fragmentShader,
+    depthWrite: false,
+    blending: AdditiveBlending,
+  });
+
+  const point = new Points(geometry, pointMaterial);
+  scene.add(point);
+});
 
 const pane = new Pane({ title: 'Debug Pane' });
 pane.addBinding(uniforms.uSize, 'value', {
