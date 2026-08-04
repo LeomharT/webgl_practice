@@ -9,6 +9,7 @@ import {
   PerspectiveCamera,
   Points,
   Scene,
+  ShaderChunk,
   ShaderMaterial,
   Uniform,
   Vector2,
@@ -16,9 +17,12 @@ import {
 } from 'three';
 import { DRACOLoader, GLTFLoader, OrbitControls } from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
+import simplex3DNoise from './shader/include/simplex3DNoise.glsl?raw';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
+
+(ShaderChunk as any)['simplex3DNoise'] = simplex3DNoise;
 
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('/draco/');
@@ -54,7 +58,8 @@ controls.enableDamping = true;
 
 // WORLD
 const uniforms = {
-  uSize: new Uniform(0.04),
+  uSize: new Uniform(0.1),
+  uProgress: new Uniform(0.0),
   uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
 };
 
@@ -85,6 +90,12 @@ gltfLoader.load('/models.glb', (data) => {
         newArr[i3 + 0] = originArr[i3 + 0];
         newArr[i3 + 1] = originArr[i3 + 1];
         newArr[i3 + 2] = originArr[i3 + 2];
+      } else {
+        const randomIndex = Math.floor(Math.random() * p.count) * 3;
+
+        newArr[i3 + 0] = originArr[randomIndex + 0];
+        newArr[i3 + 1] = originArr[randomIndex + 1];
+        newArr[i3 + 2] = originArr[randomIndex + 2];
       }
     }
 
@@ -94,6 +105,7 @@ gltfLoader.load('/models.glb', (data) => {
   const geometry = new BufferGeometry();
 
   geometry.setAttribute('position', particles.positions[0]);
+  geometry.setAttribute('aPositionTarget', particles.positions[2]);
 
   const pointMaterial = new ShaderMaterial({
     uniforms,
@@ -110,6 +122,12 @@ gltfLoader.load('/models.glb', (data) => {
 const pane = new Pane({ title: 'Debug Pane' });
 pane.addBinding(uniforms.uSize, 'value', {
   label: 'Size',
+  min: 0,
+  max: 1,
+  step: 0.01,
+});
+pane.addBinding(uniforms.uProgress, 'value', {
+  label: 'Progress',
   min: 0,
   max: 1,
   step: 0.01,
