@@ -9,7 +9,10 @@ varying vec3 vColor;
 #include <simplex3DNoise>
 
 void main() {
-  float noise = snoise(position);
+  float noiseA = snoise(position * 0.25);
+  float noiseB = snoise(aPositionTarget * 0.25);
+
+  float noise = mix(noiseA, noiseB, uProgress);
   noise = (noise + 1.0) / 2.0;
 
   float duration = 0.4;
