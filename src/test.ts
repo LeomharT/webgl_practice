@@ -1,19 +1,12 @@
 import { Colors } from '@blueprintjs/colors';
-import gsap from 'gsap';
 import {
-  AdditiveBlending,
-  BufferAttribute,
-  BufferGeometry,
   Color,
-  Float32BufferAttribute,
   Mesh,
   PerspectiveCamera,
-  Points,
   Scene,
   ShaderChunk,
   ShaderMaterial,
-  Uniform,
-  Vector2,
+  SphereGeometry,
   WebGLRenderer,
 } from 'three';
 import { DRACOLoader, GLTFLoader, OrbitControls } from 'three/examples/jsm/Addons.js';
@@ -58,96 +51,18 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
 // WORLD
-const uniforms = {
-  uSize: new Uniform(0.1),
-  uProgress: new Uniform(0.0),
-  uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
-};
 
-const particles = {
-  count: 0,
-  positions: [] as Float32BufferAttribute[],
-  morph: (_: number) => {},
-  index: 0,
-};
-
-gltfLoader.load('/models.glb', (data) => {
-  const model = data.scene;
-
-  const positions: BufferAttribute[] = model.children.map((value) => {
-    if (value instanceof Mesh) return value.geometry.attributes.position;
-  });
-
-  for (const p of positions) {
-    particles.count = Math.max(particles.count, p.count);
-  }
-
-  for (const p of positions) {
-    const originArr = p.array;
-    const newArr = new Float32Array(particles.count * 3);
-
-    for (let i = 0; i < particles.count; i++) {
-      const i3 = i * 3;
-
-      if (i3 < originArr.length) {
-        newArr[i3 + 0] = originArr[i3 + 0];
-        newArr[i3 + 1] = originArr[i3 + 1];
-        newArr[i3 + 2] = originArr[i3 + 2];
-      } else {
-        const randomIndex = Math.floor(Math.random() * p.count) * 3;
-
-        newArr[i3 + 0] = originArr[randomIndex + 0];
-        newArr[i3 + 1] = originArr[randomIndex + 1];
-        newArr[i3 + 2] = originArr[randomIndex + 2];
-      }
-    }
-
-    particles.positions.push(new Float32BufferAttribute(newArr, 3));
-  }
-
-  const geometry = new BufferGeometry();
-
-  geometry.setAttribute('position', particles.positions[0]);
-  geometry.setAttribute('aPositionTarget', particles.positions[2]);
-
-  particles.morph = (index: number) => {
-    geometry.setAttribute('position', particles.positions[particles.index]);
-    geometry.setAttribute('aPositionTarget', particles.positions[index]);
-
-    gsap.fromTo(uniforms.uProgress, { value: 0.0 }, { value: 1.0, ease: 'circ', duration: 3.0 }).play();
-
-    particles.index = index;
-  };
-
-  const pointMaterial = new ShaderMaterial({
-    uniforms,
-    vertexShader,
-    fragmentShader,
-    depthWrite: false,
-    blending: AdditiveBlending,
-  });
-
-  const point = new Points(geometry, pointMaterial);
-  scene.add(point);
+const sphereGeometry = new SphereGeometry(1, 32, 32);
+const material = new ShaderMaterial({
+  vertexShader,
+  fragmentShader,
 });
+const sphere = new Mesh(sphereGeometry, material);
+scene.add(sphere);
+
+scene.add(sphere);
 
 const pane = new Pane({ title: 'Debug Pane' });
-pane.addBinding(uniforms.uSize, 'value', {
-  label: 'Size',
-  min: 0,
-  max: 1,
-  step: 0.01,
-});
-pane.addBinding(uniforms.uProgress, 'value', {
-  label: 'Progress',
-  min: 0,
-  max: 1,
-  step: 0.01,
-});
-pane.addButton({ title: 'Morgh 0' }).on('click', () => particles.morph(0));
-pane.addButton({ title: 'Morgh 1' }).on('click', () => particles.morph(1));
-pane.addButton({ title: 'Morgh 2' }).on('click', () => particles.morph(2));
-pane.addButton({ title: 'Morgh 3' }).on('click', () => particles.morph(3));
 
 // EVENTS
 function render() {
@@ -164,7 +79,6 @@ window.addEventListener('resize', () => {
   sizes.width = window.innerWidth;
   sizes.height = window.innerHeight;
 
-  uniforms.uResolution.value.set(sizes.width, sizes.height);
   renderer.setSize(sizes.width, sizes.height);
 
   camera.aspect = sizes.width / sizes.height;
