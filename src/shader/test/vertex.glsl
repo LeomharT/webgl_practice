@@ -7,7 +7,8 @@ void main() {
   noise = (noise + 1.0) / 2.0;
 
   vec4 modelPosition = modelMatrix * vec4(position, 1.0);
-  modelPosition.xyz += noise * normal;
+  vec3 modelNormal = transpose(inverse(mat3(modelMatrix))) * normal;
+  modelPosition.xyz += noise * modelNormal;
 
   vec4 viewPosition = viewMatrix * modelPosition;
   vec4 projectionPosition = projectionMatrix * viewPosition;
