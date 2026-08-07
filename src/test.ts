@@ -1,22 +1,24 @@
 import { Colors } from '@blueprintjs/colors';
 import {
   Color,
+  IcosahedronGeometry,
   Mesh,
   PerspectiveCamera,
   Scene,
   ShaderChunk,
   ShaderMaterial,
-  SphereGeometry,
   WebGLRenderer,
 } from 'three';
 import { DRACOLoader, GLTFLoader, OrbitControls } from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
 import simplex3DNoise from './shader/include/simplex3DNoise.glsl?raw';
+import simplex4DNoise from './shader/include/simplex4DNoise.glsl?raw';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
 
 (ShaderChunk as any)['simplex3DNoise'] = simplex3DNoise;
+(ShaderChunk as any)['simplex4DNoise'] = simplex4DNoise;
 
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('/draco/');
@@ -52,7 +54,7 @@ controls.enableDamping = true;
 
 // WORLD
 
-const sphereGeometry = new SphereGeometry(1, 32, 32);
+const sphereGeometry = new IcosahedronGeometry(2, 50);
 const material = new ShaderMaterial({
   vertexShader,
   fragmentShader,

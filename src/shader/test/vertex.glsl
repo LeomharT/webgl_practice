@@ -1,10 +1,15 @@
 varying vec3 vColor;
 
-#include <simplex3DNoise>
+#include <simplex4DNoise>
+
+float getElevation(vec3 p) {
+  float noise = snoise(vec4(p, 0.0));
+
+  return noise;
+}
 
 void main() {
-  float noise = snoise(position * 2.0);
-  noise = (noise + 1.0) / 2.0;
+  float noise = getElevation(position);
 
   vec4 modelPosition = modelMatrix * vec4(position, 1.0);
   vec3 modelNormal = transpose(inverse(mat3(modelMatrix))) * normal;
