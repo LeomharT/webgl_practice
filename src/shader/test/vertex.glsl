@@ -1,9 +1,11 @@
 varying vec3 vColor;
 
+uniform float uTime;
+
 #include <simplex4DNoise>
 
 float getElevation(vec3 p) {
-  float noise = snoise(vec4(p, 0.0));
+  float noise = snoise(vec4(p, uTime));
 
   return noise;
 }

@@ -7,6 +7,8 @@ import {
   Scene,
   ShaderChunk,
   ShaderMaterial,
+  Timer,
+  Uniform,
   WebGLRenderer,
 } from 'three';
 import { DRACOLoader, GLTFLoader, OrbitControls } from 'three/examples/jsm/Addons.js';
@@ -52,16 +54,21 @@ camera.lookAt(scene.position);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
+const timer = new Timer();
+
 // WORLD
+
+const uniforms = {
+  uTime: new Uniform(0),
+};
 
 const sphereGeometry = new IcosahedronGeometry(2, 50);
 const material = new ShaderMaterial({
+  uniforms,
   vertexShader,
   fragmentShader,
 });
 const sphere = new Mesh(sphereGeometry, material);
-scene.add(sphere);
-
 scene.add(sphere);
 
 const pane = new Pane({ title: 'Debug Pane' });
@@ -69,7 +76,9 @@ const pane = new Pane({ title: 'Debug Pane' });
 // EVENTS
 function render() {
   // UPDATE
+  timer.update();
   controls.update();
+  uniforms.uTime.value += timer.getDelta();
   // RENDER
   renderer.render(scene, camera);
   // ANIMATION
