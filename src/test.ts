@@ -60,6 +60,7 @@ const timer = new Timer();
 
 const uniforms = {
   uTime: new Uniform(0),
+  uProgress: new Uniform(0.0),
 };
 
 const sphereGeometry = new IcosahedronGeometry(2, 50);
@@ -72,6 +73,11 @@ const sphere = new Mesh(sphereGeometry, material);
 scene.add(sphere);
 
 const pane = new Pane({ title: 'Debug Pane' });
+pane.addBinding(uniforms.uProgress, 'value', {
+  min: 0,
+  max: 1,
+  step: 0.01,
+});
 
 // EVENTS
 function render() {
