@@ -24,6 +24,6 @@ void main() {
   gl_Position = projectionPosition;
 
   // VARYING
-  vColor = mix(vec3(1.0, 0.0, 0.25), vec3(0.1, 1.0, 0.785), noise);
+  vColor = mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), noise);
   vPosition = modelPosition.xyz;
 }

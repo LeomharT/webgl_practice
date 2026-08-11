@@ -9,6 +9,7 @@ import {
   ShaderMaterial,
   Timer,
   Uniform,
+  Vector2,
   WebGLRenderer,
 } from 'three';
 import {
@@ -18,6 +19,7 @@ import {
   OrbitControls,
   OutputPass,
   RenderPass,
+  UnrealBloomPass,
 } from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
 import simplex3DNoise from './shader/include/simplex3DNoise.glsl?raw';
@@ -69,9 +71,11 @@ composer.setSize(sizes.width, sizes.height);
 composer.setPixelRatio(sizes.pixelRatio);
 
 const renderScene = new RenderPass(scene, camera);
+const bloomPass = new UnrealBloomPass(new Vector2(sizes.width, sizes.height), 0.5, 0.5, 0.5);
 const outputPass = new OutputPass();
 
 composer.addPass(renderScene);
+composer.addPass(bloomPass);
 composer.addPass(outputPass);
 
 // WORLD
