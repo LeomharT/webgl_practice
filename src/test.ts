@@ -1,4 +1,5 @@
 import { Colors } from '@blueprintjs/colors';
+import gsap from 'gsap';
 import {
   Color,
   IcosahedronGeometry,
@@ -94,11 +95,28 @@ const material = new ShaderMaterial({
 const sphere = new Mesh(sphereGeometry, material);
 scene.add(sphere);
 
+function onProgress(value: number) {
+  gsap
+    .fromTo(
+      uniforms.uProgress,
+      { value: 1.0 - value },
+      { value: value * 1.0, ease: 'circ', duration: 2, onUpdate: () => p_progress.refresh() },
+    )
+    .play();
+}
+
 const pane = new Pane({ title: 'Debug Pane' });
-pane.addBinding(uniforms.uProgress, 'value', {
+const p_progress = pane.addBinding(uniforms.uProgress, 'value', {
   min: 0,
   max: 1,
   step: 0.01,
+});
+
+pane.addButton({ title: 'Progress 0' }).on('click', () => {
+  onProgress(0);
+});
+pane.addButton({ title: 'Progress 1' }).on('click', () => {
+  onProgress(1);
 });
 
 // EVENTS
@@ -106,7 +124,10 @@ function render() {
   // UPDATE
   timer.update();
   controls.update();
-  uniforms.uTime.value += timer.getDelta();
+
+  const dt = timer.getDelta();
+
+  uniforms.uTime.value += dt;
   // RENDER
   composer.render();
   // ANIMATION
