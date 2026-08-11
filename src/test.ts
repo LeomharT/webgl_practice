@@ -3,6 +3,7 @@ import gsap from 'gsap';
 import {
   Color,
   IcosahedronGeometry,
+  MathUtils,
   Mesh,
   PerspectiveCamera,
   Scene,
@@ -86,6 +87,11 @@ const uniforms = {
   uProgress: new Uniform(0.0),
 };
 
+const params = {
+  y: 0,
+  updating: false,
+};
+
 const sphereGeometry = new IcosahedronGeometry(2, 50);
 const material = new ShaderMaterial({
   uniforms,
@@ -105,6 +111,10 @@ function onProgress(value: number) {
     .play();
 }
 
+function updatePosition(y: number, t: number) {
+  sphere.position.y = MathUtils.lerp(sphere.position.y, y, t);
+}
+
 const pane = new Pane({ title: 'Debug Pane' });
 const p_progress = pane.addBinding(uniforms.uProgress, 'value', {
   min: 0,
@@ -114,9 +124,11 @@ const p_progress = pane.addBinding(uniforms.uProgress, 'value', {
 
 pane.addButton({ title: 'Progress 0' }).on('click', () => {
   onProgress(0);
+  params.y = 0;
 });
 pane.addButton({ title: 'Progress 1' }).on('click', () => {
   onProgress(1);
+  params.y = 10;
 });
 
 // EVENTS
@@ -126,8 +138,11 @@ function render() {
   controls.update();
 
   const dt = timer.getDelta();
+  const t = dt;
 
   uniforms.uTime.value += dt;
+
+  updatePosition(params.y, t);
   // RENDER
   composer.render();
   // ANIMATION
