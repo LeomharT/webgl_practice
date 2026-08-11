@@ -11,7 +11,14 @@ import {
   Uniform,
   WebGLRenderer,
 } from 'three';
-import { DRACOLoader, GLTFLoader, OrbitControls } from 'three/examples/jsm/Addons.js';
+import {
+  DRACOLoader,
+  EffectComposer,
+  GLTFLoader,
+  OrbitControls,
+  OutputPass,
+  RenderPass,
+} from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
 import simplex3DNoise from './shader/include/simplex3DNoise.glsl?raw';
 import simplex4DNoise from './shader/include/simplex4DNoise.glsl?raw';
@@ -56,6 +63,17 @@ controls.enableDamping = true;
 
 const timer = new Timer();
 
+// POST PROGRESSING
+const composer = new EffectComposer(renderer);
+composer.setSize(sizes.width, sizes.height);
+composer.setPixelRatio(sizes.pixelRatio);
+
+const renderScene = new RenderPass(scene, camera);
+const outputPass = new OutputPass();
+
+composer.addPass(renderScene);
+composer.addPass(outputPass);
+
 // WORLD
 
 const uniforms = {
@@ -86,7 +104,7 @@ function render() {
   controls.update();
   uniforms.uTime.value += timer.getDelta();
   // RENDER
-  renderer.render(scene, camera);
+  composer.render();
   // ANIMATION
   requestAnimationFrame(render);
 }
@@ -97,6 +115,7 @@ window.addEventListener('resize', () => {
   sizes.height = window.innerHeight;
 
   renderer.setSize(sizes.width, sizes.height);
+  composer.setSize(sizes.width, sizes.height);
 
   camera.aspect = sizes.width / sizes.height;
   camera.updateProjectionMatrix();
