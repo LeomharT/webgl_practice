@@ -1,4 +1,5 @@
 import { Colors } from '@blueprintjs/colors';
+import { MathUtils } from 'three';
 import './style.css';
 
 const el = document.querySelector('#root');
@@ -41,6 +42,11 @@ const colors = [
 ];
 
 const pointer = {
+  x: 0,
+  y: 0,
+};
+
+const target = {
   x: 0,
   y: 0,
 };
@@ -88,9 +94,24 @@ function drawBleads() {
   }
 }
 
-function render() {
+let prevTime = 0;
+
+function render(time: number = 0) {
+  const dt = (time - prevTime) / 1000;
+  prevTime = time;
+
+  const t = 1.0 - Math.exp(10.0 * -dt);
+
+  target.x = MathUtils.lerp(target.x, pointer.x, t);
+  target.y = MathUtils.lerp(target.y, pointer.y, t);
+
+  for (const p of positions) {
+    const theta = Math.atan2(target.y - p.y, target.x - p.x);
+    p.angle = theta + Math.PI / 2;
+  }
+
   clean();
-  drawPointer(pointer.x, pointer.y);
+  drawPointer(target.x, target.y);
   drawBleads();
   requestAnimationFrame(render);
 }
@@ -99,11 +120,6 @@ render();
 window.addEventListener('pointermove', (e) => {
   pointer.x = e.clientX;
   pointer.y = e.clientY;
-
-  for (const p of positions) {
-    const theta = Math.atan2(pointer.y - p.y, pointer.x - p.x);
-    p.angle = theta + Math.PI / 2;
-  }
 });
 
 window.addEventListener('resize', () => {
