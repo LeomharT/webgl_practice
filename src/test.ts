@@ -9,11 +9,13 @@ import {
   PlaneGeometry,
   Scene,
   ShaderMaterial,
+  TextureLoader,
   Uniform,
   WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
 import { OrbitControls, Reflector } from 'three/examples/jsm/Addons.js';
+import { Pane } from 'tweakpane';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
@@ -25,6 +27,8 @@ const sizes = {
   height: window.innerHeight,
   pixelRatio: Math.min(2, window.devicePixelRatio),
 };
+
+const textureLoader = new TextureLoader();
 
 // BASIC
 const renderer = new WebGLRenderer({
@@ -39,11 +43,14 @@ const scene = new Scene();
 scene.background = new Color('#000');
 
 const camera = new PerspectiveCamera(70, sizes.width / sizes.height, 0.01, 1000);
-camera.position.set(0.1, 0.5, 1);
+camera.position.set(0.1, 0.1, 0.6);
 camera.lookAt(scene.position);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+
+const normalTexture = textureLoader.load('/normal.png');
+const roughnessTexture = textureLoader.load('/roughness.jpg');
 
 const frameRT = new WebGLRenderTarget(sizes.width, sizes.height, {
   generateMipmaps: false,
@@ -63,6 +70,11 @@ scene.add(floorReflector);
 const uniforms = {
   uRelfectorTexture: new Uniform(floorReflector.getRenderTarget().texture),
   uTextureMatrix: (floorReflector.material as ShaderMaterial).uniforms.textureMatrix,
+
+  uNormalMap: new Uniform(normalTexture),
+  uRoughnessMap: new Uniform(roughnessTexture),
+
+  uDistrubeAmount: new Uniform(0.256),
 };
 
 const floorMaterial = new ShaderMaterial({
@@ -76,8 +88,16 @@ floor.rotation.x = -Math.PI / 2;
 scene.add(floor);
 
 const ball = new Mesh(new IcosahedronGeometry(0.1, 30), new MeshBasicMaterial({ color: new Color(Colors.VERMILION2) }));
-ball.position.y = 0.5;
+ball.position.y = 0.3;
 scene.add(ball);
+
+const pane = new Pane({ title: 'Debug' });
+pane.addBinding(uniforms.uDistrubeAmount, 'value', {
+  label: 'reflectorColor',
+  min: 0,
+  max: 1,
+  step: 0.01,
+});
 
 function renderReflector() {
   renderer.setRenderTarget(frameRT);
