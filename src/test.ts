@@ -5,6 +5,7 @@ import {
   IcosahedronGeometry,
   Mesh,
   MeshBasicMaterial,
+  NearestMipmapLinearFilter,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
@@ -65,6 +66,8 @@ const floorReflector = new Reflector(floorGeometry, {
 });
 floorReflector.visible = false;
 floorReflector.rotation.x = -Math.PI / 2;
+floorReflector.getRenderTarget().texture.minFilter = NearestMipmapLinearFilter;
+floorReflector.getRenderTarget().texture.generateMipmaps = true;
 scene.add(floorReflector);
 
 const uniforms = {
@@ -75,6 +78,7 @@ const uniforms = {
   uRoughnessMap: new Uniform(roughnessTexture),
 
   uDistrubeAmount: new Uniform(0.256),
+  uBlurStrength: new Uniform(6.258),
 };
 
 const floorMaterial = new ShaderMaterial({
@@ -93,9 +97,15 @@ scene.add(ball);
 
 const pane = new Pane({ title: 'Debug' });
 pane.addBinding(uniforms.uDistrubeAmount, 'value', {
-  label: 'reflectorColor',
+  label: 'DistrubeAmount',
   min: 0,
   max: 1,
+  step: 0.01,
+});
+pane.addBinding(uniforms.uBlurStrength, 'value', {
+  label: 'BlurStrength',
+  min: 0,
+  max: 20,
   step: 0.01,
 });
 

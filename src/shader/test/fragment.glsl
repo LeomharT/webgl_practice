@@ -8,6 +8,7 @@ uniform sampler2D uNormalMap;
 uniform sampler2D uRoughnessMap;
 
 uniform float uDistrubeAmount;
+uniform float uBlurStrength;
 
 void main() {
   vec2 uv = vUv;
@@ -16,10 +17,13 @@ void main() {
   vec3 normal = texture2D(uNormalMap, vUv).rgb;
   normal = normal * 2.0 - 1.0;
 
+  float roughness = texture2D(uRoughnessMap, vUv).g;
+
   vec2 reflectUv = vTexutreMatrix.xy / vTexutreMatrix.w;
   vec2 finalUv = reflectUv + normal.xy * uDistrubeAmount;
+  float level = roughness * uBlurStrength;
 
-  vec4 reflectorColor = texture2D(uRelfectorTexture, finalUv);
+  vec4 reflectorColor = texture2D(uRelfectorTexture, finalUv, level);
 
   color = reflectorColor.rgb;
 
