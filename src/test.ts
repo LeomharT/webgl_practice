@@ -1,21 +1,17 @@
-import { Colors } from '@blueprintjs/colors';
 import {
+  AdditiveBlending,
   Color,
-  FrontSide,
-  IcosahedronGeometry,
-  Mesh,
-  MeshBasicMaterial,
-  NearestMipmapLinearFilter,
   PerspectiveCamera,
-  PlaneGeometry,
+  Points,
   Scene,
   ShaderMaterial,
+  SphereGeometry,
   TextureLoader,
   Uniform,
+  Vector2,
   WebGLRenderer,
-  WebGLRenderTarget,
 } from 'three';
-import { OrbitControls, Reflector } from 'three/examples/jsm/Addons.js';
+import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
@@ -44,84 +40,43 @@ const scene = new Scene();
 scene.background = new Color('#000');
 
 const camera = new PerspectiveCamera(70, sizes.width / sizes.height, 0.01, 1000);
-camera.position.set(0.1, 0.1, 0.6);
+camera.position.set(1, 1, 1);
 camera.lookAt(scene.position);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-const normalTexture = textureLoader.load('/normal.png');
-const roughnessTexture = textureLoader.load('/roughness.jpg');
-
-const frameRT = new WebGLRenderTarget(sizes.width, sizes.height, {
-  generateMipmaps: false,
-});
-
 // WORLD
-const floorGeometry = new PlaneGeometry(1, 1, 32, 32);
-
-const floorReflector = new Reflector(floorGeometry, {
-  textureWidth: sizes.width,
-  textureHeight: sizes.height,
-});
-floorReflector.visible = false;
-floorReflector.rotation.x = -Math.PI / 2;
-floorReflector.getRenderTarget().texture.minFilter = NearestMipmapLinearFilter;
-floorReflector.getRenderTarget().texture.generateMipmaps = true;
-scene.add(floorReflector);
 
 const uniforms = {
-  uRelfectorTexture: new Uniform(floorReflector.getRenderTarget().texture),
-  uTextureMatrix: (floorReflector.material as ShaderMaterial).uniforms.textureMatrix,
-
-  uNormalMap: new Uniform(normalTexture),
-  uRoughnessMap: new Uniform(roughnessTexture),
-
-  uDistrubeAmount: new Uniform(0.256),
-  uBlurStrength: new Uniform(6.258),
+  uSize: new Uniform(0.04),
+  uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
 };
 
-const floorMaterial = new ShaderMaterial({
+const geometry = new SphereGeometry(1, 32, 32);
+const material = new ShaderMaterial({
   uniforms,
   vertexShader,
   fragmentShader,
-  side: FrontSide,
+  blending: AdditiveBlending,
+  depthWrite: false,
 });
-const floor = new Mesh(floorGeometry, floorMaterial);
-floor.rotation.x = -Math.PI / 2;
-scene.add(floor);
 
-const ball = new Mesh(new IcosahedronGeometry(0.1, 30), new MeshBasicMaterial({ color: new Color(Colors.VERMILION2) }));
-ball.position.y = 0.3;
-scene.add(ball);
+const points = new Points(geometry, material);
+scene.add(points);
 
-const pane = new Pane({ title: 'Debug' });
-pane.addBinding(uniforms.uDistrubeAmount, 'value', {
-  label: 'DistrubeAmount',
+const pane = new Pane({ title: 'Debug Pane' });
+pane.addBinding(uniforms.uSize, 'value', {
+  label: 'Size',
   min: 0,
-  max: 1,
-  step: 0.01,
-});
-pane.addBinding(uniforms.uBlurStrength, 'value', {
-  label: 'BlurStrength',
-  min: 0,
-  max: 20,
+  max: 0.1,
   step: 0.01,
 });
 
-function renderReflector() {
-  renderer.setRenderTarget(frameRT);
-  floorReflector.visible = true;
-  renderer.render(scene, camera);
-  floorReflector.visible = false;
-  renderer.setRenderTarget(null);
-}
-
-function render(time: number = 0) {
+function render() {
   // UPDATE
   controls.update();
   // RENDER
-  renderReflector();
   renderer.render(scene, camera);
   // ANIMATION
   requestAnimationFrame(render);
