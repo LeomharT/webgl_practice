@@ -9,6 +9,7 @@ import {
   PerspectiveCamera,
   Points,
   Scene,
+  ShaderChunk,
   ShaderMaterial,
   TextureLoader,
   Uniform,
@@ -17,9 +18,12 @@ import {
 } from 'three';
 import { DRACOLoader, GLTFLoader, OrbitControls } from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
+import simplex3DNoise from './shader/include/simplex3DNoise.glsl?raw';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
+
+(ShaderChunk as any)['simplex3DNoise'] = simplex3DNoise;
 
 const el = document.querySelector('#root');
 
@@ -60,6 +64,7 @@ controls.enableDamping = true;
 
 const uniforms = {
   uSize: new Uniform(0.14),
+  uProgress: new Uniform(0),
   uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
 };
 
@@ -106,6 +111,7 @@ gltfLoader.load('/models.glb', (data) => {
 
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', particles.positions[0]);
+  geometry.setAttribute('aPositionTarget', particles.positions[2]);
 
   const material = new ShaderMaterial({
     uniforms,
@@ -124,6 +130,12 @@ pane.addBinding(uniforms.uSize, 'value', {
   label: 'Size',
   min: 0,
   max: 0.1,
+  step: 0.01,
+});
+pane.addBinding(uniforms.uProgress, 'value', {
+  label: 'Progress',
+  min: 0,
+  max: 1,
   step: 0.01,
 });
 
