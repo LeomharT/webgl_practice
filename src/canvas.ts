@@ -49,15 +49,13 @@ const dayMapTexture = textureLoader.load('/2k_earth_daymap.jpg');
 
 // WORLD
 
-const baseGeometry = (function () {
-  const geometry = new SphereGeometry(3);
-  const count = geometry.attributes.position.count;
+const baseGeometry = {
+  instance: new SphereGeometry(3),
+  count: 0,
+};
+baseGeometry.count = baseGeometry.instance.attributes.position.count;
 
-  return {
-    instance: geometry,
-    count,
-  };
-})();
+console.log(baseGeometry);
 
 /**
  * GPU Compute

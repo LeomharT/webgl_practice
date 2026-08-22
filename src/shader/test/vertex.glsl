@@ -1,8 +1,13 @@
+#define COLOR_A vec3(1.0, 0.0, 0.0)
+#define COLOR_B vec3(0.0, 0.0, 1.0)
+
 uniform float uSize;
 uniform float uProgress;
 uniform vec2 uResolution;
 
 attribute vec3 aPositionTarget;
+
+varying vec3 vColor;
 
 #include <simplex3DNoise>
 
@@ -27,4 +32,6 @@ void main() {
 
   gl_PointSize = uSize * uResolution.y;
   gl_PointSize *= 1.0 / -modelViewPosition.z;
+
+  vColor = mix(COLOR_A, COLOR_B, noise);
 }
