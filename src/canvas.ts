@@ -4,6 +4,7 @@ import {
   PerspectiveCamera,
   Points,
   Scene,
+  ShaderChunk,
   ShaderMaterial,
   SphereGeometry,
   TextureLoader,
@@ -13,9 +14,12 @@ import {
 } from 'three';
 import { GPUComputationRenderer, OrbitControls } from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
+import simplex3DNoise from './shader/include/simplex3DNoise.glsl?raw';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
+
+(ShaderChunk as any)['simplex3DNoise'] = simplex3DNoise;
 
 const textureLoader = new TextureLoader();
 
