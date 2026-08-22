@@ -1,4 +1,5 @@
 import { Colors } from '@blueprintjs/colors';
+import gsap from 'gsap';
 import {
   AdditiveBlending,
   BufferAttribute,
@@ -71,6 +72,8 @@ const uniforms = {
 const particles = {
   count: 0,
   positions: [] as Float32BufferAttribute[],
+  morph: (_: number) => {},
+  index: 0,
 };
 
 gltfLoader.load('/models.glb', (data) => {
@@ -113,6 +116,15 @@ gltfLoader.load('/models.glb', (data) => {
   geometry.setAttribute('position', particles.positions[0]);
   geometry.setAttribute('aPositionTarget', particles.positions[2]);
 
+  particles.morph = (index: number) => {
+    geometry.setAttribute('position', particles.positions[particles.index]);
+    geometry.setAttribute('aPositionTarget', particles.positions[index]);
+
+    gsap.fromTo(uniforms.uProgress, { value: 0 }, { value: 1, ease: 'circ', duration: 3 }).play();
+
+    particles.index = index;
+  };
+
   const material = new ShaderMaterial({
     uniforms,
     vertexShader,
@@ -138,6 +150,10 @@ pane.addBinding(uniforms.uProgress, 'value', {
   max: 1,
   step: 0.01,
 });
+pane.addButton({ title: 'Morph 0' }).on('click', () => particles.morph(0));
+pane.addButton({ title: 'Morph 1' }).on('click', () => particles.morph(1));
+pane.addButton({ title: 'Morph 2' }).on('click', () => particles.morph(2));
+pane.addButton({ title: 'Morph 3' }).on('click', () => particles.morph(3));
 
 function render() {
   // UPDATE
