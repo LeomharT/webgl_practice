@@ -1,4 +1,5 @@
 import { Colors } from '@blueprintjs/colors';
+import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import {
   Color,
   PerspectiveCamera,
@@ -85,6 +86,14 @@ const points = new Points(baseGeometry.instance, pointMaterial);
 scene.add(points);
 
 const pane = new Pane({ title: 'Debug Pane' });
+// Register plugin to the pane
+pane.registerPlugin(EssentialsPlugin);
+
+// Add a FPS graph
+const fpsGraph: any = pane.addBlade({
+  view: 'fpsgraph',
+  label: 'fps',
+});
 pane.addBinding(uniforms.uSize, 'value', {
   label: 'Size',
   min: 0,
@@ -95,11 +104,15 @@ pane.addBinding(uniforms.uSize, 'value', {
 // EVENTS
 
 function render() {
+  fpsGraph.begin();
+
   controls.update();
   //
   renderer.render(scene, camera);
   //
   requestAnimationFrame(render);
+
+  fpsGraph.end();
 }
 render();
 
