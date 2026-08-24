@@ -72,7 +72,7 @@ const gpgpu = {};
 const particles = {};
 
 const uniforms = {
-  uSize: new Uniform(0.02),
+  uSize: new Uniform(0.2),
   uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
   uDayMapTexture: new Uniform(dayMapTexture),
 };

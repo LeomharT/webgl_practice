@@ -64,7 +64,7 @@ controls.enableDamping = true;
 // WORLD
 
 const uniforms = {
-  uSize: new Uniform(0.14),
+  uSize: new Uniform(0.2),
   uProgress: new Uniform(0),
   uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
 };
