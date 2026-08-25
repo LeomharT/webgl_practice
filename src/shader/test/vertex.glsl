@@ -7,7 +7,7 @@ varying vec3 vColor;
 void main() {
   vec4 modelPosition = modelMatrix * vec4(position, 1.0);
   float h = smoothstep(uHeightRange.x, uHeightRange.y, modelPosition.y);
-  h = clamp(0.0, 1.0, h);
+  h = clamp(h, 0.0, 1.0);
 
   vec4 viewPosition = viewMatrix * modelPosition;
   vec4 projectionPosition = projectionMatrix * viewPosition;
