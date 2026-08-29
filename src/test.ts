@@ -117,6 +117,11 @@ gltfLoader.load('/models.glb', (data) => {
   geometry.setAttribute('aPositionTarget', particles.positions[2]);
 
   particles.morph = (index: number) => {
+    if (index === particles.index) {
+      alert('Same shape');
+      return;
+    }
+
     geometry.setAttribute('position', particles.positions[particles.index]);
     geometry.setAttribute('aPositionTarget', particles.positions[index]);
 
