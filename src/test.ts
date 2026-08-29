@@ -120,7 +120,13 @@ gltfLoader.load('/models.glb', (data) => {
     geometry.setAttribute('position', particles.positions[particles.index]);
     geometry.setAttribute('aPositionTarget', particles.positions[index]);
 
-    gsap.fromTo(uniforms.uProgress, { value: 0 }, { value: 1, ease: 'circ', duration: 3 }).play();
+    gsap
+      .fromTo(
+        uniforms.uProgress,
+        { value: 0 },
+        { value: 1, ease: 'circ', duration: 3, onUpdate: () => p_progress.refresh() },
+      )
+      .play();
 
     particles.index = index;
   };
@@ -144,7 +150,7 @@ pane.addBinding(uniforms.uSize, 'value', {
   max: 0.1,
   step: 0.01,
 });
-pane.addBinding(uniforms.uProgress, 'value', {
+const p_progress = pane.addBinding(uniforms.uProgress, 'value', {
   label: 'Progress',
   min: 0,
   max: 1,
