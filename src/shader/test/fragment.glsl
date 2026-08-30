@@ -1,11 +1,5 @@
-varying vec3 vColor;
-
 void main() {
-  vec3 color = vColor;
-  vec2 uv    = gl_PointCoord;
+  vec3 color = vec3(1.0);
 
-  float dist = length(uv - 0.5);
-  float alpha = 0.05 / dist - 0.1;
-
-  gl_FragColor = vec4(color, alpha);
+  gl_FragColor = vec4(color, 1.0);
 }

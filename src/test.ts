@@ -1,6 +1,23 @@
-import { Color, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, Scene, WebGLRenderer } from 'three';
+import {
+  Color,
+  Mesh,
+  PerspectiveCamera,
+  PlaneGeometry,
+  Scene,
+  ShaderChunk,
+  ShaderMaterial,
+  TextureLoader,
+  WebGLRenderer,
+} from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
+import fragmentShader from './shader/test/fragment.glsl?raw';
+import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
+
+import simplex4DNoise from './shader/include/simplex4DNoise.glsl?raw';
+
+(ShaderChunk as any)['simplex4DNoise'] = simplex4DNoise;
+
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
@@ -8,6 +25,8 @@ const sizes = {
 };
 
 const el = document.querySelector('#root');
+
+const textureLoader = new TextureLoader();
 
 const renderer = new WebGLRenderer({
   alpha: true,
@@ -29,7 +48,10 @@ controls.enableDamping = true;
 // WORLD
 
 const pleneGeometry = new PlaneGeometry(1, 1, 32, 32);
-const planeMaterial = new MeshBasicMaterial();
+const planeMaterial = new ShaderMaterial({
+  vertexShader,
+  fragmentShader,
+});
 const floor = new Mesh(pleneGeometry, planeMaterial);
 floor.rotation.x = -Math.PI / 2;
 
