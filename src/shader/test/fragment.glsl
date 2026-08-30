@@ -8,12 +8,9 @@ void main() {
 
   vec3 sunDirection = normalize(uSunDirection);
 
-  float orientation = dot(normal, sunDirection);
+  float light = dot(normal, sunDirection);
 
-  color = vec3(orientation);
+  color = vec3(light);
 
   gl_FragColor = vec4(color, 1.0);
-
-  #include <tonemapping_fragment>
-  #include <colorspace_fragment>
 }

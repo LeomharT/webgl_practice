@@ -4,7 +4,6 @@ import {
   Mesh,
   MeshBasicMaterial,
   PerspectiveCamera,
-  PlaneGeometry,
   Scene,
   ShaderChunk,
   ShaderMaterial,
@@ -47,7 +46,7 @@ const scene = new Scene();
 scene.background = new Color(0x000000);
 
 const camera = new PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 1000);
-camera.position.set(0, 0.2, 0.3);
+camera.position.set(0, 2, 2);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -71,21 +70,20 @@ function updateSun() {
 
   uniforms.uSunDirection.value.copy(sunPosition.clone());
 
-  sun.position.copy(sunPosition.clone());
+  sun.position.copy(sunPosition.clone().multiplyScalar(3));
 }
 updateSun();
 scene.add(sun);
 
-const pleneGeometry = new PlaneGeometry(1, 1, 32, 32);
-const planeMaterial = new ShaderMaterial({
-  uniforms,
+const sphereGeometry = new IcosahedronGeometry(1, 50);
+const material = new ShaderMaterial({
   vertexShader,
   fragmentShader,
+  uniforms,
 });
-const floor = new Mesh(pleneGeometry, planeMaterial);
-floor.rotation.x = -Math.PI / 2;
+const sphere = new Mesh(sphereGeometry, material);
 
-scene.add(floor);
+scene.add(sphere);
 
 const pane = new Pane({ title: 'Debug Params' });
 pane
