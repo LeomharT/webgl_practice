@@ -69,7 +69,7 @@ const sun = new Mesh(
 function updateSun() {
   sunPosition.setFromSpherical(sunSpherical);
 
-  uniforms.uSunDirection.value.copy(sunPosition);
+  uniforms.uSunDirection.value.copy(sunPosition.clone());
 
   sun.position.copy(sunPosition.clone());
 }
@@ -106,7 +106,7 @@ pane
 function render() {
   // UPDATE
   controls.update();
-  // uniforms.uTime.value += 0.01;
+  uniforms.uTime.value += 0.01;
   // RENDER
   renderer.render(scene, camera);
   // ANIMATION

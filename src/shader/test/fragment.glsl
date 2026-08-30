@@ -10,7 +10,10 @@ void main() {
 
   float orientation = dot(normal, sunDirection);
 
-  color *= orientation;
+  color = vec3(orientation);
 
   gl_FragColor = vec4(color, 1.0);
+
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
 }
