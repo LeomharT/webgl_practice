@@ -19,6 +19,7 @@ import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
 
 import { Colors } from '@blueprintjs/colors';
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Pane } from 'tweakpane';
 import simplex4DNoise from './shader/include/simplex4DNoise.glsl?raw';
 
@@ -75,7 +76,9 @@ function updateSun() {
 updateSun();
 scene.add(sun);
 
-const sphereGeometry = new IcosahedronGeometry(1, 50);
+const sphereGeometry = mergeVertices(new IcosahedronGeometry(1, 50));
+sphereGeometry.computeTangents();
+console.log(sphereGeometry.attributes);
 const material = new ShaderMaterial({
   vertexShader,
   fragmentShader,
