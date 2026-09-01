@@ -139,4 +139,9 @@ window.addEventListener('resize', () => {
   canvas.height = sizes.height;
   canvas.style.width = sizes.width + 'px';
   canvas.style.height = sizes.height + 'px';
+
+  for (const p of positions) {
+    p.x = Math.random() * sizes.width;
+    p.y = Math.random() * sizes.height;
+  }
 });
