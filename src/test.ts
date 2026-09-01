@@ -1,126 +1,82 @@
-import {
-  Color,
-  IcosahedronGeometry,
-  Mesh,
-  MeshBasicMaterial,
-  PerspectiveCamera,
-  Scene,
-  ShaderChunk,
-  ShaderMaterial,
-  Spherical,
-  TextureLoader,
-  Uniform,
-  Vector3,
-  WebGLRenderer,
-} from 'three';
-import { OrbitControls } from 'three/examples/jsm/Addons.js';
-import fragmentShader from './shader/test/fragment.glsl?raw';
-import vertexShader from './shader/test/vertex.glsl?raw';
-import './style.css';
-
 import { Colors } from '@blueprintjs/colors';
-import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { Pane } from 'tweakpane';
-import simplex4DNoise from './shader/include/simplex4DNoise.glsl?raw';
-
-(ShaderChunk as any)['simplex4DNoise'] = simplex4DNoise;
-
+import { MathUtils } from 'three';
+import './style.css';
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
-  pixelRatio: Math.min(2, window.devicePixelRatio),
 };
 
 const el = document.querySelector('#root');
 
-const textureLoader = new TextureLoader();
+const canvas = document.createElement('canvas');
+canvas.width = sizes.width;
+canvas.height = sizes.height;
+canvas.style.width = sizes.width + 'px';
+canvas.style.height = sizes.height + 'px';
+el?.append(canvas);
 
-const renderer = new WebGLRenderer({
-  alpha: true,
-  antialias: true,
-});
-renderer.setSize(sizes.width, sizes.height);
-renderer.setPixelRatio(sizes.pixelRatio);
-el?.append(renderer.domElement);
+const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
-const scene = new Scene();
-scene.background = new Color(0x000000);
-
-const camera = new PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 1000);
-camera.position.set(0, 2, 2);
-
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-
-// WORLD
-
-const uniforms = {
-  uTime: new Uniform(0),
-  uSunDirection: new Uniform(new Vector3()),
+const cursor = {
+  x: 0,
+  y: 0,
 };
 
-const sunSpherical = new Spherical(1, Math.PI / 3, 0.5);
-const sunPosition = new Vector3();
+const point = {
+  x: 0,
+  y: 0,
+};
 
-const sun = new Mesh(
-  new IcosahedronGeometry(0.02, 3),
-  new MeshBasicMaterial({ color: Colors.GOLD5 }),
-);
-function updateSun() {
-  sunPosition.setFromSpherical(sunSpherical);
+function clean() {
+  ctx.save();
 
-  uniforms.uSunDirection.value.copy(sunPosition.clone());
+  ctx.fillStyle = Colors.BLACK;
+  ctx.fillRect(0, 0, sizes.width, sizes.height);
 
-  sun.position.copy(sunPosition.clone().multiplyScalar(3));
+  ctx.restore();
 }
-updateSun();
-scene.add(sun);
 
-const sphereGeometry = mergeVertices(new IcosahedronGeometry(1, 50));
-sphereGeometry.computeTangents();
-console.log(sphereGeometry.attributes);
-const material = new ShaderMaterial({
-  vertexShader,
-  fragmentShader,
-  uniforms,
-});
-const sphere = new Mesh(sphereGeometry, material);
+function renderCursor(x: number, y: number) {
+  ctx.save();
 
-scene.add(sphere);
+  ctx.fillStyle = Colors.GOLD4;
+  ctx.beginPath();
+  ctx.arc(x, y, 30, 0, Math.PI * 2);
+  ctx.fill();
 
-const pane = new Pane({ title: 'Debug Params' });
-pane
-  .addBinding(sunSpherical, 'phi', {
-    min: 0,
-    max: Math.PI,
-    step: 0.001,
-  })
-  .on('change', updateSun);
-pane
-  .addBinding(sunSpherical, 'theta', {
-    min: -Math.PI,
-    max: Math.PI,
-    step: 0.001,
-  })
-  .on('change', updateSun);
+  ctx.restore();
+}
 
-function render() {
-  // UPDATE
-  controls.update();
-  uniforms.uTime.value += 0.01;
-  // RENDER
-  renderer.render(scene, camera);
-  // ANIMATION
+let prevTime = 0;
+
+function render(time: number = 0) {
+  const dt = (time - prevTime) / 1000;
+  prevTime = time;
+
+  const t = 1.0 - Math.exp(5.0 * -dt);
+
+  clean();
+
+  cursor.x = MathUtils.lerp(cursor.x, point.x, t);
+  cursor.y = MathUtils.lerp(cursor.y, point.y, t);
+
+  renderCursor(cursor.x, cursor.y);
+
   requestAnimationFrame(render);
 }
 render();
+
+window.addEventListener('pointermove', (e) => {
+  point.x = e.clientX;
+  point.y = e.clientY;
+});
 
 window.addEventListener('resize', () => {
   sizes.width = window.innerWidth;
   sizes.height = window.innerHeight;
 
-  renderer.setSize(sizes.width, sizes.height);
-
-  camera.aspect = sizes.width / sizes.height;
-  camera.updateProjectionMatrix();
+  canvas.width = sizes.width;
+  canvas.height = sizes.height;
+  canvas.style.width = sizes.width + 'px';
+  canvas.style.height = sizes.height + 'px';
 });
