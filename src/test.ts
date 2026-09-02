@@ -143,6 +143,8 @@ function parsePGM(arrayBuffer: ArrayBuffer) {
     const line = readLine(view, offset);
     offset += line.length + 1;
 
+    console.log(line);
+
     const width = readNumber(view, offset);
     offset += width.length + 1;
     const height = readNumber(view, offset);
@@ -177,7 +179,7 @@ const readLine = (view: DataView, offset: number) => {
 
 const readNumber = (view: DataView, offset: number) => {
   const chars = [];
-  let flag = true;
+  const flag = true;
   while (flag) {
     const char = view.getUint8(offset);
     if (char === 32 || char === 10 || char === 13) {
@@ -213,7 +215,7 @@ function redrawScene() {
   if (!mapImageData) return;
 
   ctx.putImageData(mapImageData, 0, 0);
-  drawObstacleLayer(obstacleSnapshots.blocked, 'rgba(226, 248, 29, 0.91)');
+  drawObstacleLayer(obstacleSnapshots.blocked, 'rgba(36, 212, 228, 0.25)');
   drawObstacleLayer(obstacleSnapshots.lethal, 'rgba(255, 48, 48, 0.9)');
 }
 
