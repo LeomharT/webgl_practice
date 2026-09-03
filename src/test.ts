@@ -12,7 +12,9 @@ import {
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
+  ShaderChunk,
   ShaderMaterial,
+  Timer,
   Uniform,
   WebGLRenderer,
 } from 'three';
@@ -55,6 +57,8 @@ const floor = new Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = -Math.PI / 2;
 scene.add(floor);
 
+const timer = new Timer();
+
 const positionsArr = new Float32Array([
   //
   1.0, 0.0, 0.0,
@@ -79,10 +83,10 @@ grassbladeGeometry.setAttribute(
   new Float32BufferAttribute(positionsArr, 3),
 );
 grassbladeGeometry.setAttribute('uv', new Float32BufferAttribute(uvArr, 2));
-grassbladeGeometry.scale(0.08, 0.08, 0.08);
 
 const uniforms = {
   uColor: new Uniform(new Color('#7CFC00')),
+  uTime: new Uniform(0),
 };
 
 const instance = {
@@ -103,12 +107,18 @@ const grass = new InstancedMesh(
 
 const obj = new Object3D();
 
+console.log(ShaderChunk['begin_vertex'], ShaderChunk['project_vertex']);
+
 for (let i = 0; i < instance.count; i++) {
   const x = MathUtils.randFloat(-1, 1);
   const z = MathUtils.randFloat(-1, 1);
 
   obj.position.set(x, obj.position.y, z);
-  obj.scale.set(MathUtils.randFloat(0.5, 1.0), 1, 1);
+  obj.scale.set(
+    MathUtils.randFloat(0.05, 0.1),
+    MathUtils.randFloat(0.07, 0.1),
+    0.1,
+  );
   obj.updateMatrix();
   obj.updateMatrixWorld();
   obj.updateWorldMatrix(true, true);
@@ -120,7 +130,12 @@ scene.add(grass);
 
 function render() {
   // UPDATE
+  timer.update();
   controls.update();
+
+  const dt = timer.getDelta();
+  uniforms.uTime.value += dt;
+
   // RENDER
   renderer.render(scene, camera);
   // ANIMATION
