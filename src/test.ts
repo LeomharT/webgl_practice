@@ -35,7 +35,7 @@ function clean() {
   ctx.fillStyle = Colors.BLACK;
   ctx.fillRect(0, 0, size.width, size.height);
 
-  ctx.restore;
+  ctx.restore();
 }
 
 function renderOrigin() {
@@ -71,11 +71,11 @@ function renderRange() {
   ctx.save();
 
   ctx.beginPath();
-  ctx.fillStyle = 'rgb(20, 126, 179, 0.1)';
+  ctx.fillStyle = 'rgba(20, 126, 179, 0.1)';
   ctx.strokeStyle = Colors.CERULEAN3;
 
   ctx.translate(origin.x, origin.y);
-  ctx.arc(0, 0, 80, 0, Math.PI * 2);
+  ctx.arc(0, 0, 50, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.lineWidth = 1;
@@ -93,11 +93,11 @@ function renderDirection(angle: number) {
 
   ctx.beginPath();
   ctx.moveTo(20, 0);
-  ctx.lineTo(36, 0);
+  ctx.lineTo(50, 0);
   ctx.lineWidth = 2;
   ctx.strokeStyle = Colors.CERULEAN3;
-  ctx.stroke();
   ctx.closePath();
+  ctx.stroke();
 
   ctx.restore();
 
@@ -109,7 +109,7 @@ function renderDirection(angle: number) {
 
   ctx.translate(origin.x, origin.y);
   ctx.rotate(angle);
-  ctx.translate(24, -12);
+  ctx.translate(-12 + 56, -12);
 
   ctx.fillStyle = Colors.CERULEAN3;
   ctx.fill(p);
@@ -144,8 +144,7 @@ canvas.addEventListener('pointermove', (e) => {
   // origin.y = e.offsetY;
   if (!isEnable) return;
 
-  angle = Math.atan2(e.clientY - origin.y, e.clientX - origin.x);
-  console.log(angle);
+  angle = Math.atan2(e.offsetY - origin.y, e.offsetX - origin.x);
 });
 
 canvas.addEventListener('pointerdown', () => {
