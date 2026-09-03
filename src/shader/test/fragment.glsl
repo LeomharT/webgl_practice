@@ -1,17 +1,13 @@
-varying vec3 vNormal;
+varying vec2 vUv;
 
-uniform vec3 uSunDirection;
+uniform vec3 uColor;
 
 void main() {
-  vec3 color = vec3(1.0);
-  vec3 normal = normalize(vNormal);
+  vec3 color = uColor;
+  vec2 uv = vUv;
 
-  vec3 sunDirection = normalize(uSunDirection);
-
-  float light = dot(normal, sunDirection);
-  light = clamp(light, 0.122, 1.0);
-
-  color = vec3(light);
+  float h = smoothstep(0.2, 1.5, uv.y);
+  color *= h;
 
   gl_FragColor = vec4(color, 1.0);
 
