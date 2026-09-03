@@ -1,251 +1,86 @@
 import { Colors } from '@blueprintjs/colors';
 import './style.css';
-const sizes = {
+
+const size = {
   width: window.innerWidth,
   height: window.innerHeight,
 };
 
 const el = document.querySelector('#root') as HTMLDivElement;
+el.style.width = window.innerWidth + 'px';
+el.style.height = window.innerHeight + 'px';
 el.style.background = Colors.BLACK;
-el.style.width = '100vw';
-el.style.height = '100vh';
-el.style.display = 'flex';
-el.style.justifyContent = 'center';
+el.style.position = 'relative';
 
-const canvas = document.createElement('canvas');
-canvas.width = sizes.width;
-canvas.height = sizes.height;
-canvas.style.width = sizes.width + 'px';
-canvas.style.height = sizes.height + 'px';
-el?.append(canvas);
+const placeholder = document.createElement('div');
+placeholder.style.visibility = 'hidden';
+placeholder.style.position = 'absolute';
+placeholder.style.background = Colors.BLUE1;
+placeholder.style.border = '1px solid';
+placeholder.style.borderColor = Colors.BLUE5;
+el.append(placeholder);
 
-const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+const rects: Record<string, HTMLDivElement> = {};
 
-type PGMData = {
-  width: number;
-  height: number;
-  maxValue: number;
-  data: Uint8Array;
-};
+let isEnable = false;
+const start = { x: 0, y: 0 };
 
-type ObstacleLayer = 'lethal' | 'blocked';
+function handleOnPointMove(e: PointerEvent) {
+  if (!isEnable) return;
 
-type ObstacleSnapshot = {
-  msg: ObstacleData;
-  cells: Uint32Array;
-};
+  const width = Math.abs(e.clientX - start.x);
+  const height = Math.abs(e.clientY - start.y);
+  const left = Math.min(start.x, e.clientX);
+  const top = Math.min(start.y, e.clientY);
 
-let mapImageData: ImageData | null = null;
-let mapSize: Pick<PGMData, 'width' | 'height'> | null = null;
-
-const obstacleSnapshots: Partial<Record<ObstacleLayer, ObstacleSnapshot>> = {};
-
-function clean() {
-  ctx.save();
-
-  ctx.fillStyle = Colors.BLACK;
-  ctx.fillRect(0, 0, sizes.width, sizes.height);
-
-  ctx.restore();
+  placeholder.style.width = width + 'px';
+  placeholder.style.height = height + 'px';
+  placeholder.style.top = top + 'px';
+  placeholder.style.left = left + 'px';
 }
 
-async function render() {
-  const res = await fetch('/16f01.pgm');
-  const arrayBuffer = await res.arrayBuffer();
+el.addEventListener('pointermove', handleOnPointMove);
+el.addEventListener('pointerdown', (e) => {
+  el.setPointerCapture(e.pointerId);
+  isEnable = true;
 
-  const pgm = parsePGM(arrayBuffer);
+  start.x = e.clientX;
+  start.y = e.clientY;
 
-  if (!pgm) return;
+  placeholder.style.visibility = 'visible';
+});
+el.addEventListener('pointerup', () => {
+  const rect = placeholder.getBoundingClientRect();
+  el.append(createRect(rect.width, rect.height, rect.top, rect.left));
 
-  const { width, height, data } = pgm;
-  canvas.width = width;
-  canvas.height = height;
-  canvas.style.width = width + 'px';
-  canvas.style.height = height + 'px';
+  isEnable = false;
 
-  mapSize = { width, height };
-  const imageData = ctx.createImageData(width, height, {
-    colorSpace: 'srgb',
-  });
+  placeholder.style.visibility = 'hidden';
+  placeholder.style.width = '0';
+  placeholder.style.height = '0';
+});
 
-  for (let i = 0; i < data.length; i++) {
-    const i4 = i * 4;
-    imageData.data[i4 + 0] = data[i];
-    imageData.data[i4 + 1] = data[i];
-    imageData.data[i4 + 2] = data[i];
-    imageData.data[i4 + 3] = 255;
-  }
+window.addEventListener('resize', () => {
+  size.width = window.innerWidth;
+  size.height = window.innerHeight;
 
-  mapImageData = imageData;
-  redrawScene();
-}
+  el.style.width = size.width + 'px';
+  el.style.height = size.height + 'px';
+});
 
-type ObstacleData = {
-  count: number;
-  data: string;
-  encoding: string;
-  frame_id: string;
-  layer: string;
-  origin: number[];
-  region: { col0: number; row0: number; width: number; height: number };
-  resolution: number;
-  stamp: { sec: number; nanosec: number };
-};
+function createRect(width: number, height: number, top: number, left: number) {
+  const id = crypto.randomUUID();
 
-const TOPIC = {
-  LETHAL: '/obstacles_lethal',
-  BLOCKED: '/obstacles_blocked',
-} as const;
+  const div = document.createElement('div');
+  div.id = id;
+  div.style.position = 'absolute';
+  div.style.width = width + 'px';
+  div.style.height = height + 'px';
+  div.style.top = top + 'px';
+  div.style.left = left + 'px';
+  div.style.background = Colors.GOLD2;
 
-type ObstacleResponse = {
-  op: 'publish' | 'public';
-  topic: (typeof TOPIC)[keyof typeof TOPIC];
-  msg: ObstacleData;
-};
+  rects[id] = div;
 
-function connectWS() {
-  const ws = new WebSocket('ws://localhost:8080/api/v1/ws');
-
-  ws.onopen = () => {
-    console.log('Connect open');
-    ws.send(JSON.stringify({ op: 'subscribe', topic: TOPIC.LETHAL }));
-    ws.send(JSON.stringify({ op: 'subscribe', topic: TOPIC.BLOCKED }));
-  };
-
-  ws.onmessage = async (e) => {
-    const json = JSON.parse(e.data) as ObstacleResponse;
-
-    if (json.op !== 'publish' && json.op !== 'public') return;
-    if (!json.msg) return;
-
-    const layer = topicToLayer(json.topic);
-    if (!layer) return;
-
-    obstacleSnapshots[layer] = {
-      msg: json.msg,
-      cells: await decodeCells(json.msg),
-    };
-
-    redrawScene();
-  };
-}
-
-connectWS();
-
-clean();
-render();
-
-function parsePGM(arrayBuffer: ArrayBuffer) {
-  const view = new DataView(arrayBuffer);
-  let offset = 0;
-
-  while (offset < view.byteLength) {
-    const line = readLine(view, offset);
-    offset += line.length + 1;
-
-    console.log(line);
-
-    const width = readNumber(view, offset);
-    offset += width.length + 1;
-    const height = readNumber(view, offset);
-    offset += height.length + 1;
-    const maxValue = readNumber(view, offset);
-    offset += maxValue.length + 1;
-
-    const data = new Uint8Array(view.buffer, offset);
-
-    return {
-      width: parseInt(width),
-      height: parseInt(height),
-      maxValue: parseInt(maxValue),
-      data,
-    } satisfies PGMData;
-  }
-}
-
-const readLine = (view: DataView, offset: number) => {
-  const chars = [];
-  const flag = true;
-  while (flag) {
-    const char = view.getUint8(offset);
-    if (char === 10 || char === 13) {
-      break;
-    }
-    chars.push(String.fromCharCode(char));
-    offset++;
-  }
-  return chars.join('');
-};
-
-const readNumber = (view: DataView, offset: number) => {
-  const chars = [];
-  const flag = true;
-  while (flag) {
-    const char = view.getUint8(offset);
-    if (char === 32 || char === 10 || char === 13) {
-      break;
-    }
-    chars.push(String.fromCharCode(char));
-    offset++;
-  }
-  return chars.join('');
-};
-
-async function decodeCells(msg: ObstacleData) {
-  if (msg.count === 0) return new Uint32Array(0); // 空帧：清层
-  const bin = Uint8Array.from(atob(msg.data), (c) => c.charCodeAt(0));
-  const raw = new Uint8Array(
-    await new Response(
-      new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip')),
-    ).arrayBuffer(),
-  );
-  const dv = new DataView(raw.buffer);
-  const cells = new Uint32Array(msg.count);
-  let acc = 0;
-  for (let i = 0; i < msg.count; i++) {
-    acc += dv.getUint32(i * 4, true); // true = 小端
-    cells[i] = acc; // 前缀和还原绝对索引
-  }
-  return cells;
-}
-
-function redrawScene() {
-  clean();
-
-  if (!mapImageData) return;
-
-  ctx.putImageData(mapImageData, 0, 0);
-  drawObstacleLayer(obstacleSnapshots.blocked, 'rgba(36, 212, 228, 0.25)');
-  drawObstacleLayer(obstacleSnapshots.lethal, 'rgba(255, 48, 48, 0.9)');
-}
-
-function drawObstacleLayer(
-  snapshot: ObstacleSnapshot | undefined,
-  fillStyle: string,
-) {
-  if (!snapshot || !mapSize) return;
-
-  const { region } = snapshot.msg;
-
-  ctx.save();
-  ctx.fillStyle = fillStyle;
-
-  for (const cell of snapshot.cells) {
-    const localCol = cell % region.width;
-    const localRow = Math.floor(cell / region.width);
-    const x = region.col0 + localCol;
-    const y = mapSize.height - 1 - (region.row0 + localRow);
-
-    if (x < 0 || x >= mapSize.width || y < 0 || y >= mapSize.height) continue;
-
-    ctx.fillRect(x, y, 1, 1);
-  }
-
-  ctx.restore();
-}
-
-function topicToLayer(topic: string): ObstacleLayer | null {
-  if (topic === TOPIC.LETHAL) return 'lethal';
-  if (topic === TOPIC.BLOCKED) return 'blocked';
-  return null;
+  return div;
 }
