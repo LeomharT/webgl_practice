@@ -86,14 +86,15 @@ function renderRange() {
   ctx.restore();
 }
 
-function renderDirection() {
+function renderDirection(angle: number) {
   ctx.save();
   ctx.translate(origin.x, origin.y);
+  ctx.rotate(angle);
 
   ctx.beginPath();
   ctx.moveTo(20, 0);
   ctx.lineTo(36, 0);
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 2;
   ctx.strokeStyle = Colors.CERULEAN3;
   ctx.stroke();
   ctx.closePath();
@@ -106,7 +107,9 @@ function renderDirection() {
     'M6.3771 12.4679L3.94323 18.0159C3.24249 19.6132 4.95015 21.1979 6.49094 20.3797L19.7145 13.3532C21.0163 12.661 21.017 10.7949 19.7145 10.1034L6.49165 3.07755C4.95157 2.25872 3.24249 3.84476 3.94394 5.44141L6.3778 10.9894C6.47995 11.2223 6.5327 11.4739 6.5327 11.7283C6.5327 11.9827 6.47995 12.2343 6.3778 12.4672',
   );
 
-  ctx.translate(origin.x + 24, origin.y - 12);
+  ctx.translate(origin.x, origin.y);
+  ctx.rotate(angle);
+  ctx.translate(24, -12);
 
   ctx.fillStyle = Colors.CERULEAN3;
   ctx.fill(p);
@@ -117,6 +120,8 @@ function renderDirection() {
 let prevTime = 0;
 let dt = 0;
 let offset = 0;
+let angle = 0;
+let isEnable = false;
 
 function render(time: number = 0) {
   dt = (time - prevTime) / 1000;
@@ -128,13 +133,24 @@ function render(time: number = 0) {
 
   renderOrigin();
   renderRange();
-  renderDirection();
+  renderDirection(angle);
   // ANIMATION
   requestAnimationFrame(render);
 }
 render();
 
 canvas.addEventListener('pointermove', (e) => {
-  origin.x = e.offsetX;
-  origin.y = e.offsetY;
+  // origin.x = e.offsetX;
+  // origin.y = e.offsetY;
+  if (!isEnable) return;
+
+  angle = Math.atan2(e.clientY - origin.y, e.clientX - origin.x);
+  console.log(angle);
+});
+
+canvas.addEventListener('pointerdown', () => {
+  isEnable = !isEnable;
+});
+canvas.addEventListener('pointerup', () => {
+  isEnable = !isEnable;
 });
