@@ -19,6 +19,9 @@ canvas.style.width = sizes.width + 'px';
 canvas.style.height = sizes.height + 'px';
 el?.append(canvas);
 
+const svg = document.createElement('svg');
+console.log(svg);
+
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
 type PGMData = {
@@ -32,7 +35,8 @@ type ObstacleLayer = 'lethal' | 'blocked' | 'path';
 
 type ObstacleSnapshot = {
   msg: ObstacleData;
-  cells: Uint32Array;
+  cells?: Uint32Array;
+  points?: [number, number][];
 };
 
 let mapImageData: ImageData | null = null;
@@ -90,6 +94,7 @@ type ObstacleData = {
   region: { col0: number; row0: number; width: number; height: number };
   resolution: number;
   stamp: { sec: number; nanosec: number };
+  points: [number, number][];
 };
 
 const TOPIC = {
@@ -122,7 +127,12 @@ function receiveMessage() {
     if (!layer) return;
 
     if (layer === 'path') {
-      console.log(json);
+      obstacleSnapshots[layer] = {
+        msg: json.msg,
+        points: json.msg.points,
+      };
+
+      console.log(obstacleSnapshots[layer]);
     } else {
       obstacleSnapshots[layer] = {
         msg: json.msg,
@@ -221,6 +231,7 @@ function redrawScene() {
   ctx.putImageData(mapImageData, 0, 0);
   drawObstacleLayer(obstacleSnapshots.blocked, 'rgba(36, 212, 228, 0.25)');
   drawObstacleLayer(obstacleSnapshots.lethal, 'rgba(255, 48, 48, 0.9)');
+  drawLocalPath(obstacleSnapshots.path, 'rgba(255, 220, 0, 0.95)');
 }
 
 function drawObstacleLayer(
@@ -228,6 +239,7 @@ function drawObstacleLayer(
   fillStyle: string,
 ) {
   if (!snapshot || !mapSize) return;
+  if (!snapshot.cells) return;
 
   const { region } = snapshot.msg;
 
@@ -253,4 +265,54 @@ function topicToLayer(topic: string): ObstacleLayer | null {
   if (topic === TOPIC.BLOCKED) return 'blocked';
   if (topic === TOPIC.PATH) return 'path';
   return null;
+}
+function worldToImage(
+  x: number,
+  y: number,
+  meta: {
+    origin: number[];
+    resolution: number;
+    mapHeight: number;
+  },
+) {
+  const col = Math.floor((x - meta.origin[0]) / meta.resolution);
+  const row = Math.floor((y - meta.origin[1]) / meta.resolution);
+
+  return {
+    x: col,
+    y: meta.mapHeight - 1 - row,
+  };
+}
+function drawLocalPath(
+  snapshot: ObstacleSnapshot | undefined,
+  fillStyle: string,
+) {
+  const points = snapshot?.points;
+
+  if (!points || !points.length) return;
+
+  ctx.save();
+  ctx.strokeStyle = fillStyle;
+  ctx.lineWidth = 4;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.setLineDash([6, 10]);
+  ctx.lineDashOffset = 0;
+
+  ctx.beginPath();
+
+  points.forEach(([wx, wy], index) => {
+    if (!mapSize) return;
+    const p = worldToImage(wx, wy, {
+      origin: snapshot.msg.origin,
+      resolution: snapshot.msg.resolution,
+      mapHeight: mapSize.height,
+    });
+
+    if (index === 0) ctx.moveTo(p.x, p.y);
+    else ctx.lineTo(p.x, p.y);
+  });
+
+  ctx.stroke();
+  ctx.restore();
 }
