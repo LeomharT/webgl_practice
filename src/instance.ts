@@ -1,4 +1,5 @@
 import { Colors } from '@blueprintjs/colors';
+import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import {
   BufferGeometry,
   Color,
@@ -18,6 +19,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
+import { Pane } from 'tweakpane';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
@@ -123,7 +125,20 @@ for (let i = 0; i < maxCount; i++) {
 
 scene.add(grass);
 
+const pane = new Pane({ title: 'Debug Params' });
+// Register plugin to the pane
+pane.registerPlugin(EssentialsPlugin);
+
+// Add a FPS graph
+const fpsGraph: any = pane.addBlade({
+  view: 'fpsgraph',
+  label: undefined,
+  rows: 2,
+});
+
 function render() {
+  fpsGraph.begin();
+
   // UPDATE
   timer.update();
   const dt = timer.getDelta();
@@ -136,6 +151,8 @@ function render() {
   renderer.render(scene, camera);
   // ANIMATION
   requestAnimationFrame(render);
+
+  fpsGraph.end();
 }
 render();
 

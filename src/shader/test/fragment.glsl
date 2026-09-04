@@ -9,6 +9,7 @@ void main() {
   float h = uv.y;
   h = smoothstep(0.25, 0.7, h);
 
+  color = mix(color, vec3(1.0), h);
   color *= h;
 
   gl_FragColor = vec4(color, 1.0);
