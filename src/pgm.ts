@@ -28,7 +28,7 @@ type PGMData = {
   data: Uint8Array;
 };
 
-type ObstacleLayer = 'lethal' | 'blocked';
+type ObstacleLayer = 'lethal' | 'blocked' | 'path';
 
 type ObstacleSnapshot = {
   msg: ObstacleData;
@@ -95,6 +95,7 @@ type ObstacleData = {
 const TOPIC = {
   LETHAL: '/obstacles_lethal',
   BLOCKED: '/obstacles_blocked',
+  PATH: '/obstacles_path',
 } as const;
 
 type ObstacleResponse = {
@@ -109,6 +110,7 @@ function receiveMessage() {
   console.log('Connect open');
   worker.postMessage(JSON.stringify({ op: 'subscribe', topic: TOPIC.LETHAL }));
   worker.postMessage(JSON.stringify({ op: 'subscribe', topic: TOPIC.BLOCKED }));
+  worker.postMessage(JSON.stringify({ op: 'subscribe', topic: TOPIC.PATH }));
 
   worker.onmessage = async (e: MessageEvent<ObstacleResponse>) => {
     const json = e.data;
@@ -119,10 +121,14 @@ function receiveMessage() {
     const layer = topicToLayer(json.topic);
     if (!layer) return;
 
-    obstacleSnapshots[layer] = {
-      msg: json.msg,
-      cells: await decodeCells(json.msg),
-    };
+    if (layer === 'path') {
+      console.log(json);
+    } else {
+      obstacleSnapshots[layer] = {
+        msg: json.msg,
+        cells: await decodeCells(json.msg),
+      };
+    }
 
     redrawScene();
   };
@@ -245,5 +251,6 @@ function drawObstacleLayer(
 function topicToLayer(topic: string): ObstacleLayer | null {
   if (topic === TOPIC.LETHAL) return 'lethal';
   if (topic === TOPIC.BLOCKED) return 'blocked';
+  if (topic === TOPIC.PATH) return 'path';
   return null;
 }
