@@ -9,11 +9,13 @@ import {
   ShaderChunk,
   ShaderMaterial,
   Spherical,
+  Timer,
   Uniform,
   Vector3,
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Pane } from 'tweakpane';
 import simplex4DNoise from '../shader/include/simplex4DNoise.glsl?raw';
 import fragmentShader from '../shader/test/fragment.glsl?raw';
@@ -48,11 +50,14 @@ const camera = new PerspectiveCamera(
 camera.position.set(2, 2, 2);
 camera.lookAt(scene.position);
 
+const timer = new Timer();
+
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
 const uniforms = {
   uSunPosition: new Uniform(new Vector3()),
+  uTime: new Uniform(0),
 };
 
 const spherical = new Spherical(1, Math.PI / 2, 0.5);
@@ -71,8 +76,11 @@ updateSun();
 
 scene.add(sun);
 
-const geometry = new IcosahedronGeometry(1, 50);
+const geometry = mergeVertices(new IcosahedronGeometry(1, 50));
+geometry.computeTangents();
+
 const material = new ShaderMaterial({
+  uniforms,
   vertexShader,
   fragmentShader,
 });
@@ -97,7 +105,9 @@ pane
 
 function render() {
   // UPDATE
+  timer.update();
   controls.update();
+  uniforms.uTime.value += timer.getDelta();
   // RENDER
   renderer.render(scene, camera);
   // ANIMATION
