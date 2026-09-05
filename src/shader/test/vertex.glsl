@@ -3,6 +3,7 @@
 attribute vec4 tangent;
 
 varying vec3 vNormal;
+varying vec3 vOriginNormal;
 varying vec3 vPosition;
 
 uniform float uTime;
@@ -37,5 +38,6 @@ void main() {
 
   // VARYING
   vNormal = N;
+  vOriginNormal = normal;
   vPosition = modelPosition.xyz;
 }

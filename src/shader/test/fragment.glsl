@@ -1,12 +1,14 @@
 uniform vec3 uSunPosition;
 
 varying vec3 vNormal;
+varying vec3 vOriginNormal;
 varying vec3 vPosition;
 
 void main() {
   vec3 color = vec3(1.0);
 
   vec3 normal = normalize(vNormal);
+  vec3 oNormal = normalize(vOriginNormal);
   vec3 sunPosition = normalize(uSunPosition);
   vec3 viewDirection = normalize(vPosition - cameraPosition);
 
@@ -14,7 +16,7 @@ void main() {
   orientation = smoothstep(-0.25, 1.0, orientation);
   orientation = clamp(orientation, 0.0, 1.0);
 
-  float fresnel = 1.0 + dot(vPosition, viewDirection);
+  float fresnel = 1.0 + dot(oNormal, viewDirection);
   fresnel = pow(fresnel, 2.0);
   color *= fresnel;
 
