@@ -16,8 +16,11 @@ void main() {
   orientation = smoothstep(-0.25, 1.0, orientation);
   orientation = clamp(orientation, 0.0, 1.0);
 
+  color = vec3(orientation);
+
   float fresnel = 1.0 + dot(oNormal, viewDirection);
   fresnel = pow(fresnel, 2.0);
+
   color *= fresnel;
 
   gl_FragColor = vec4(color, 1.0);
