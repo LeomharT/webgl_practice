@@ -58,6 +58,7 @@ controls.enableDamping = true;
 const uniforms = {
   uSunPosition: new Uniform(new Vector3()),
   uTime: new Uniform(0),
+  uProgress: new Uniform(0),
 };
 
 const spherical = new Spherical(1, Math.PI / 2, 0.5);
@@ -102,6 +103,12 @@ pane
     max: Math.PI,
   })
   .on('change', updateSun);
+
+pane.addBinding(uniforms.uProgress, 'value', {
+  step: 0.01,
+  min: 0,
+  max: 1,
+});
 
 function render() {
   // UPDATE
