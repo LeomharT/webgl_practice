@@ -4,6 +4,7 @@ const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
 };
+const MAP_ZOOM = 3;
 
 const el = document.querySelector('#root') as HTMLDivElement;
 el.style.background = Colors.BLACK;
@@ -11,12 +12,15 @@ el.style.width = '100vw';
 el.style.height = '100vh';
 el.style.display = 'flex';
 el.style.justifyContent = 'center';
+el.style.transform = 'scale(3, 3)';
 
 const canvas = document.createElement('canvas');
+
 canvas.width = sizes.width;
 canvas.height = sizes.height;
 canvas.style.width = sizes.width + 'px';
 canvas.style.height = sizes.height + 'px';
+canvas.style.imageRendering = 'pixelated';
 el?.append(canvas);
 
 const svg = document.createElement('svg');
@@ -39,7 +43,7 @@ type ObstacleSnapshot = {
   points?: [number, number][];
 };
 
-let mapImageData: ImageData | null = null;
+let mapCanvas: HTMLCanvasElement | null = null;
 let mapSize: Pick<PGMData, 'width' | 'height'> | null = null;
 
 const obstacleSnapshots: Partial<Record<ObstacleLayer, ObstacleSnapshot>> = {};
@@ -48,9 +52,26 @@ function clean() {
   ctx.save();
 
   ctx.fillStyle = Colors.BLACK;
-  ctx.fillRect(0, 0, sizes.width, sizes.height);
+  ctx.fillRect(
+    0,
+    0,
+    mapSize?.width ?? sizes.width,
+    mapSize?.height ?? sizes.height,
+  );
 
   ctx.restore();
+}
+
+function resizeMapCanvas(width: number, height: number) {
+  const dpr = window.devicePixelRatio || 1;
+
+  canvas.width = width * MAP_ZOOM * dpr;
+  canvas.height = height * MAP_ZOOM * dpr;
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  canvas.style.imageRendering = 'pixelated';
+
+  ctx.setTransform(MAP_ZOOM * dpr, 0, 0, MAP_ZOOM * dpr, 0, 0);
 }
 
 async function render() {
@@ -62,10 +83,7 @@ async function render() {
   if (!pgm) return;
 
   const { width, height, data } = pgm;
-  canvas.width = width;
-  canvas.height = height;
-  canvas.style.width = width + 'px';
-  canvas.style.height = height + 'px';
+  resizeMapCanvas(width, height);
 
   mapSize = { width, height };
   const imageData = ctx.createImageData(width, height, {
@@ -80,7 +98,11 @@ async function render() {
     imageData.data[i4 + 3] = 255;
   }
 
-  mapImageData = imageData;
+  mapCanvas = document.createElement('canvas');
+  mapCanvas.width = width;
+  mapCanvas.height = height;
+  mapCanvas.getContext('2d')?.putImageData(imageData, 0, 0);
+
   redrawScene();
 }
 
@@ -226,9 +248,10 @@ async function decodeCells(msg: ObstacleData) {
 function redrawScene() {
   clean();
 
-  if (!mapImageData) return;
+  if (!mapCanvas) return;
 
-  ctx.putImageData(mapImageData, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(mapCanvas, 0, 0);
   drawObstacleLayer(obstacleSnapshots.blocked, 'rgba(36, 212, 228, 0.25)');
   drawObstacleLayer(obstacleSnapshots.lethal, 'rgba(255, 48, 48, 0.9)');
   drawLocalPath(obstacleSnapshots.path, 'rgba(255, 220, 0, 0.95)');
