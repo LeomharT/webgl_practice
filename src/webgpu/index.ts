@@ -1,32 +1,30 @@
 import { Colors } from '@blueprintjs/colors';
 import {
+  ACESFilmicToneMapping,
   Color,
-  IcosahedronGeometry,
   Mesh,
-  MeshBasicMaterial,
+  MeshStandardMaterial,
+  PCFShadowMap,
   PerspectiveCamera,
+  PlaneGeometry,
   Scene,
   ShaderChunk,
-  Spherical,
+  SRGBColorSpace,
+  TextureLoader,
   Timer,
-  Uniform,
-  Vector3,
+  TorusKnotGeometry,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
-import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import {
-  cameraPosition,
-  modelPosition,
-  normalWorld,
-  oneMinus,
-  vec3,
-} from 'three/tsl';
+import { texture } from 'three/tsl';
 import { MeshBasicNodeMaterial, WebGPURenderer } from 'three/webgpu';
 import { Pane } from 'tweakpane';
 import simplex4DNoise from '../shader/include/simplex4DNoise.glsl?raw';
 import '../style.css';
 
 (ShaderChunk as any)['simplex4DNoise'] = simplex4DNoise;
+
+const el = document.querySelector('#root') as HTMLDivElement;
+el.style.background = Colors.BLACK;
 
 const sizes = {
   width: window.innerWidth,
@@ -40,7 +38,10 @@ const renderer = new WebGPURenderer({
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(sizes.pixelRatio);
-document.querySelector('#root')?.append(renderer.domElement);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = PCFShadowMap;
+renderer.toneMapping = ACESFilmicToneMapping;
+el.append(renderer.domElement);
 
 const scene = new Scene();
 scene.background = new Color(Colors.BLACK);
@@ -51,7 +52,7 @@ const camera = new PerspectiveCamera(
   0.01,
   1000,
 );
-camera.position.set(2, 2, 2);
+camera.position.set(0.2, 0.2, 0.2);
 camera.lookAt(scene.position);
 
 const timer = new Timer();
@@ -60,60 +61,27 @@ timer.connect(document);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-const uniforms = {
-  uSunPosition: new Uniform(new Vector3()),
-  uTime: new Uniform(0),
-  uProgress: new Uniform(0),
-};
+const textLoader = new TextureLoader();
 
-const spherical = new Spherical(1, Math.PI / 2, 0.5);
-const position = new Vector3();
+const floorColorMap = textLoader.load('/floor-color.jpg');
+floorColorMap.colorSpace = SRGBColorSpace;
 
-const sun = new Mesh(
-  new IcosahedronGeometry(0.1, 3),
-  new MeshBasicMaterial({ color: new Color(Colors.GOLD5) }),
-);
-function updateSun() {
-  position.setFromSpherical(spherical);
-  uniforms.uSunPosition.value.copy(position.clone());
-  sun.position.copy(position.clone().multiplyScalar(1.5));
-}
-updateSun();
+// WORLD
+const floorGeometry = new PlaneGeometry(1, 1, 32, 32);
+const floorMaterial = new MeshBasicNodeMaterial({});
+floorMaterial.colorNode = texture(floorColorMap);
 
-scene.add(sun);
+const floor = new Mesh(floorGeometry, floorMaterial);
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
 
-const geometry = mergeVertices(new IcosahedronGeometry(1, 50));
-geometry.computeTangents();
-
-const material = new MeshBasicNodeMaterial();
-const viewDirection = modelPosition.sub(cameraPosition).normalize();
-const fresnel = vec3(oneMinus(normalWorld.normalize().dot(viewDirection)));
-material.colorNode = fresnel;
-
-const ball = new Mesh(geometry, material);
-scene.add(ball);
+const torusGeometry = new TorusKnotGeometry(0.05, 0.02, 64, 64);
+const torusMaterial = new MeshStandardMaterial();
+const torus = new Mesh(torusGeometry, torusMaterial);
+torus.position.y = 0.1;
+scene.add(torus);
 
 const pane = new Pane({ title: 'Debug pane' });
-pane
-  .addBinding(spherical, 'phi', {
-    step: 0.01,
-    min: 0,
-    max: Math.PI,
-  })
-  .on('change', updateSun);
-pane
-  .addBinding(spherical, 'theta', {
-    step: 0.01,
-    min: -Math.PI,
-    max: Math.PI,
-  })
-  .on('change', updateSun);
-
-pane.addBinding(uniforms.uProgress, 'value', {
-  step: 0.01,
-  min: 0,
-  max: 1,
-});
 
 renderer.setAnimationLoop(render);
 
@@ -121,7 +89,6 @@ function render() {
   // UPDATE
   timer.update();
   controls.update();
-  uniforms.uTime.value += timer.getDelta();
   // RENDER
   renderer.render(scene, camera);
 }
