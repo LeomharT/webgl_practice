@@ -14,7 +14,7 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { vec3 } from 'three/tsl';
+import { cameraPosition, modelPosition, uv, vec3 } from 'three/tsl';
 import { ShadowNodeMaterial, WebGPURenderer } from 'three/webgpu';
 import { Pane } from 'tweakpane';
 import simplex4DNoise from '../shader/include/simplex4DNoise.glsl?raw';
@@ -80,7 +80,9 @@ const geometry = mergeVertices(new IcosahedronGeometry(1, 50));
 geometry.computeTangents();
 
 const material = new ShadowNodeMaterial({});
-material.fragmentNode = vec3(1.0, 1.0, 0.24);
+const viewDirection = cameraPosition;
+console.log(modelPosition);
+material.fragmentNode = vec3(uv(), 1.0);
 
 const ball = new Mesh(geometry, material);
 scene.add(ball);
