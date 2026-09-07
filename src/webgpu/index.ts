@@ -1,7 +1,10 @@
 import { Colors } from '@blueprintjs/colors';
 import {
   ACESFilmicToneMapping,
+  AmbientLight,
+  AxesHelper,
   Color,
+  DirectionalLight,
   Mesh,
   MeshStandardMaterial,
   PCFShadowMap,
@@ -16,7 +19,7 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { texture } from 'three/tsl';
-import { MeshBasicNodeMaterial, WebGPURenderer } from 'three/webgpu';
+import { WebGPURenderer } from 'three/webgpu';
 import { Pane } from 'tweakpane';
 import simplex4DNoise from '../shader/include/simplex4DNoise.glsl?raw';
 import '../style.css';
@@ -41,6 +44,7 @@ renderer.setPixelRatio(sizes.pixelRatio);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = PCFShadowMap;
 renderer.toneMapping = ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
 el.append(renderer.domElement);
 
 const scene = new Scene();
@@ -68,18 +72,34 @@ floorColorMap.colorSpace = SRGBColorSpace;
 
 // WORLD
 const floorGeometry = new PlaneGeometry(1, 1, 32, 32);
-const floorMaterial = new MeshBasicNodeMaterial({});
+const floorMaterial = new MeshStandardMaterial({});
 floorMaterial.colorNode = texture(floorColorMap);
 
 const floor = new Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
 scene.add(floor);
 
-const torusGeometry = new TorusKnotGeometry(0.05, 0.02, 64, 64);
+const torusGeometry = new TorusKnotGeometry(0.05, 0.02, 128, 128);
 const torusMaterial = new MeshStandardMaterial();
 const torus = new Mesh(torusGeometry, torusMaterial);
+torus.castShadow = true;
 torus.position.y = 0.1;
 scene.add(torus);
+
+const ambientLight = new AmbientLight();
+ambientLight.intensity = 0.2;
+scene.add(ambientLight);
+
+const directionalLight = new DirectionalLight();
+directionalLight.position.set(3, 2, 3);
+directionalLight.intensity = 3;
+directionalLight.castShadow = true;
+directionalLight.shadow.radius = 2;
+scene.add(directionalLight);
+
+const axesHelper = new AxesHelper();
+scene.add(axesHelper);
 
 const pane = new Pane({ title: 'Debug pane' });
 
