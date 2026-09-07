@@ -24,12 +24,11 @@ void main() {
   orientation = smoothstep(-0.25, 1.0, orientation);
   orientation = clamp(orientation, 0.0, 1.0);
 
-  color = vec3(orientation);
-
   float fresnel = 1.0 + dot(oNormal, viewDirection);
   fresnel = pow(fresnel, 2.0);
 
-  color *= fresnel;
+  color *= 1.0 - fresnel * vec3(1.0, 0.23, 011);
+  color *= vec3(orientation);
 
   if (bool(uProgress) && noise < uProgress + 0.05) {
     color = vec3(1.0, 0.0, 0.0);

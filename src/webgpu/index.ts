@@ -7,19 +7,17 @@ import {
   PerspectiveCamera,
   Scene,
   ShaderChunk,
-  ShaderMaterial,
   Spherical,
   Timer,
   Uniform,
   Vector3,
-  WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { vec3 } from 'three/tsl';
+import { MeshBasicNodeMaterial, WebGPURenderer } from 'three/webgpu';
 import { Pane } from 'tweakpane';
 import simplex4DNoise from '../shader/include/simplex4DNoise.glsl?raw';
-import fragmentShader from '../shader/test/fragment.glsl?raw';
-import vertexShader from '../shader/test/vertex.glsl?raw';
 import '../style.css';
 
 (ShaderChunk as any)['simplex4DNoise'] = simplex4DNoise;
@@ -30,12 +28,13 @@ const sizes = {
   pixelRatio: Math.min(2, window.devicePixelRatio),
 };
 
-const renderer = new WebGLRenderer({
+const renderer = new WebGPURenderer({
   alpha: true,
   antialias: true,
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(sizes.pixelRatio);
+await renderer.init();
 document.querySelector('#root')?.append(renderer.domElement);
 
 const scene = new Scene();
@@ -51,6 +50,7 @@ camera.position.set(2, 2, 2);
 camera.lookAt(scene.position);
 
 const timer = new Timer();
+timer.connect(document);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -80,11 +80,8 @@ scene.add(sun);
 const geometry = mergeVertices(new IcosahedronGeometry(1, 50));
 geometry.computeTangents();
 
-const material = new ShaderMaterial({
-  uniforms,
-  vertexShader,
-  fragmentShader,
-});
+const material = new MeshBasicNodeMaterial();
+material.colorNode = vec3(1.0, 0.2, 1.0);
 const ball = new Mesh(geometry, material);
 scene.add(ball);
 
@@ -110,6 +107,8 @@ pane.addBinding(uniforms.uProgress, 'value', {
   max: 1,
 });
 
+renderer.setAnimationLoop(render);
+
 function render() {
   // UPDATE
   timer.update();
@@ -117,10 +116,7 @@ function render() {
   uniforms.uTime.value += timer.getDelta();
   // RENDER
   renderer.render(scene, camera);
-  // ANIMATION
-  requestAnimationFrame(render);
 }
-render();
 
 window.addEventListener('resize', () => {
   sizes.width = window.innerWidth;
