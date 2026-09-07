@@ -15,7 +15,7 @@ import {
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { vec3 } from 'three/tsl';
-import { MeshBasicNodeMaterial, WebGPURenderer } from 'three/webgpu';
+import { ShadowNodeMaterial, WebGPURenderer } from 'three/webgpu';
 import { Pane } from 'tweakpane';
 import simplex4DNoise from '../shader/include/simplex4DNoise.glsl?raw';
 import '../style.css';
@@ -34,7 +34,6 @@ const renderer = new WebGPURenderer({
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(sizes.pixelRatio);
-await renderer.init();
 document.querySelector('#root')?.append(renderer.domElement);
 
 const scene = new Scene();
@@ -80,8 +79,9 @@ scene.add(sun);
 const geometry = mergeVertices(new IcosahedronGeometry(1, 50));
 geometry.computeTangents();
 
-const material = new MeshBasicNodeMaterial();
-material.colorNode = vec3(1.0, 0.2, 1.0);
+const material = new ShadowNodeMaterial({});
+material.fragmentNode = vec3(1.0, 1.0, 0.24);
+
 const ball = new Mesh(geometry, material);
 scene.add(ball);
 
