@@ -4,8 +4,8 @@ import {
   AxesHelper,
   Color,
   DirectionalLight,
+  LineBasicMaterial,
   Mesh,
-  MeshStandardMaterial,
   PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
@@ -17,8 +17,19 @@ import {
   TorusKnotGeometry,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
-import { texture } from 'three/tsl';
-import { WebGPURenderer } from 'three/webgpu';
+import {
+  checker,
+  distance,
+  float,
+  positionLocal,
+  sin,
+  texture,
+  time,
+  uv,
+  vec2,
+  vec3,
+} from 'three/tsl';
+import { MeshStandardNodeMaterial, WebGPURenderer } from 'three/webgpu';
 import { Pane } from 'tweakpane';
 import simplex4DNoise from '../shader/include/simplex4DNoise.glsl?raw';
 import '../style.css';
@@ -71,16 +82,30 @@ floorColorMap.colorSpace = SRGBColorSpace;
 
 // WORLD
 const floorGeometry = new PlaneGeometry(10, 10, 10, 10);
-const floorMaterial = new MeshStandardMaterial({});
-floorMaterial.colorNode = texture(floorColorMap);
+const floorMaterial = new MeshStandardNodeMaterial({ transparent: true });
+floorMaterial.colorNode = texture(floorColorMap, uv());
+const fade = distance(uv(), vec2(0.5)).smoothstep(0.2, 0.5).oneMinus();
+floorMaterial.opacityNode = fade;
 
 const floor = new Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
 
+// KORUS KNOT
 const torusGeometry = new TorusKnotGeometry(0.5, 0.24, 128, 32);
-const torusMaterial = new MeshStandardMaterial();
+const torusMaterial = new MeshStandardNodeMaterial({
+  color: new Color(Colors.ROSE3),
+  roughness: 0.25,
+  metalness: 0.5,
+});
+const pattern = checker(uv().add(time.mul(0.02)).mul(vec2(45, 5)));
+torusMaterial.colorNode = vec3(pattern, 0, 0);
+torusMaterial.roughnessNode = float(0);
+
+const zOffset = sin(time.add(positionLocal.y.mul(3))).mul(0.4);
+torusMaterial.positionNode = positionLocal.add(vec3(0, 0, zOffset));
+
 const torus = new Mesh(torusGeometry, torusMaterial);
 torus.castShadow = true;
 torus.position.y = 1;
@@ -103,6 +128,10 @@ directionalLight.shadow.normalBias = 0.1;
 scene.add(directionalLight);
 
 const axesHelper = new AxesHelper();
+axesHelper.frustumCulled = false;
+(axesHelper.material as LineBasicMaterial).polygonOffset = true;
+(axesHelper.material as LineBasicMaterial).polygonOffsetFactor = 0.3;
+
 scene.add(axesHelper);
 
 const pane = new Pane({ title: 'Debug pane' });
