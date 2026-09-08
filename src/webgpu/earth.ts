@@ -3,11 +3,14 @@ import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import {
   cameraPosition,
+  color,
   dot,
+  float,
   mix,
   normalLocal,
   normalWorld,
   positionWorld,
+  reflect,
   texture,
   uniform,
   uv,
@@ -86,6 +89,9 @@ const specularCloudTexture = textLoader.load('/specularClouds.jpg');
 // SUN
 
 const uSunDirection = uniform(vec3());
+const uColorTwililight = uniform(color(Colors.VERMILION3));
+const uColorAtmospherelight = uniform(color(Colors.CERULEAN4));
+
 const sunPosition = new Vector3();
 const sunSpherical = new Spherical(1, Math.PI / 2, 0.5);
 
@@ -109,7 +115,7 @@ scene.add(sun);
   const material = new MeshBasicMaterial();
 
   const sunDirection = uSunDirection.normalize();
-  const orientation = dot(normalLocal, sunDirection);
+  const orientation = dot(normalWorld, sunDirection);
 
   const dayMix = orientation.smoothstep(-0.25, 0.5);
 
@@ -124,10 +130,28 @@ scene.add(sun);
   const cloudMix = specularCloudColor.g.smoothstep(0.3, 1.0);
   const cloud = mix(color, vec3(1.0), cloudMix.mul(dayMix));
 
-  material.colorNode = cloud;
-
   const viewDirection = positionWorld.sub(cameraPosition).normalize();
-  const fresnel = dot(normalWorld, viewDirection);
+  const fresnel = float(1.0).add(dot(normalWorld, viewDirection)).pow2();
+
+  const atmosphereMix = orientation.smoothstep(0.0, 0.5);
+
+  const atmosphere = mix(
+    uColorTwililight,
+    uColorAtmospherelight,
+    atmosphereMix,
+  );
+
+  const reflector = reflect(sunDirection, normalLocal).normalize();
+  const specularColor = mix(vec3(1.0), uColorTwililight, fresnel);
+  const specular = dot(reflector, viewDirection)
+    .max(0)
+    .pow(20.0)
+    .mul(specularCloudColor.r)
+    .mul(specularColor);
+
+  const finalNode = mix(cloud, atmosphere, fresnel.mul(dayMix));
+
+  material.colorNode = finalNode.add(specular);
 
   const earth = new Mesh(geometry, material);
   scene.add(earth);
@@ -158,6 +182,15 @@ f_sun
   })
   .on('change', updateSun);
 
+const f_earth = pane.addFolder({ title: 'Earth' });
+f_earth.addBinding(uColorAtmospherelight, 'value', {
+  color: { type: 'float' },
+  label: 'Atmospherelight',
+});
+f_earth.addBinding(uColorTwililight, 'value', {
+  color: { type: 'float' },
+  label: 'Twililight',
+});
 renderer.setAnimationLoop(render);
 
 function render() {
