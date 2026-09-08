@@ -1,6 +1,5 @@
 import { Colors } from '@blueprintjs/colors';
 import {
-  ACESFilmicToneMapping,
   AmbientLight,
   AxesHelper,
   Color,
@@ -43,8 +42,8 @@ renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(sizes.pixelRatio);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = PCFShadowMap;
-renderer.toneMapping = ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.2;
+renderer.setClearColor(0x111111);
 el.append(renderer.domElement);
 
 const scene = new Scene();
@@ -56,7 +55,7 @@ const camera = new PerspectiveCamera(
   0.01,
   1000,
 );
-camera.position.set(0.2, 0.2, 0.2);
+camera.position.set(5, 4.5, 2.5);
 camera.lookAt(scene.position);
 
 const timer = new Timer();
@@ -71,7 +70,7 @@ const floorColorMap = textLoader.load('/floor-color.jpg');
 floorColorMap.colorSpace = SRGBColorSpace;
 
 // WORLD
-const floorGeometry = new PlaneGeometry(1, 1, 32, 32);
+const floorGeometry = new PlaneGeometry(10, 10, 10, 10);
 const floorMaterial = new MeshStandardMaterial({});
 floorMaterial.colorNode = texture(floorColorMap);
 
@@ -80,22 +79,27 @@ floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-const torusGeometry = new TorusKnotGeometry(0.05, 0.02, 128, 128);
+const torusGeometry = new TorusKnotGeometry(0.5, 0.24, 128, 32);
 const torusMaterial = new MeshStandardMaterial();
 const torus = new Mesh(torusGeometry, torusMaterial);
 torus.castShadow = true;
-torus.position.y = 0.1;
+torus.position.y = 1;
 scene.add(torus);
 
-const ambientLight = new AmbientLight();
-ambientLight.intensity = 0.2;
+const ambientLight = new AmbientLight(0x859dff, 1);
 scene.add(ambientLight);
 
-const directionalLight = new DirectionalLight();
-directionalLight.position.set(3, 2, 3);
-directionalLight.intensity = 3;
+const directionalLight = new DirectionalLight(0xffffff, 4.5);
+directionalLight.position.set(2, 0.75, -1).normalize().multiplyScalar(10);
+directionalLight.shadow.camera.top = 10;
+directionalLight.shadow.camera.right = 10;
+directionalLight.shadow.camera.bottom = -10;
+directionalLight.shadow.camera.left = -10;
+directionalLight.shadow.camera.near = 0.01;
+directionalLight.shadow.camera.far = 20;
 directionalLight.castShadow = true;
-directionalLight.shadow.radius = 2;
+directionalLight.shadow.radius = 3;
+directionalLight.shadow.normalBias = 0.1;
 scene.add(directionalLight);
 
 const axesHelper = new AxesHelper();
