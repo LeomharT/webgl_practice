@@ -21,6 +21,7 @@ import {
   checker,
   distance,
   float,
+  mx_noise_vec3,
   positionLocal,
   sin,
   texture,
@@ -28,6 +29,7 @@ import {
   uv,
   vec2,
   vec3,
+  vertexStage,
 } from 'three/tsl';
 import { MeshStandardNodeMaterial, WebGPURenderer } from 'three/webgpu';
 import { Pane } from 'tweakpane';
@@ -83,9 +85,12 @@ floorColorMap.colorSpace = SRGBColorSpace;
 // WORLD
 const floorGeometry = new PlaneGeometry(10, 10, 10, 10);
 const floorMaterial = new MeshStandardNodeMaterial({ transparent: true });
-floorMaterial.colorNode = texture(floorColorMap, uv());
+const floorColor = texture(floorColorMap, uv());
 const fade = distance(uv(), vec2(0.5)).smoothstep(0.2, 0.5).oneMinus();
 floorMaterial.opacityNode = fade;
+
+const noise = vertexStage(mx_noise_vec3(uv().mul(4)));
+floorMaterial.colorNode = floorColor.add(noise);
 
 const floor = new Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = -Math.PI / 2;
