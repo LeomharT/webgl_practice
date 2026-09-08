@@ -80,6 +80,9 @@ dayMapTexture.anisotropy = 16;
 const nightMapTexture = textLoader.load('/2k_earth_nightmap.jpg');
 nightMapTexture.colorSpace = SRGBColorSpace;
 nightMapTexture.anisotropy = 16;
+
+const specularCloudTexture = textLoader.load('/specularClouds.jpg');
+
 // SUN
 
 const uSunDirection = uniform(vec3());
@@ -110,13 +113,18 @@ scene.add(sun);
 
   const dayMix = orientation.smoothstep(-0.25, 0.5);
 
-  const map = mix(
+  const color = mix(
     texture(nightMapTexture, uv()),
     texture(dayMapTexture, uv()),
     dayMix,
   );
 
-  material.colorNode = map;
+  const specularCloudColor = texture(specularCloudTexture, uv());
+
+  const cloudMix = specularCloudColor.g.smoothstep(0.3, 1.0);
+  const cloud = mix(color, vec3(1.0), cloudMix.mul(dayMix));
+
+  material.colorNode = cloud;
 
   const viewDirection = positionWorld.sub(cameraPosition).normalize();
   const fresnel = dot(normalWorld, viewDirection);
