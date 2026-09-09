@@ -21,6 +21,7 @@ import {
   IcosahedronGeometry,
   Mesh,
   MeshBasicMaterial,
+  MeshStandardNodeMaterial,
   PCFShadowMap,
   PerspectiveCamera,
   Scene,
@@ -112,7 +113,7 @@ scene.add(sun);
 // EARTH
 {
   const geometry = new SphereGeometry(1, 64, 64);
-  const material = new MeshBasicMaterial();
+  const material = new MeshStandardNodeMaterial();
 
   const sunDirection = uSunDirection.normalize();
   const orientation = dot(normalWorld, sunDirection);
@@ -151,7 +152,7 @@ scene.add(sun);
 
   const finalNode = mix(cloud, atmosphere, fresnel.mul(dayMix));
 
-  material.colorNode = finalNode.add(specular);
+  material.fragmentNode = finalNode.add(specular);
 
   const earth = new Mesh(geometry, material);
   scene.add(earth);
