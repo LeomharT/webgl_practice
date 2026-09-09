@@ -1,36 +1,29 @@
 import { Colors } from '@blueprintjs/colors';
 import {
-  BufferGeometry,
+  AmbientLight,
+  AxesHelper,
   Color,
-  DoubleSide,
-  Float32BufferAttribute,
-  InstancedMesh,
-  MathUtils,
+  DirectionalLight,
+  LineBasicMaterial,
   Mesh,
-  MeshBasicMaterial,
-  Object3D,
   PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
+  ShaderChunk,
   SRGBColorSpace,
   TextureLoader,
   Timer,
+  TorusKnotGeometry,
 } from 'three';
-import { OrbitControls } from 'three/examples/jsm/Addons.js';
-import {
-  atan,
-  cameraPosition,
-  cos,
-  float,
-  mat2,
-  positionLocal,
-  sin,
-  vec3,
-} from 'three/tsl';
-import { MeshBasicNodeMaterial, Node, WebGPURenderer } from 'three/webgpu';
+import { OrbitControls, TransformControls } from 'three/examples/jsm/Addons.js';
+import { positionWorld, texture, uv, vec3 } from 'three/tsl';
+import { MeshStandardNodeMaterial, WebGPURenderer } from 'three/webgpu';
 import { Pane } from 'tweakpane';
+import simplex4DNoise from '../shader/include/simplex4DNoise.glsl?raw';
 import '../style.css';
+
+(ShaderChunk as any)['simplex4DNoise'] = simplex4DNoise;
 
 const el = document.querySelector('#root') as HTMLDivElement;
 el.style.background = Colors.BLACK;
@@ -62,7 +55,7 @@ const camera = new PerspectiveCamera(
   0.01,
   1000,
 );
-camera.position.set(0.2, 0.5, 0.5);
+camera.position.set(5, 4.5, 2.5);
 camera.lookAt(scene.position);
 
 const timer = new Timer();
@@ -76,80 +69,62 @@ const textLoader = new TextureLoader();
 const floorColorMap = textLoader.load('/floor-color.jpg');
 floorColorMap.colorSpace = SRGBColorSpace;
 
-const floorGeo = new PlaneGeometry(1, 1, 32, 32);
-const floorMat = new MeshBasicMaterial({
-  map: floorColorMap,
-});
-const floor = new Mesh(floorGeo, floorMat);
+// WORLD
+const floorGeometry = new PlaneGeometry(10, 10, 10, 10);
+const floorMaterial = new MeshStandardNodeMaterial({ transparent: true });
+const floorColor = texture(floorColorMap, uv());
+
+floorMaterial.colorNode = floorColor;
+
+const floor = new Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
 scene.add(floor);
 
-// WORLD
-const geometry = new BufferGeometry();
-const posArr = new Float32Array([
-  // v1
-  1.0, 0.0, 0.0,
-  // v2
-  0.0, 1.0, 0.0,
-  // v3
-  -1.0, 0.0, 0.0,
-]);
-const uvArr = new Float32Array([
-  // v1
-  1.0, 0.0,
-  // v2
-  0.5, 1.0,
-  // v3
-  0.0, 0.0,
-]);
-geometry.setAttribute('position', new Float32BufferAttribute(posArr, 3));
-geometry.setAttribute('uv', new Float32BufferAttribute(uvArr, 2));
-geometry.scale(0.1, 0.1, 0.1);
+// KORUS KNOT
+const torusGeometry = new TorusKnotGeometry(0.5, 0.24, 128, 32);
+const torusMaterial = new MeshStandardNodeMaterial({
+  color: new Color(Colors.ROSE3),
+  roughness: 0.9,
+  metalness: 0.1,
+});
+torusMaterial.colorNode = vec3(positionWorld);
 
-const material = new MeshBasicNodeMaterial({
-  side: DoubleSide,
+const torus = new Mesh(torusGeometry, torusMaterial);
+torus.castShadow = true;
+torus.position.y = 1;
+scene.add(torus);
+
+const transformControls = new TransformControls(camera, renderer.domElement);
+transformControls.attach(torus);
+scene.add(transformControls.getHelper());
+
+transformControls.addEventListener('dragging-changed', (e) => {
+  controls.enabled = !e.value;
 });
 
-function rotate2D(v: Node<'vec2'>, theta: Node<'float'>) {
-  const c = cos(theta);
-  const s = sin(theta);
+const ambientLight = new AmbientLight(0x859dff, 1);
+scene.add(ambientLight);
 
-  return mat2(c, s.negate(), s, c).transpose().mul(v);
-}
+const directionalLight = new DirectionalLight(0xffffff, 4.5);
+directionalLight.position.set(2, 0.75, -1).normalize().multiplyScalar(10);
+directionalLight.shadow.camera.top = 10;
+directionalLight.shadow.camera.right = 10;
+directionalLight.shadow.camera.bottom = -10;
+directionalLight.shadow.camera.left = -10;
+directionalLight.shadow.camera.near = 0.01;
+directionalLight.shadow.camera.far = 20;
+directionalLight.castShadow = true;
+directionalLight.shadow.radius = 3;
+directionalLight.shadow.normalBias = 0.1;
+scene.add(directionalLight);
 
-const rotateCenter = positionLocal.mul(vec3(0.0), 1.0);
-const viewDirection = cameraPosition.xz.sub(rotateCenter);
-const theta = atan(float(viewDirection.z), float(viewDirection.x));
+const axesHelper = new AxesHelper();
+axesHelper.frustumCulled = false;
+(axesHelper.material as LineBasicMaterial).polygonOffset = true;
+(axesHelper.material as LineBasicMaterial).polygonOffsetFactor = 0.3;
 
-const rotated = rotate2D(positionLocal.xz, theta);
-
-material.positionNode = vec3(rotated.x, positionLocal.y, rotated.y);
-
-const MAX_COUNT = 2000;
-
-const grass = new InstancedMesh(geometry, material, MAX_COUNT);
-const obj = new Object3D();
-
-function updateGrassPos() {
-  for (let i = 0; i < MAX_COUNT; i++) {
-    const r = MathUtils.randFloat(0.2, 0.5);
-
-    obj.scale.set(r, 1, r);
-
-    obj.position.set(
-      MathUtils.randFloat(-0.5, 0.5),
-      0,
-      MathUtils.randFloat(-0.5, 0.5),
-    );
-    obj.updateMatrix();
-    obj.updateMatrixWorld();
-
-    grass.setMatrixAt(i, obj.matrix);
-  }
-}
-updateGrassPos();
-
-scene.add(grass);
+scene.add(axesHelper);
 
 const pane = new Pane({ title: 'Debug pane' });
 
