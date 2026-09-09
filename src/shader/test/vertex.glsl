@@ -1,35 +1,26 @@
-#include <simplex4DNoise>
+#define PI 3.1415926
 
-attribute vec4 tangent;
+varying vec2 vUv;
 
-varying vec3 vNormal;
-varying vec3 vOriginNormal;
-varying vec3 vPosition;
+vec2 rotate(vec2 v, float theta) {
+  float c = cos(theta);
+  float s = sin(theta);
 
-uniform float uTime;
+  mat2 m = transpose(mat2(c, -s, s, c));
 
-float getWobble(vec3 v, float t) {
-  return snoise(vec4(v * 0.812, t)) * 0.8;
+  return m * v;
 }
 
 void main() {
-  vec3 biTangent = cross(normal, tangent.xyz);
+  vec4 instanceCenter = modelMatrix * instanceMatrix * vec4(vec3(0.0), 1.0);
 
-  float shift = 0.01;
-  float noise = getWobble(position, uTime * 0.2);
+  vec3 viewDirection = normalize(cameraPosition - instanceCenter.xyz);
+  float angle = atan(viewDirection.z, viewDirection.x);
 
-  vec4 modelPosition = modelMatrix * vec4(position, 1.0);
-  vec3 positionA = modelPosition.xyz + shift * tangent.xyz;
-  vec3 positionB = modelPosition.xyz + shift * biTangent;
+  vec3 p = position;
+  p.xz = rotate(p.xz, angle + PI / 2.0);
 
-  modelPosition.xyz += noise * normal;
-  positionA += getWobble(positionA, uTime * 0.2) * normal;
-  positionB += getWobble(positionB, uTime * 0.2) * normal;
-
-  vec3 toA = normalize(positionA - modelPosition.xyz);
-  vec3 toB = normalize(positionB - modelPosition.xyz);
-
-  vec3 N = cross(toA, toB);
+  vec4 modelPosition = modelMatrix * instanceMatrix * vec4(p, 1.0);
 
   vec4 viewPosition = viewMatrix * modelPosition;
   vec4 projectionPosition = projectionMatrix * viewPosition;
@@ -37,7 +28,5 @@ void main() {
   gl_Position = projectionPosition;
 
   // VARYING
-  vNormal = N;
-  vOriginNormal = normal;
-  vPosition = modelPosition.xyz;
+  vUv = uv;
 }
