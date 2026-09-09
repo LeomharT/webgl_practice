@@ -22,8 +22,8 @@ import {
   atan,
   cameraPosition,
   cos,
+  float,
   mat2,
-  PI,
   positionLocal,
   sin,
   vec3,
@@ -119,9 +119,9 @@ function rotate2D(v: Node<'vec2'>, theta: Node<'float'>) {
 
 const rotateCenter = positionLocal.mul(vec3(0.0), 1.0);
 const viewDirection = cameraPosition.xz.sub(rotateCenter);
-const theta = atan(viewDirection).add(PI.div(2));
+const theta = atan(float(viewDirection.z), float(viewDirection.x));
 
-const rotated = rotate2D(positionLocal.xz, theta.x);
+const rotated = rotate2D(positionLocal.xz, theta);
 
 material.positionNode = vec3(rotated.x, positionLocal.y, rotated.y);
 
