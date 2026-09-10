@@ -8,10 +8,10 @@ import {
   MathUtils,
   Mesh,
   MeshBasicMaterial,
+  MirroredRepeatWrapping,
   Object3D,
   PerspectiveCamera,
   PlaneGeometry,
-  RepeatWrapping,
   Scene,
   ShaderMaterial,
   SRGBColorSpace,
@@ -39,8 +39,7 @@ const floorTexture = textureLoader.load('floor-color.jpg');
 floorTexture.colorSpace = SRGBColorSpace;
 
 const noiseTexture = textureLoader.load('noiseTexture.png');
-noiseTexture.wrapS = noiseTexture.wrapT = RepeatWrapping;
-noiseTexture.repeat.set(10, 10);
+noiseTexture.wrapS = noiseTexture.wrapT = MirroredRepeatWrapping;
 
 // BASE
 const renderer = new WebGLRenderer({
