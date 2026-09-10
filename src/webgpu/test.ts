@@ -17,7 +17,14 @@ import {
   TorusKnotGeometry,
 } from 'three';
 import { OrbitControls, TransformControls } from 'three/examples/jsm/Addons.js';
-import { positionWorld, texture, uv, vec3 } from 'three/tsl';
+import {
+  checker,
+  materialColor,
+  positionWorld,
+  rand,
+  uv,
+  vec3,
+} from 'three/tsl';
 import { MeshStandardNodeMaterial, WebGPURenderer } from 'three/webgpu';
 import { Pane } from 'tweakpane';
 import simplex4DNoise from '../shader/include/simplex4DNoise.glsl?raw';
@@ -71,10 +78,14 @@ floorColorMap.colorSpace = SRGBColorSpace;
 
 // WORLD
 const floorGeometry = new PlaneGeometry(10, 10, 10, 10);
-const floorMaterial = new MeshStandardNodeMaterial({ transparent: true });
-const floorColor = texture(floorColorMap, uv());
+const floorMaterial = new MeshStandardNodeMaterial({
+  transparent: true,
+  map: floorColorMap,
+});
 
-floorMaterial.colorNode = floorColor;
+const noise = rand(uv());
+
+floorMaterial.colorNode = materialColor.mul(checker(uv().mul(20)));
 
 const floor = new Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = -Math.PI / 2;
