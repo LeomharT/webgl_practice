@@ -11,10 +11,12 @@ import {
   Object3D,
   PerspectiveCamera,
   PlaneGeometry,
+  RepeatWrapping,
   Scene,
   ShaderMaterial,
   SRGBColorSpace,
   TextureLoader,
+  Timer,
   Uniform,
   WebGLRenderer,
 } from 'three';
@@ -36,6 +38,10 @@ const textureLoader = new TextureLoader();
 const floorTexture = textureLoader.load('floor-color.jpg');
 floorTexture.colorSpace = SRGBColorSpace;
 
+const noiseTexture = textureLoader.load('noiseTexture.png');
+noiseTexture.wrapS = noiseTexture.wrapT = RepeatWrapping;
+noiseTexture.repeat.set(10, 10);
+
 // BASE
 const renderer = new WebGLRenderer({
   alpha: true,
@@ -54,6 +60,8 @@ camera.lookAt(scene.position);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+
+const timer = new Timer();
 
 // WORLD
 const floorGeometry = new PlaneGeometry(10, 10, 32, 32);
@@ -88,6 +96,8 @@ const MAX_COUNT = 3000;
 
 const uniforms = {
   uColor: new Uniform(new Color('#7CFC00')),
+  uNoiseTexture: new Uniform(noiseTexture),
+  uTime: new Uniform(0),
 };
 
 const grassMat = new ShaderMaterial({
@@ -115,7 +125,9 @@ scene.add(grass);
 // EVENTS
 function render() {
   // Update
+  timer.update();
   controls.update();
+  uniforms.uTime.value += timer.getDelta();
   // Render
   renderer.render(scene, camera);
   // Animation
