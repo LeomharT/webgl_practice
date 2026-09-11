@@ -17,6 +17,7 @@ import {
   TorusKnotGeometry,
 } from 'three';
 import { OrbitControls, TransformControls } from 'three/examples/jsm/Addons.js';
+import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import {
   checker,
   materialColor,
@@ -51,6 +52,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = PCFShadowMap;
 renderer.toneMappingExposure = 1.2;
 renderer.setClearColor(0x111111);
+renderer.inspector = new Inspector();
 el.append(renderer.domElement);
 
 const scene = new Scene();
