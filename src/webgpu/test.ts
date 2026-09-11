@@ -52,7 +52,9 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = PCFShadowMap;
 renderer.toneMappingExposure = 1.2;
 renderer.setClearColor(0x111111);
-renderer.inspector = new Inspector();
+const inspector = new Inspector();
+renderer.inspector = inspector;
+
 el.append(renderer.domElement);
 
 const scene = new Scene();
@@ -106,6 +108,9 @@ torusMaterial.colorNode = vec3(positionWorld);
 const torus = new Mesh(torusGeometry, torusMaterial);
 torus.castShadow = true;
 torus.position.y = 1;
+
+const folder = inspector.createParameters('torus');
+folder.add(torusMaterial, 'wireframe');
 scene.add(torus);
 
 const transformControls = new TransformControls(camera, renderer.domElement);
