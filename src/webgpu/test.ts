@@ -27,7 +27,6 @@ import {
   vec3,
 } from 'three/tsl';
 import { MeshStandardNodeMaterial, WebGPURenderer } from 'three/webgpu';
-import { Pane } from 'tweakpane';
 import simplex4DNoise from '../shader/include/simplex4DNoise.glsl?raw';
 import '../style.css';
 
@@ -143,8 +142,6 @@ axesHelper.frustumCulled = false;
 (axesHelper.material as LineBasicMaterial).polygonOffsetFactor = 0.3;
 
 scene.add(axesHelper);
-
-const pane = new Pane({ title: 'Debug pane' });
 
 renderer.setAnimationLoop(render);
 
