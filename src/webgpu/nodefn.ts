@@ -19,8 +19,8 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
-import { distance, Fn, materialColor, uv, vec2 } from 'three/tsl';
-import { MeshStandardNodeMaterial, WebGPURenderer } from 'three/webgpu';
+import { distance, float, Fn, uv, vec2, vec3 } from 'three/tsl';
+import { MeshStandardNodeMaterial, Node, WebGPURenderer } from 'three/webgpu';
 import simplex4DNoise from '../shader/include/simplex4DNoise.glsl?raw';
 import '../style.css';
 
@@ -77,16 +77,36 @@ uvCheckerTexture.wrapT = uvCheckerTexture.wrapS = MirroredRepeatWrapping;
 // WORLD
 const fade = Fn(function () {
   const dist = distance(uv(), vec2(0.5));
+  const radius = dist.smoothstep(0.2, 0.5).oneMinus();
 
-  return dist.smoothstep(0.2, 0.5).oneMinus();
+  return radius;
+});
+
+const circel = Fn(function ({
+  coord = uv(),
+  center = vec2(0.5),
+  radius = float(0.25),
+  thickness = float(0.05),
+}: {
+  coord?: Node<'vec2'>;
+  center?: Node<'vec2'>;
+  radius?: Node<'float'>;
+  thickness?: Node<'float'>;
+}) {
+  const dist = distance(coord, center);
+  const lineSDF = dist.sub(radius);
+  const line = lineSDF.abs().step(thickness.div(2)).oneMinus();
+
+  return line;
 });
 
 const floorGeometry = new PlaneGeometry(10, 10, 16, 16);
 const floorMaterial = new MeshStandardNodeMaterial({
   transparent: true,
-  map: uvCheckerTexture,
 });
-floorMaterial.colorNode = materialColor.mul(fade());
+floorMaterial.colorNode = vec3(circel({}));
+
+floorMaterial.opacityNode = fade();
 
 const floor = new Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = -Math.PI / 2;
@@ -106,6 +126,9 @@ scene.add(torus);
 
 const ambientLight = new AmbientLight(0x859dff, 1);
 scene.add(ambientLight);
+
+const lightTweak = inspector.createParameters('Ambient Light');
+lightTweak.addColor(ambientLight, 'color');
 
 const directionalLight = new DirectionalLight(0xffffff, 4.5);
 directionalLight.position.set(2, 0.75, -1).normalize().multiplyScalar(10);
