@@ -82,7 +82,12 @@ const fade = Fn(function () {
   return radius;
 });
 
-const circel = Fn(function ({
+const circel: (params: {
+  coord?: Node<'vec2'>;
+  center?: Node<'vec2'>;
+  radius?: Node<'float'>;
+  thickness?: Node<'float'>;
+}) => Node<'float'> = Fn(function ({
   coord = uv(),
   center = vec2(0.5),
   radius = float(0.25),
