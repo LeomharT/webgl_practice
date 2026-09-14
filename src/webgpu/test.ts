@@ -24,6 +24,7 @@ import {
   positionWorld,
   rand,
   uv,
+  vec2,
   vec3,
 } from 'three/tsl';
 import { MeshStandardNodeMaterial, WebGPURenderer } from 'three/webgpu';
@@ -102,7 +103,8 @@ const torusMaterial = new MeshStandardNodeMaterial({
   roughness: 0.9,
   metalness: 0.1,
 });
-torusMaterial.colorNode = vec3(positionWorld);
+const pattrn = checker(uv().mul(vec2(50, 20)));
+torusMaterial.colorNode = vec3(positionWorld).mul(pattrn);
 
 const torus = new Mesh(torusGeometry, torusMaterial);
 torus.castShadow = true;
