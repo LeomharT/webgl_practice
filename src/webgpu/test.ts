@@ -6,6 +6,7 @@ import {
   DirectionalLight,
   LineBasicMaterial,
   Mesh,
+  MirroredRepeatWrapping,
   PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
@@ -19,13 +20,14 @@ import {
 import { OrbitControls, TransformControls } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import {
-  checker,
-  materialColor,
-  positionWorld,
-  rand,
+  distance,
+  float,
+  normalLocal,
+  positionLocal,
+  texture,
+  triplanarTexture,
   uv,
   vec2,
-  vec3,
 } from 'three/tsl';
 import { MeshStandardNodeMaterial, WebGPURenderer } from 'three/webgpu';
 import simplex4DNoise from '../shader/include/simplex4DNoise.glsl?raw';
@@ -80,16 +82,18 @@ const textLoader = new TextureLoader();
 const floorColorMap = textLoader.load('/floor-color.jpg');
 floorColorMap.colorSpace = SRGBColorSpace;
 
+const uvCheckerTexture = textLoader.load('/uv_checker.png');
+uvCheckerTexture.colorSpace = SRGBColorSpace;
+uvCheckerTexture.wrapT = uvCheckerTexture.wrapS = MirroredRepeatWrapping;
+
 // WORLD
 const floorGeometry = new PlaneGeometry(10, 10, 10, 10);
 const floorMaterial = new MeshStandardNodeMaterial({
   transparent: true,
   map: floorColorMap,
 });
-
-const noise = rand(uv());
-
-floorMaterial.colorNode = materialColor.mul(checker(uv().mul(20)));
+const dist = distance(uv(), vec2(0.5)).smoothstep(0.2, 0.5).oneMinus();
+floorMaterial.colorNode = texture(uvCheckerTexture, uv().mul(3)).mul(dist);
 
 const floor = new Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = -Math.PI / 2;
@@ -103,8 +107,15 @@ const torusMaterial = new MeshStandardNodeMaterial({
   roughness: 0.9,
   metalness: 0.1,
 });
-const pattrn = checker(uv().mul(vec2(50, 20)));
-torusMaterial.colorNode = vec3(positionWorld).mul(pattrn);
+const pattrn = triplanarTexture(
+  texture(uvCheckerTexture),
+  null,
+  null,
+  float(2),
+  positionLocal,
+  normalLocal,
+);
+torusMaterial.colorNode = pattrn;
 
 const torus = new Mesh(torusGeometry, torusMaterial);
 torus.castShadow = true;
@@ -116,6 +127,7 @@ scene.add(torus);
 
 const transformControls = new TransformControls(camera, renderer.domElement);
 transformControls.attach(torus);
+transformControls.mode = 'rotate';
 scene.add(transformControls.getHelper());
 
 transformControls.addEventListener('dragging-changed', (e) => {
