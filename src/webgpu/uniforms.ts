@@ -4,7 +4,9 @@ import {
   AxesHelper,
   Color,
   DirectionalLight,
+  Float32BufferAttribute,
   LineBasicMaterial,
+  MathUtils,
   Mesh,
   MirroredRepeatWrapping,
   PCFShadowMap,
@@ -19,7 +21,19 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
-import { distance, texture, uv, vec2 } from 'three/tsl';
+import {
+  attribute,
+  distance,
+  normalLocal,
+  positionLocal,
+  positionWorld,
+  texture,
+  time,
+  uniform,
+  uv,
+  vec2,
+  vec3,
+} from 'three/tsl';
 import { MeshStandardNodeMaterial, WebGPURenderer } from 'three/webgpu';
 import simplex4DNoise from '../shader/include/simplex4DNoise.glsl?raw';
 import '../style.css';
@@ -78,13 +92,26 @@ uvCheckerTexture.colorSpace = SRGBColorSpace;
 uvCheckerTexture.wrapT = uvCheckerTexture.wrapS = MirroredRepeatWrapping;
 
 // WORLD
-const floorGeometry = new PlaneGeometry(10, 10, 10, 10);
+const floorGeometry = new PlaneGeometry(10, 10, 16, 16);
+const count = floorGeometry.attributes.position.count;
+const randomArr = new Float32Array(count);
+
+for (let i = 0; i < count; i++) {
+  randomArr[i] = MathUtils.randFloat(-1, 1) * 0.52;
+}
+
+floorGeometry.setAttribute('random', new Float32BufferAttribute(randomArr, 1));
+
 const floorMaterial = new MeshStandardNodeMaterial({
   transparent: true,
   map: floorColorMap,
 });
+
+const random = attribute('random', 'float');
+
 const dist = distance(uv(), vec2(0.5)).smoothstep(0.2, 0.5).oneMinus();
 floorMaterial.colorNode = texture(uvCheckerTexture, uv().mul(3)).mul(dist);
+floorMaterial.positionNode = positionLocal.add(vec3(random).mul(normalLocal));
 
 const floor = new Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = -Math.PI / 2;
@@ -92,18 +119,29 @@ floor.receiveShadow = true;
 scene.add(floor);
 
 // KORUS KNOT
+
 const torusGeometry = new TorusKnotGeometry(0.5, 0.24, 128, 32);
 const torusMaterial = new MeshStandardNodeMaterial({
   color: new Color(Colors.WHITE),
 });
+const frequencies = uniform(vec2(2, 0.25));
 
-const folder = inspector.createParameters('torus');
-folder.addColor(torusMaterial, 'color');
+const pattern = positionWorld.y;
+torusMaterial.colorNode = pattern
+  .mul(frequencies.x)
+  .sub(time.mul(frequencies.y))
+  .fract();
 
 const torus = new Mesh(torusGeometry, torusMaterial);
 torus.castShadow = true;
 torus.position.y = 1;
 scene.add(torus);
+
+// Tweak
+const folder = inspector.createParameters('torus');
+folder.addColor(torusMaterial, 'color');
+folder.add(frequencies.value, 'x', 0, 10, 0.01).name('frequencies x');
+folder.add(frequencies.value, 'y', 0, 10, 0.01).name('frequencies x');
 
 const ambientLight = new AmbientLight(0x859dff, 1);
 scene.add(ambientLight);
