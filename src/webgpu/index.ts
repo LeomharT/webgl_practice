@@ -14,25 +14,15 @@ import {
   SRGBColorSpace,
   TextureLoader,
   Timer,
-  TorusKnotGeometry,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
+import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
+import { distance, uv, vec2, vec3 } from 'three/tsl';
 import {
-  checker,
-  distance,
-  float,
-  mx_noise_vec3,
-  positionLocal,
-  sin,
-  texture,
-  time,
-  uv,
-  vec2,
-  vec3,
-  vertexStage,
-} from 'three/tsl';
-import { MeshStandardNodeMaterial, WebGPURenderer } from 'three/webgpu';
-import { Pane } from 'tweakpane';
+  MeshBasicNodeMaterial,
+  MeshStandardNodeMaterial,
+  WebGPURenderer,
+} from 'three/webgpu';
 import simplex4DNoise from '../shader/include/simplex4DNoise.glsl?raw';
 import '../style.css';
 
@@ -68,7 +58,7 @@ const camera = new PerspectiveCamera(
   0.01,
   1000,
 );
-camera.position.set(5, 4.5, 2.5);
+camera.position.set(0, 0, 1);
 camera.lookAt(scene.position);
 
 const timer = new Timer();
@@ -77,6 +67,9 @@ timer.connect(document);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
+const inspector = new Inspector();
+renderer.inspector = inspector;
+
 const textLoader = new TextureLoader();
 
 const floorColorMap = textLoader.load('/floor-color.jpg');
@@ -84,42 +77,33 @@ floorColorMap.colorSpace = SRGBColorSpace;
 
 // WORLD
 const floorGeometry = new PlaneGeometry(10, 10, 10, 10);
-const floorMaterial = new MeshStandardNodeMaterial({ transparent: true });
-const floorColor = texture(floorColorMap, uv());
+const floorMaterial = new MeshStandardNodeMaterial({
+  transparent: true,
+  map: floorColorMap,
+});
 const fade = distance(uv(), vec2(0.5)).smoothstep(0.2, 0.5).oneMinus();
 floorMaterial.opacityNode = fade;
-
-const noise = vertexStage(mx_noise_vec3(uv().mul(4)));
-floorMaterial.colorNode = floorColor.add(noise);
 
 const floor = new Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
 
+const planeGeometry = new PlaneGeometry(1, 1, 32, 32);
+const planeMaterial = new MeshBasicNodeMaterial();
+
+planeMaterial.colorNode = vec3(uv(), 1.0);
+planeMaterial.colorNode = vec3(uv().x.mul(10).mod(2));
+
+const plane = new Mesh(planeGeometry, planeMaterial);
+scene.add(plane);
+
 // KORUS KNOT
-const torusGeometry = new TorusKnotGeometry(0.5, 0.24, 128, 32);
-const torusMaterial = new MeshStandardNodeMaterial({
-  color: new Color(Colors.ROSE3),
-  roughness: 0.25,
-  metalness: 0.5,
-});
-const pattern = checker(uv().add(time.mul(0.02)).mul(vec2(45, 5)));
-torusMaterial.colorNode = vec3(pattern, 0, 0);
-torusMaterial.roughnessNode = float(0);
-
-const zOffset = sin(time.add(positionLocal.y.mul(3))).mul(0.4);
-torusMaterial.positionNode = positionLocal.add(vec3(0, 0, zOffset));
-
-const torus = new Mesh(torusGeometry, torusMaterial);
-torus.castShadow = true;
-torus.position.y = 1;
-scene.add(torus);
 
 const ambientLight = new AmbientLight(0x859dff, 1);
 scene.add(ambientLight);
 
-const directionalLight = new DirectionalLight(0xffffff, 4.5);
+const directionalLight = new DirectionalLight(0xffffff, 10.5);
 directionalLight.position.set(2, 0.75, -1).normalize().multiplyScalar(10);
 directionalLight.shadow.camera.top = 10;
 directionalLight.shadow.camera.right = 10;
@@ -138,8 +122,6 @@ axesHelper.frustumCulled = false;
 (axesHelper.material as LineBasicMaterial).polygonOffsetFactor = 0.3;
 
 scene.add(axesHelper);
-
-const pane = new Pane({ title: 'Debug pane' });
 
 renderer.setAnimationLoop(render);
 
