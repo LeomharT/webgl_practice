@@ -4,6 +4,7 @@ import {
   AxesHelper,
   Color,
   DirectionalLight,
+  DoubleSide,
   LineBasicMaterial,
   Mesh,
   PCFShadowMap,
@@ -17,7 +18,19 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
-import { distance, uv, vec2, vec3 } from 'three/tsl';
+import {
+  atan,
+  distance,
+  mix,
+  PI,
+  PI2,
+  positionLocal,
+  rotate,
+  time,
+  uv,
+  vec2,
+  vec3,
+} from 'three/tsl';
 import {
   MeshBasicNodeMaterial,
   MeshStandardNodeMaterial,
@@ -58,7 +71,7 @@ const camera = new PerspectiveCamera(
   0.01,
   1000,
 );
-camera.position.set(0, 0, 1);
+camera.position.set(0, 2, 3);
 camera.lookAt(scene.position);
 
 const timer = new Timer();
@@ -89,13 +102,30 @@ floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-const planeGeometry = new PlaneGeometry(1, 1, 32, 32);
-const planeMaterial = new MeshBasicNodeMaterial();
+const planeGeometry = new PlaneGeometry(2, 2, 32, 32);
+const planeMaterial = new MeshBasicNodeMaterial({
+  side: DoubleSide,
+  transparent: true,
+});
 
 planeMaterial.colorNode = vec3(uv(), 1.0);
 planeMaterial.colorNode = vec3(uv().x.mul(10).mod(2));
+planeMaterial.colorNode = vec3(distance(uv(), vec2(0.5)));
+
+const polarUv = uv().sub(0.5);
+const angle = atan(polarUv.x, polarUv.y).add(PI).div(PI2);
+planeMaterial.colorNode = mix(
+  vec3(1.0, 0.5, 0.34),
+  vec3(0.123, 0.223, 0.3),
+  angle,
+);
+planeMaterial.opacityNode = fade;
+
+const p = rotate(positionLocal.xy, time.negate());
+planeMaterial.positionNode = vec3(p.x, p.y, positionLocal.z);
 
 const plane = new Mesh(planeGeometry, planeMaterial);
+plane.position.y = 1;
 scene.add(plane);
 
 // KORUS KNOT
