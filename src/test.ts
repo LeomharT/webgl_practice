@@ -10,6 +10,7 @@ import {
   SRGBColorSpace,
   TextureLoader,
   Timer,
+  Uniform,
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
@@ -54,11 +55,16 @@ controls.enableDamping = true;
 
 const timer = new Timer();
 
+const uniforms = {
+  uTime: new Uniform(0),
+};
+
 // WORLD
 const planeGeometry = new PlaneGeometry(1, 1, 32, 32);
 const planeMaterial = new ShaderMaterial({
   vertexShader,
   fragmentShader,
+  transparent: true,
 });
 const plane = new Mesh(planeGeometry, planeMaterial);
 scene.add(plane);
@@ -68,6 +74,7 @@ function render() {
   // Update
   timer.update();
   controls.update();
+  uniforms.uTime.value += timer.getDelta();
   // Render
   renderer.render(scene, camera);
   // Animation
