@@ -3,6 +3,7 @@
 varying vec2 vUv;
 
 uniform float uTime;
+uniform vec3 uColor;
 
 vec2 rotate2D(vec2 v, float angle) {
   float c = cos(angle);
@@ -26,10 +27,13 @@ void main() {
 
   uv += 0.5;
 
-  color = mix(vec3(0.0), vec3(0.0, 0.7, 0.0), angle);
+  color = mix(uColor, vec3(0.0, 1.0, 0.0), angle);
 
   float dist = distance(uv, vec2(0.5));
   dist = smoothstep(0.2, 0.5, dist);
 
   gl_FragColor = vec4(color, 1.0 - dist);
+
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
 }

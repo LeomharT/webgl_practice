@@ -57,6 +57,7 @@ const timer = new Timer();
 
 const uniforms = {
   uTime: new Uniform(0),
+  uColor: new Uniform(new Color(Colors.BLACK)),
 };
 
 // WORLD
