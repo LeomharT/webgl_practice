@@ -18,14 +18,15 @@ void main() {
   vec2 uv = vUv;
 
   uv -= 0.5;
+  uv = rotate2D(uv, uTime);
 
   float angle = atan(uv.x, uv.y);
   angle += PI;
   angle /= PI * 2.0;
 
-  color = vec3(angle);
-
   uv += 0.5;
+
+  color = mix(vec3(0.0), vec3(0.0, 1.0, 0.0), angle);
 
   float dist = distance(uv, vec2(0.5));
   dist = smoothstep(0.2, 0.5, dist);

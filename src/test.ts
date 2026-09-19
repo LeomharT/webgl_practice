@@ -62,6 +62,7 @@ const uniforms = {
 // WORLD
 const planeGeometry = new PlaneGeometry(1, 1, 32, 32);
 const planeMaterial = new ShaderMaterial({
+  uniforms,
   vertexShader,
   fragmentShader,
   transparent: true,
