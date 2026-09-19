@@ -26,7 +26,7 @@ void main() {
 
   uv += 0.5;
 
-  color = mix(vec3(0.0), vec3(0.0, 1.0, 0.0), angle);
+  color = mix(vec3(0.0), vec3(0.0, 0.7, 0.0), angle);
 
   float dist = distance(uv, vec2(0.5));
   dist = smoothstep(0.2, 0.5, dist);
