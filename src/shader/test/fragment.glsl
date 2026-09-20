@@ -3,7 +3,8 @@
 varying vec2 vUv;
 
 uniform float uTime;
-uniform vec3 uColor;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
 
 vec2 rotate2D(vec2 v, float angle) {
   float c = cos(angle);
@@ -27,7 +28,7 @@ void main() {
 
   uv += 0.5;
 
-  color = mix(uColor, vec3(0.0, 1.0, 0.0), angle);
+  color = mix(uColorA, uColorB, angle);
 
   float dist = distance(uv, vec2(0.5));
   dist = smoothstep(0.2, 0.5, dist);

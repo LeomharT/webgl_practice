@@ -14,6 +14,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
+import { Pane } from 'tweakpane';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
@@ -57,7 +58,8 @@ const timer = new Timer();
 
 const uniforms = {
   uTime: new Uniform(0),
-  uColor: new Uniform(new Color(Colors.BLACK)),
+  uColorA: new Uniform(new Color(Colors.GREEN5)),
+  uColorB: new Uniform(new Color(Colors.BLACK)),
 };
 
 // WORLD
@@ -70,6 +72,14 @@ const planeMaterial = new ShaderMaterial({
 });
 const plane = new Mesh(planeGeometry, planeMaterial);
 scene.add(plane);
+
+const pane = new Pane({ title: 'Pane' });
+pane.addBinding(uniforms.uColorA, 'value', {
+  color: { type: 'float' },
+});
+pane.addBinding(uniforms.uColorB, 'value', {
+  color: { type: 'float' },
+});
 
 // EVENTS
 function render() {
