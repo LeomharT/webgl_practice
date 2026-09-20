@@ -74,12 +74,24 @@ const plane = new Mesh(planeGeometry, planeMaterial);
 scene.add(plane);
 
 const pane = new Pane({ title: 'Pane' });
-pane.addBinding(uniforms.uColorA, 'value', {
-  color: { type: 'float' },
-});
-pane.addBinding(uniforms.uColorB, 'value', {
-  color: { type: 'float' },
-});
+pane
+  .addBinding(uniforms.uColorA, 'value', {
+    color: { type: 'float' },
+  })
+  .on('change', (val) => {
+    uniforms.uColorA.value
+      .set(val.value.r, val.value.g, val.value.b)
+      .convertSRGBToLinear();
+  });
+pane
+  .addBinding(uniforms.uColorB, 'value', {
+    color: { type: 'float' },
+  })
+  .on('change', (val) => {
+    uniforms.uColorA.value
+      .set(val.value.r, val.value.g, val.value.b)
+      .convertSRGBToLinear();
+  });
 
 // EVENTS
 function render() {
