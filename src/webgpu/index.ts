@@ -18,19 +18,7 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
-import {
-  atan,
-  distance,
-  mix,
-  PI,
-  PI2,
-  positionLocal,
-  rotate,
-  time,
-  uv,
-  vec2,
-  vec3,
-} from 'three/tsl';
+import { atan, distance, PI, PI2, rand, uv, vec2, vec3 } from 'three/tsl';
 import {
   MeshBasicNodeMaterial,
   MeshStandardNodeMaterial,
@@ -71,7 +59,7 @@ const camera = new PerspectiveCamera(
   0.01,
   1000,
 );
-camera.position.set(0, 2, 3);
+camera.position.set(0, 0, 2);
 camera.lookAt(scene.position);
 
 const timer = new Timer();
@@ -114,18 +102,16 @@ planeMaterial.colorNode = vec3(distance(uv(), vec2(0.5)));
 
 const polarUv = uv().sub(0.5);
 const angle = atan(polarUv.x, polarUv.y).add(PI).div(PI2);
-planeMaterial.colorNode = mix(
-  vec3(1.0, 0.5, 0.34),
-  vec3(0.123, 0.223, 0.3),
-  angle,
-);
-planeMaterial.opacityNode = fade;
+planeMaterial.colorNode = vec3(angle);
 
-const p = rotate(positionLocal.xy, time.negate());
-planeMaterial.positionNode = vec3(p.x, p.y, positionLocal.z);
+//
+const subdivision = 10;
+const gridUv = uv().mul(subdivision).floor();
+// const random = hash(gridUv.x.mul(subdivision).add(gridUv.y));
+const random = rand(gridUv);
+planeMaterial.colorNode = vec3(random);
 
 const plane = new Mesh(planeGeometry, planeMaterial);
-plane.position.y = 1;
 scene.add(plane);
 
 // KORUS KNOT
