@@ -6,6 +6,7 @@ import {
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
+  ShaderChunk,
   ShaderMaterial,
   SRGBColorSpace,
   TextureLoader,
@@ -15,9 +16,12 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
+import random2D from './shader/include/random2D.glsl?raw';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
+
+(ShaderChunk as any)['random2D'] = random2D;
 
 const size = {
   width: window.innerWidth,
