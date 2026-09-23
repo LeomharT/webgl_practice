@@ -19,7 +19,18 @@ import {
 } from 'three';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import type { ParametersGroup } from 'three/examples/jsm/inspector/tabs/Parameters.js';
-import { atan, distance, PI, PI2, rand, uv, vec2, vec3 } from 'three/tsl';
+import {
+  atan,
+  distance,
+  mix,
+  PI,
+  PI2,
+  rand,
+  time,
+  uv,
+  vec2,
+  vec3,
+} from 'three/tsl';
 import {
   MeshBasicNodeMaterial,
   MeshStandardNodeMaterial,
@@ -101,8 +112,11 @@ const planeMaterial = new MeshBasicNodeMaterial({
   transparent: true,
 });
 
+//
 planeMaterial.colorNode = vec3(uv(), 1.0);
+//
 planeMaterial.colorNode = vec3(uv().x.mul(10).mod(2));
+//
 planeMaterial.colorNode = vec3(distance(uv(), vec2(0.5)));
 
 const polarUv = uv().sub(0.5);
@@ -111,10 +125,12 @@ planeMaterial.colorNode = vec3(angle);
 
 //
 const subdivision = 10;
-const gridUv = uv().mul(subdivision).floor();
+const gridUv = uv().mul(subdivision).floor().add(time.mul(3).floor());
 // const random = hash(gridUv.x.mul(subdivision).add(gridUv.y));
 const random = rand(gridUv);
-planeMaterial.colorNode = vec3(random);
+const mixC = mix(vec3(1.0, 0.0, 1.0), vec3(0.0, 1.0, 1.0), random);
+
+planeMaterial.colorNode = vec3(mixC);
 
 const plane = new Mesh(planeGeometry, planeMaterial);
 plane.position.y = 1;
