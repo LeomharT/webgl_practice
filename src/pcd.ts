@@ -1,13 +1,21 @@
 import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
+import { float, instancedBufferAttribute, vec3 } from 'three/tsl';
 import {
+  BoxGeometry,
+  BufferAttribute,
+  BufferGeometry,
   Color,
   PerspectiveCamera,
+  PointsNodeMaterial,
   Scene,
+  Sprite,
   Timer,
   WebGPURenderer,
 } from 'three/webgpu';
 import './style.css';
+
+CameraControls.install({ THREE: await import('three') });
 
 const sizes = {
   width: window.innerWidth,
@@ -38,12 +46,28 @@ const camera = new PerspectiveCamera(
 camera.position.set(0, 3, 3);
 camera.lookAt(scene.position);
 
-console.log(renderer.domElement);
-
 const controls = new CameraControls(camera, renderer.domElement);
 controls.enabled = true;
 
 const timer = new Timer();
+
+const boxGeometry = new BoxGeometry(3, 3, 3, 32, 32, 32);
+const geometry = new BufferGeometry();
+geometry.setAttribute('position', boxGeometry.attributes.position);
+
+const material = new PointsNodeMaterial({
+  positionNode: instancedBufferAttribute(
+    new BufferAttribute(boxGeometry.attributes.position.array, 3),
+  ),
+});
+material.colorNode = vec3(0.0, 1.0, 0.0);
+material.sizeNode = float(2);
+
+const points = new Sprite(material);
+
+scene.add(points);
+
+// Time
 
 function render() {
   // UPDATE
