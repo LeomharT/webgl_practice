@@ -1,8 +1,8 @@
 import { Colors } from '@blueprintjs/colors';
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import {
-  AdditiveBlending,
   AxesHelper,
+  Box3Helper,
   BufferGeometry,
   Color,
   PerspectiveCamera,
@@ -15,8 +15,8 @@ import {
 } from 'three';
 import { OrbitControls, PCDLoader } from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
-import fragmentShader from './shader/test/fragment.glsl?raw';
-import vertexShader from './shader/test/vertex.glsl?raw';
+import fragmentShader from './shader/pcd/fragment.glsl?raw';
+import vertexShader from './shader/pcd/vertex.glsl?raw';
 import './style.css';
 
 const sizes = {
@@ -42,46 +42,60 @@ el?.append(renderer.domElement);
 const scene = new Scene();
 scene.background = new Color(Colors.BLACK);
 
-const camera = new PerspectiveCamera(70, sizes.width / sizes.height, 0.01, 1000);
-camera.position.set(3, 3, 3);
+const camera = new PerspectiveCamera(
+  70,
+  sizes.width / sizes.height,
+  0.01,
+  1000,
+);
+camera.position.set(3, 5, 3);
 camera.lookAt(scene.position);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+controls.dampingFactor = 0.08;
 
 // WORLD
 const uniforms = {
-  uSize: new Uniform(0.07),
+  uSize: new Uniform(0.02),
   uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
-  uHeightRange: new Uniform(new Vector2(0, 0)),
+  uMinHeight: new Uniform(0),
+  uMaxHeight: new Uniform(0),
 };
 
-pcdLoader.load('/16f.pcd', (data) => {
-  console.log(data);
-
+pcdLoader.load('/test_16f.pcd', (data) => {
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', data.geometry.attributes.position);
-
   geometry.rotateX(-Math.PI / 2);
 
   const material = new ShaderMaterial({
     uniforms,
     vertexShader,
     fragmentShader,
-    depthWrite: false,
-    blending: AdditiveBlending,
   });
 
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+
+  if (geometry.boundingBox) {
+    uniforms.uMaxHeight.value = geometry.boundingBox.max.y;
+    uniforms.uMinHeight.value = -geometry.boundingBox.max.y;
+  }
+  if (geometry.boundingSphere) controls.target = geometry.boundingSphere.center;
+
   const points = new Points(geometry, material);
-  points.geometry.computeBoundingBox();
-  uniforms.uHeightRange.value.set(points.geometry.boundingBox!.min.y, points.geometry.boundingBox!.max.y);
-  console.log(uniforms);
 
   //   points.rotation.x = -Math.PI / 2;
   scene.add(points);
+
+  const boxHelper = new Box3Helper(
+    geometry.boundingBox!,
+    new Color(Colors.TURQUOISE3),
+  );
+  scene.add(boxHelper);
 });
 
-const axesHelper = new AxesHelper();
+const axesHelper = new AxesHelper(30);
 scene.add(axesHelper);
 
 const pane = new Pane({ title: 'Debug Pane' });
