@@ -63,7 +63,7 @@ const uniforms = {
   uMaxHeight: new Uniform(0),
 };
 
-pcdLoader.load('/test_16f.pcd', (data) => {
+pcdLoader.load('/park081302.pcd', (data) => {
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', data.geometry.attributes.position);
   geometry.rotateX(-Math.PI / 2);
