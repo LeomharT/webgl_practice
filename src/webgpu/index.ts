@@ -1,4 +1,5 @@
 import { Colors } from '@blueprintjs/colors';
+import CameraControls from 'camera-controls';
 import {
   AmbientLight,
   AxesHelper,
@@ -16,7 +17,6 @@ import {
   TextureLoader,
   Timer,
 } from 'three';
-import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import { atan, distance, PI, PI2, rand, uv, vec2, vec3 } from 'three/tsl';
 import {
@@ -26,6 +26,8 @@ import {
 } from 'three/webgpu';
 import simplex4DNoise from '../shader/include/simplex4DNoise.glsl?raw';
 import '../style.css';
+
+CameraControls.install({ THREE: await import('three') });
 
 (ShaderChunk as any)['simplex4DNoise'] = simplex4DNoise;
 
@@ -59,14 +61,16 @@ const camera = new PerspectiveCamera(
   0.01,
   1000,
 );
-camera.position.set(0, 0, 2);
+camera.position.set(0, 1, 2);
 camera.lookAt(scene.position);
 
 const timer = new Timer();
 timer.connect(document);
 
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
+const controls = new CameraControls(camera, renderer.domElement);
+controls.enabled = true;
+controls.dollySpeed = 0.2;
+controls.setTarget(0, 1, 0);
 
 const inspector = new Inspector();
 renderer.inspector = inspector;
@@ -112,6 +116,7 @@ const random = rand(gridUv);
 planeMaterial.colorNode = vec3(random);
 
 const plane = new Mesh(planeGeometry, planeMaterial);
+plane.position.y = 1;
 scene.add(plane);
 
 // KORUS KNOT
@@ -144,7 +149,7 @@ renderer.setAnimationLoop(render);
 function render() {
   // UPDATE
   timer.update();
-  controls.update();
+  controls.update(timer.getDelta());
   // RENDER
   renderer.render(scene, camera);
 }
