@@ -18,6 +18,7 @@ import {
   Timer,
 } from 'three';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
+import type { ParametersGroup } from 'three/examples/jsm/inspector/tabs/Parameters.js';
 import { atan, distance, PI, PI2, rand, uv, vec2, vec3 } from 'three/tsl';
 import {
   MeshBasicNodeMaterial,
@@ -143,6 +144,19 @@ axesHelper.frustumCulled = false;
 (axesHelper.material as LineBasicMaterial).polygonOffsetFactor = 0.3;
 
 scene.add(axesHelper);
+
+const camera_debug = inspector.createParameters('Camera') as ParametersGroup;
+camera_debug
+  .add(
+    {
+      reset: () => {
+        controls.setTarget(0, 1, 0, true);
+        controls.setPosition(0, 1, 2, true);
+      },
+    },
+    'reset',
+  )
+  .name('Reset Camera');
 
 renderer.setAnimationLoop(render);
 
