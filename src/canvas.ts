@@ -8,7 +8,7 @@ const sizes = {
 
 const el = document.querySelector('#root');
 
-const transform = { x: 0, y: 0 };
+const transform = { x: 0, y: 0, scale: 1 };
 
 const canvas = document.createElement('canvas');
 el?.append(canvas);
@@ -37,11 +37,11 @@ function clean() {
 }
 
 function draw() {
-  const MAJOR = 100;
+  const MAJOR = 100 * transform.scale;
   const MINOR = MAJOR / 5;
 
-  const MAJOR_COLOR = 'oklch(55.1% 0.027 264.364)';
-  const MINOR_COLOR = 'oklch(55.1% 0.027 264.364 / 0.3)';
+  const MAJOR_COLOR = 'oklch(55.1% 0.027 264.364 / 0.4)';
+  const MINOR_COLOR = 'oklch(55.1% 0.027 264.364 / 0.2)';
 
   const mod = (n: number, m: number) => ((n % m) + m) % m;
 
@@ -60,20 +60,18 @@ function draw() {
     if (dash) ctx.setLineDash([3, 3]);
 
     ctx.beginPath();
+    ctx.lineDashOffset = mod(-transform.y, 3 + 3);
     for (let x = mod(transform.x, step); x <= width; x += step) {
       ctx.moveTo(x, 0);
       ctx.lineTo(x, height);
-
-      ctx.lineDashOffset = mod(-transform.y, 3 + 3);
     }
     ctx.stroke();
 
     ctx.beginPath();
+    ctx.lineDashOffset = mod(-transform.x, 3 + 3);
     for (let y = mod(transform.y, step); y <= height; y += step) {
       ctx.moveTo(0, y);
       ctx.lineTo(width, y);
-
-      ctx.lineDashOffset = mod(-transform.x, 3 + 3);
     }
     ctx.stroke();
 
@@ -127,3 +125,22 @@ window.addEventListener('pointerup', () => {
 });
 
 window.addEventListener('resize', resize);
+
+window.addEventListener(
+  'wheel',
+  (e) => {
+    e.preventDefault();
+    const next = Math.min(
+      100,
+      Math.max(0.2, transform.scale * Math.exp(-e.deltaY * 0.001)),
+    );
+
+    const k = next / transform.scale;
+    transform.x = e.clientX - (e.clientX - transform.x) * k;
+    transform.y = e.clientY - (e.clientY - transform.y) * k;
+
+    transform.scale = next;
+    render();
+  },
+  { passive: false },
+);
