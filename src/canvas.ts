@@ -1,5 +1,3 @@
-import { Colors } from '@blueprintjs/colors';
-
 const COLORS = 'oklch(55.1% 0.027 264.364)';
 
 const sizes = {
@@ -25,7 +23,6 @@ function resize() {
   canvas.style.width = sizes.width + 'px';
   canvas.style.height = sizes.height + 'px';
 
-  clean();
   render();
 }
 
@@ -40,32 +37,56 @@ function clean() {
 }
 
 function draw() {
-  const CELL_SIZE = 100;
-  const { width, height, pixelRatio } = sizes;
+  const MAJOR = 100;
+  const MINOR = MAJOR / 5;
+
+  const MAJOR_COLOR = 'oklch(55.1% 0.027 264.364)';
+  const MINOR_COLOR = 'oklch(55.1% 0.027 264.364 / 0.3)';
+
+  const mod = (n: number, m: number) => ((n % m) + m) % m;
+
+  function strokeGrid(
+    step: number,
+    color: string,
+    lineWidth: number,
+    dash?: boolean,
+  ) {
+    ctx.save();
+
+    const { width, height } = sizes;
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    if (dash) ctx.setLineDash([3, 3]);
+
+    ctx.beginPath();
+    for (let x = mod(transform.x, step); x <= width; x += step) {
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+
+      ctx.lineDashOffset = mod(-transform.y, 3 + 3);
+    }
+    ctx.stroke();
+
+    ctx.beginPath();
+    for (let y = mod(transform.y, step); y <= height; y += step) {
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+
+      ctx.lineDashOffset = mod(-transform.x, 3 + 3);
+    }
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  const { pixelRatio } = sizes;
 
   ctx.save();
   ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = Colors.ROSE1;
-
-  const offsetX = ((transform.x % CELL_SIZE) + CELL_SIZE) % CELL_SIZE;
-  const offsetY = ((transform.y % CELL_SIZE) + CELL_SIZE) % CELL_SIZE;
-
-  ctx.beginPath();
-
-  for (let y = offsetY; y <= height; y += CELL_SIZE) {
-    ctx.moveTo(0, y);
-    ctx.lineTo(width, y);
-  }
-
-  for (let x = offsetX; x <= width; x += CELL_SIZE) {
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, height);
-  }
-
-  ctx.stroke();
-  ctx.restore();
+  strokeGrid(MINOR, MINOR_COLOR, 1, true); // 先画细线
+  strokeGrid(MAJOR, MAJOR_COLOR, 1); // 再画粗线，盖在上面
 
   ctx.restore();
 }
