@@ -12,7 +12,7 @@ el?.append(canvas);
 
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
-const MAJOR = 'oklch(70.4% 0.04 256.788)';
+const MAJOR = 'oklch(92.8% 0.006 264.531)';
 
 const prev = { x: 0, y: 0 };
 const transform = { x: 0, y: 0, scale: 1 };
@@ -31,7 +31,12 @@ function draw() {
   ctx.save();
 
   ctx.fillStyle = MAJOR;
-  ctx.fillRect(transform.x, transform.y, 50, 50);
+  ctx.fillRect(
+    transform.x,
+    transform.y,
+    50 * transform.scale,
+    50 * transform.scale,
+  );
 
   ctx.restore();
 }
@@ -83,3 +88,24 @@ window.addEventListener('pointermove', (e) => {
 
   render();
 });
+
+window.addEventListener(
+  'wheel',
+  (e) => {
+    e.preventDefault();
+
+    const next = Math.min(
+      100,
+      Math.max(0.2, transform.scale * Math.exp(-e.deltaY * 0.001)),
+    );
+
+    const k = next / transform.scale;
+    transform.x = e.clientX - (e.clientX - transform.x) * k;
+    transform.y = e.clientY - (e.clientY - transform.y) * k;
+
+    transform.scale = next;
+
+    render();
+  },
+  { passive: false },
+);
