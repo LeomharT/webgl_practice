@@ -13,6 +13,7 @@ el?.append(canvas);
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
 const MAJOR_COLOR = 'oklch(92.8% 0.006 264.531)';
+const MINOR_COLOR = 'oklch(70.7% 0.022 261.325)';
 
 const prev = { x: 0, y: 0 };
 const transform = { x: 0, y: 0, scale: 1 };
@@ -29,13 +30,13 @@ function clean() {
 
 const mod = (n: number, m: number) => ((n % m) + m) % m;
 
-function strokeGrid(step: number, dash?: [number, number]) {
+function strokeGrid(step: number, color: string, dash?: [number, number]) {
   ctx.save();
 
   // View port size
   const { width, height } = sizes;
 
-  ctx.strokeStyle = MAJOR_COLOR;
+  ctx.strokeStyle = color;
   if (dash) ctx.setLineDash(dash);
 
   ctx.beginPath();
@@ -65,8 +66,8 @@ function draw() {
   const MAJOR_CELL = 100 * transform.scale;
   const MINOR_CELL = MAJOR_CELL / 5;
 
-  strokeGrid(MAJOR_CELL);
-  strokeGrid(MINOR_CELL, [3, 3]);
+  strokeGrid(MAJOR_CELL, MAJOR_COLOR);
+  if (transform.scale > 0.5) strokeGrid(MINOR_CELL, MINOR_COLOR, [3, 3]);
 
   ctx.restore();
 }
