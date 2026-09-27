@@ -12,8 +12,8 @@ el?.append(canvas);
 
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
-const MAJOR_COLOR = 'oklch(92.8% 0.006 264.531)';
-const MINOR_COLOR = 'oklch(70.7% 0.022 261.325)';
+const MAJOR_COLOR = 'oklch(55.4% 0.046 257.417)';
+const MINOR_COLOR = 'oklch(37.2% 0.044 257.287)';
 
 const prev = { x: 0, y: 0 };
 const transform = { x: 0, y: 0, scale: 1 };
