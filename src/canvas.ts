@@ -125,10 +125,7 @@ window.addEventListener(
   (e) => {
     e.preventDefault();
 
-    const next = Math.min(
-      100,
-      Math.max(0.2, transform.scale * Math.exp(-e.deltaY * 0.001)),
-    );
+    const next = clamp(transform.scale * Math.exp(-e.deltaY * 0.001), 0.2, 100);
 
     const k = next / transform.scale;
     transform.x = e.clientX - (e.clientX - transform.x) * k;
@@ -140,3 +137,6 @@ window.addEventListener(
   },
   { passive: false },
 );
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.max(min, Math.min(value, max));
