@@ -15,6 +15,7 @@ import {
   TextureLoader,
   Timer,
   Uniform,
+  Vector2,
   WebGLRenderer,
   WebGLRenderTarget,
   type IUniform,
@@ -57,7 +58,7 @@ camera.position.set(0, 0.2, 0.3);
 camera.lookAt(scene.position);
 
 const controls = new CameraControls(camera, renderer.domElement);
-controls.dollySpeed = 1;
+controls.dollySpeed = 0.8;
 
 const timer = new Timer();
 
@@ -82,6 +83,8 @@ const reflectorMaterial = floorReflector.material as ShaderMaterial;
 scene.add(floorReflector);
 
 const uniforms = {
+  uTime: new Uniform(0),
+  uResolution: new Uniform(new Vector2(sizes.width, sizes.height)),
   uTextureMatrix: reflectorMaterial.uniforms.textureMatrix,
   uReflectorTexture: reflectorMaterial.uniforms.tDiffuse as IUniform<Texture>,
   uNormalTexture: new Uniform(normalTexture),
@@ -111,6 +114,10 @@ sphere.position.y = 0.12;
 scene.add(sphere);
 
 const pane = new Pane({ title: 'Debug Params' });
+pane.addBinding(sphereMaterial, 'color', {
+  color: { type: 'float' },
+});
+
 pane.addBinding(uniforms.uBlurStrength, 'value', {
   label: 'Blur Strength',
   step: 0.1,
@@ -134,7 +141,9 @@ function renderScene() {
 function render() {
   // UPDATE
   timer.update();
-  controls.update(timer.getDelta());
+  const dt = timer.getDelta();
+  controls.update(dt);
+  uniforms.uTime.value += dt;
   // RENDER
   renderScene();
   renderer.render(scene, camera);
@@ -146,6 +155,8 @@ render();
 window.addEventListener('resize', () => {
   sizes.width = window.innerWidth;
   sizes.height = window.innerHeight;
+
+  uniforms.uResolution.value.set(sizes.width, sizes.height);
 
   renderer.setSize(sizes.width, sizes.height);
 
