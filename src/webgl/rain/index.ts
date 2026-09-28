@@ -2,6 +2,7 @@ import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
 import {
   IcosahedronGeometry,
+  MathUtils,
   Mesh,
   MeshBasicMaterial,
   NearestFilter,
@@ -59,6 +60,8 @@ camera.lookAt(scene.position);
 
 const controls = new CameraControls(camera, renderer.domElement);
 controls.dollySpeed = 0.8;
+controls.minPolarAngle = 0;
+controls.maxPolarAngle = Math.PI / 2;
 
 const timer = new Timer();
 
@@ -110,7 +113,7 @@ const sphereMaterial = new MeshBasicMaterial({
   color: Colors.BLUE3,
 });
 const sphere = new Mesh(sphereGeometry, sphereMaterial);
-sphere.position.y = 0.12;
+sphere.position.y = 1;
 scene.add(sphere);
 
 const pane = new Pane({ title: 'Debug Params' });
@@ -142,6 +145,10 @@ function render() {
   // UPDATE
   timer.update();
   const dt = timer.getDelta();
+
+  const t = 1.0 - Math.exp(-5.0 * dt);
+  sphere.position.y = MathUtils.lerp(sphere.position.y, 0.1, t);
+
   controls.update(dt);
   uniforms.uTime.value += dt;
   // RENDER
