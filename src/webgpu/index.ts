@@ -125,12 +125,13 @@ planeMaterial.colorNode = vec3(angle);
 
 //
 const subdivision = 10;
-const gridUv = uv().mul(subdivision).floor().add(time.mul(3).floor());
+const gridUv = uv().mul(subdivision).floor().add(time.floor());
 // const random = hash(gridUv.x.mul(subdivision).add(gridUv.y));
 const random = rand(gridUv);
 const mixC = mix(vec3(1.0, 0.0, 1.0), vec3(0.0, 1.0, 1.0), random);
-
 planeMaterial.colorNode = vec3(mixC);
+
+//
 
 const plane = new Mesh(planeGeometry, planeMaterial);
 plane.position.y = 1;

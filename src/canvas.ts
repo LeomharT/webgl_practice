@@ -1,5 +1,8 @@
 import { Colors } from '@blueprintjs/colors';
 
+const clamp = (value: number, minVal: number, maxVal: number) =>
+  Math.max(minVal, Math.min(value, maxVal));
+
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
@@ -12,11 +15,22 @@ el?.append(canvas);
 
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
-const MAJOR_COLOR = 'oklch(55.1% 0.027 264.364)';
-const MINOR_COLOR = 'oklch(44.6% 0.03 256.802)';
-
 const prev = { x: 0, y: 0 };
 const transform = { x: 0, y: 0, scale: 1 };
+
+const MAJOR_COLOR = Colors.DARK_GRAY5;
+
+function resize() {
+  sizes.width = window.innerWidth;
+  sizes.height = window.innerHeight;
+
+  canvas.width = sizes.width * sizes.pixelRatio;
+  canvas.height = sizes.height * sizes.pixelRatio;
+  canvas.style.width = sizes.width + 'px';
+  canvas.style.height = sizes.height + 'px';
+  render();
+}
+resize();
 
 function clean() {
   ctx.save();
@@ -28,28 +42,25 @@ function clean() {
   ctx.restore();
 }
 
-const mod = (n: number, m: number) => ((n % m) + m) % m;
-
-function strokeGrid(step: number, color: string, dash?: [number, number]) {
+function renderGrid(color: string) {
   ctx.save();
 
-  // View port size
   const { width, height } = sizes;
 
+  const MAJOR_CELL = 100 * transform.scale;
+
+  ctx.setTransform(sizes.pixelRatio, 0, 0, sizes.pixelRatio, 0, 0);
   ctx.strokeStyle = color;
-  if (dash) ctx.setLineDash(dash);
 
   ctx.beginPath();
-  ctx.lineDashOffset = -transform.y % (3 + 3);
-  for (let x = transform.x % step; x <= width; x += step) {
+  for (let x = transform.x % MAJOR_CELL; x < width; x += MAJOR_CELL) {
     ctx.moveTo(x, 0);
     ctx.lineTo(x, height);
   }
   ctx.stroke();
 
   ctx.beginPath();
-  ctx.lineDashOffset = -transform.x % (3 + 3);
-  for (let y = transform.y % step; y <= height; y += step) {
+  for (let y = transform.y % MAJOR_CELL; y < height; y += MAJOR_CELL) {
     ctx.moveTo(0, y);
     ctx.lineTo(width, y);
   }
@@ -58,40 +69,27 @@ function strokeGrid(step: number, color: string, dash?: [number, number]) {
   ctx.restore();
 }
 
-function draw() {
+function renderSquire() {
   ctx.save();
 
   ctx.setTransform(sizes.pixelRatio, 0, 0, sizes.pixelRatio, 0, 0);
-
-  const MAJOR_CELL = 100 * transform.scale;
-  const MINOR_CELL = MAJOR_CELL / 5;
-
-  strokeGrid(MAJOR_CELL, MAJOR_COLOR);
-  if (transform.scale > 0.5) strokeGrid(MINOR_CELL, MINOR_COLOR, [3, 3]);
+  ctx.fillStyle = Colors.ROSE1;
+  ctx.fillRect(
+    transform.x,
+    transform.y,
+    100 * transform.scale,
+    100 * transform.scale,
+  );
 
   ctx.restore();
 }
 
 function render() {
   clean();
-  draw();
+
+  renderGrid(MAJOR_COLOR);
+  renderSquire();
 }
-
-function resize() {
-  sizes.width = window.innerWidth;
-  sizes.height = window.innerHeight;
-
-  canvas.width = sizes.width * sizes.pixelRatio;
-  canvas.height = sizes.height * sizes.pixelRatio;
-
-  canvas.style.width = sizes.width + 'px';
-  canvas.style.height = sizes.height + 'px';
-
-  render();
-}
-resize();
-
-window.addEventListener('resize', resize);
 
 let isPending = false;
 
@@ -104,8 +102,9 @@ window.addEventListener('pointerdown', (e) => {
   prev.y = e.clientY;
 });
 
-window.addEventListener('pointerup', () => {
+window.addEventListener('pointerup', (e) => {
   isPending = false;
+  canvas.releasePointerCapture(e.pointerId);
 });
 
 window.addEventListener('pointermove', (e) => {
@@ -120,11 +119,12 @@ window.addEventListener('pointermove', (e) => {
   render();
 });
 
+window.addEventListener('resize', resize);
+
 window.addEventListener(
   'wheel',
   (e) => {
     e.preventDefault();
-
     const next = clamp(transform.scale * Math.exp(-e.deltaY * 0.001), 0.2, 100);
 
     const k = next / transform.scale;
@@ -137,6 +137,3 @@ window.addEventListener(
   },
   { passive: false },
 );
-
-const clamp = (value: number, min: number, max: number) =>
-  Math.max(min, Math.min(value, max));
