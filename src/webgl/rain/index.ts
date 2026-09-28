@@ -59,9 +59,11 @@ camera.position.set(0, 0.2, 0.3);
 camera.lookAt(scene.position);
 
 const controls = new CameraControls(camera, renderer.domElement);
-controls.dollySpeed = 0.8;
+controls.dollySpeed = 0.4;
 controls.minPolarAngle = 0;
 controls.maxPolarAngle = Math.PI / 2;
+controls.maxDistance = 2;
+controls.minDistance = 0.1;
 
 const timer = new Timer();
 
@@ -74,6 +76,9 @@ const frameRenderTarget = new WebGLRenderTarget(sizes.width, sizes.height, {
 const opacityTexture = textureLoader.load('opacity.jpg');
 const normalTexture = textureLoader.load('normal.png');
 const roughnessTexture = textureLoader.load('roughness.jpg');
+roughnessTexture.anisotropy = 16;
+roughnessTexture.generateMipmaps = true;
+roughnessTexture.minFilter = NearestMipMapNearestFilter;
 
 const floorGeometry = new PlaneGeometry(1, 1, 32, 32);
 const floorReflector = new Reflector(floorGeometry, {
@@ -93,7 +98,7 @@ const uniforms = {
   uNormalTexture: new Uniform(normalTexture),
   uOpacityTexture: new Uniform(opacityTexture),
   uRoughnessTexture: new Uniform(roughnessTexture),
-  uBlurStrength: new Uniform(0.124),
+  uBlurStrength: new Uniform(6.37),
   uNormalBias: new Uniform(0.6),
 };
 uniforms.uReflectorTexture.value.generateMipmaps = true;
@@ -123,13 +128,13 @@ pane.addBinding(sphereMaterial, 'color', {
 
 pane.addBinding(uniforms.uBlurStrength, 'value', {
   label: 'Blur Strength',
-  step: 0.1,
+  step: 0.01,
   min: 1,
   max: 20,
 });
 pane.addBinding(uniforms.uNormalBias, 'value', {
   label: 'Normal Bias',
-  step: 0.1,
+  step: 0.01,
   min: 0,
   max: 1,
 });
