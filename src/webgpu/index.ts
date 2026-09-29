@@ -23,6 +23,7 @@ import {
   atan,
   distance,
   mix,
+  mx_noise_float,
   PI,
   PI2,
   rand,
@@ -132,6 +133,9 @@ const mixC = mix(vec3(1.0, 0.0, 1.0), vec3(0.0, 1.0, 1.0), random);
 planeMaterial.colorNode = vec3(mixC);
 
 //
+const perlinUv = uv().mul(5);
+const perlinNoise = mx_noise_float(perlinUv);
+planeMaterial.colorNode = vec3(perlinNoise.mul(5).add(time).fract().step(0.8));
 
 const plane = new Mesh(planeGeometry, planeMaterial);
 plane.position.y = 1;
