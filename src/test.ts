@@ -1,4 +1,5 @@
 import { Colors } from '@blueprintjs/colors';
+import CameraControls from 'camera-controls';
 import {
   Color,
   Mesh,
@@ -14,14 +15,17 @@ import {
   Uniform,
   WebGLRenderer,
 } from 'three';
-import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { Pane } from 'tweakpane';
 import random2D from './shader/include/random2D.glsl?raw';
+import simplex2DNoise from './shader/include/simplex2DNoise.glsl?raw';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
 
+CameraControls.install({ THREE: await import('three') });
+
 (ShaderChunk as any)['random2D'] = random2D;
+(ShaderChunk as any)['simplex2DNoise'] = simplex2DNoise;
 
 const size = {
   width: window.innerWidth,
@@ -55,8 +59,8 @@ const camera = new PerspectiveCamera(70, size.width / size.height, 0.01, 1000);
 camera.position.set(0, 0, 1);
 camera.lookAt(scene.position);
 
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
+const controls = new CameraControls(camera, renderer.domElement);
+controls.dollySpeed = 0.5;
 
 const timer = new Timer();
 
@@ -101,8 +105,10 @@ pane
 function render() {
   // Update
   timer.update();
-  controls.update();
-  uniforms.uTime.value += timer.getDelta();
+  const dt = timer.getDelta();
+
+  controls.update(dt);
+  uniforms.uTime.value += dt;
   // Render
   renderer.render(scene, camera);
   // Animation
