@@ -3,6 +3,8 @@ import { Colors } from '@blueprintjs/colors';
 const clamp = (value: number, minVal: number, maxVal: number) =>
   Math.max(minVal, Math.min(value, maxVal));
 
+const mod = (n: number, m: number) => ((n % m) + m) % m;
+
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
@@ -19,6 +21,7 @@ const prev = { x: 0, y: 0 };
 const transform = { x: 0, y: 0, scale: 1 };
 
 const MAJOR_COLOR = Colors.DARK_GRAY5;
+const MINOR_COLOR = Colors.DARK_GRAY2;
 
 function resize() {
   sizes.width = window.innerWidth;
@@ -42,25 +45,24 @@ function clean() {
   ctx.restore();
 }
 
-function renderGrid(color: string) {
+function renderGrid(step: number, color: string, dash?: [number, number]) {
   ctx.save();
 
   const { width, height } = sizes;
 
-  const MAJOR_CELL = 100 * transform.scale;
-
   ctx.setTransform(sizes.pixelRatio, 0, 0, sizes.pixelRatio, 0, 0);
   ctx.strokeStyle = color;
+  if (dash) ctx.setLineDash(dash);
 
   ctx.beginPath();
-  for (let x = transform.x % MAJOR_CELL; x < width; x += MAJOR_CELL) {
+  for (let x = transform.x % step; x < width; x += step) {
     ctx.moveTo(x, 0);
     ctx.lineTo(x, height);
   }
   ctx.stroke();
 
   ctx.beginPath();
-  for (let y = transform.y % MAJOR_CELL; y < height; y += MAJOR_CELL) {
+  for (let y = transform.y % step; y < height; y += step) {
     ctx.moveTo(0, y);
     ctx.lineTo(width, y);
   }
@@ -87,7 +89,12 @@ function renderSquire() {
 function render() {
   clean();
 
-  renderGrid(MAJOR_COLOR);
+  const MAJOR_CELL = 100 * transform.scale;
+  const MINOR_CELL = MAJOR_CELL / 5;
+
+  renderGrid(MINOR_CELL, MINOR_COLOR, [3, 3]);
+  renderGrid(MAJOR_CELL, MAJOR_COLOR);
+
   renderSquire();
 }
 
