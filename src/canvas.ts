@@ -22,6 +22,7 @@ const transform = { x: 0, y: 0, scale: 1 };
 
 const MAJOR_COLOR = Colors.DARK_GRAY5;
 const MINOR_COLOR = Colors.DARK_GRAY2;
+const MINOR_COLOR_LIGHT = Colors.DARK_GRAY1;
 
 function resize() {
   sizes.width = window.innerWidth;
@@ -92,7 +93,12 @@ function render() {
   const MAJOR_CELL = 100 * transform.scale;
   const MINOR_CELL = MAJOR_CELL / 5;
 
-  renderGrid(MINOR_CELL, MINOR_COLOR, [3, 3]);
+  if (transform.scale > 0.5)
+    renderGrid(
+      MINOR_CELL,
+      transform.scale > 0.7 ? MINOR_COLOR : MINOR_COLOR_LIGHT,
+      [3, 3],
+    );
   renderGrid(MAJOR_CELL, MAJOR_COLOR);
 
   renderSquire();
