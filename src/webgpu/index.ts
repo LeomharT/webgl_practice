@@ -5,7 +5,6 @@ import {
   AxesHelper,
   Color,
   DirectionalLight,
-  DoubleSide,
   LineBasicMaterial,
   Mesh,
   PCFShadowMap,
@@ -21,9 +20,13 @@ import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import type { ParametersGroup } from 'three/examples/jsm/inspector/tabs/Parameters.js';
 import {
   atan,
+  cos,
   distance,
+  Fn,
   mix,
+  mul,
   mx_noise_float,
+  mx_worley_noise_float,
   PI,
   PI2,
   rand,
@@ -107,11 +110,8 @@ floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-const planeGeometry = new PlaneGeometry(2, 2, 32, 32);
-const planeMaterial = new MeshBasicNodeMaterial({
-  side: DoubleSide,
-  transparent: true,
-});
+const planeGeometry = new PlaneGeometry(2, 2, 1, 1);
+const planeMaterial = new MeshBasicNodeMaterial({});
 
 //
 planeMaterial.colorNode = vec3(uv(), 1.0);
@@ -136,6 +136,32 @@ planeMaterial.colorNode = vec3(mixC);
 const perlinUv = uv().mul(5);
 const perlinNoise = mx_noise_float(perlinUv);
 planeMaterial.colorNode = vec3(perlinNoise.mul(5).add(time).fract().step(0.8));
+
+// https://iquilezles.org/articles/palettes/
+// cosine based palette, 4 vec3 params
+const palette = /*@__PURE__*/ Fn(
+  ([t, a, b, c, d]: any) => {
+    return a.add(b.mul(cos(mul(6.283185, c.mul(t).add(d)))));
+  },
+  { t: 'float', a: 'vec3', b: 'vec3', c: 'vec3', d: 'vec3', return: 'vec3' },
+);
+
+const worleyUv = uv().mul(10);
+const worleyNoise = mx_worley_noise_float(vec3(worleyUv, time));
+planeMaterial.colorNode = vec3(worleyNoise);
+// planeMaterial.colorNode = palette(
+//   worleyNoise,
+//   vec3(0.5, 0.3, 0.4),
+//   vec3(0.9, 0.5, 0.4),
+//   vec3(1.0, 1.0, 1.0),
+//   vec3(0.0, 0.1, 0.2),
+// );
+
+//
+
+const causticsNoise = mx_worley_noise_float(uv().mul(10));
+
+planeMaterial.colorNode = vec3(causticsNoise);
 
 const plane = new Mesh(planeGeometry, planeMaterial);
 plane.position.y = 1;
