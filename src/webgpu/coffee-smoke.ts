@@ -2,10 +2,15 @@ import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
+import { Fn, positionLocal, rotate, time } from 'three/tsl';
 import {
   Color,
+  DoubleSide,
+  Mesh,
+  MeshBasicNodeMaterial,
   PCFShadowMap,
   PerspectiveCamera,
+  PlaneGeometry,
   Scene,
   Timer,
   WebGPURenderer,
@@ -40,7 +45,7 @@ const camera = new PerspectiveCamera(
   0.01,
   1000,
 );
-camera.position.set(2, 4, 5);
+camera.position.set(2, 4, 8);
 camera.lookAt(scene.position);
 
 const inspector = new Inspector();
@@ -54,8 +59,32 @@ const timer = new Timer();
 
 gltfLoader.load('bakedModel.glb', (data) => {
   const model = data.scene;
-
   scene.add(model);
+
+  const geometry = new PlaneGeometry(1, 1, 16, 64);
+  geometry.translate(0, 0.5, 0);
+  geometry.scale(1.5, 6, 1.5);
+
+  const material = new MeshBasicNodeMaterial({
+    depthWrite: false,
+    side: DoubleSide,
+    transparent: true,
+    wireframe: true,
+  });
+
+  // Position
+  material.positionNode = Fn(() => {
+    const position = positionLocal;
+
+    const angle = position.y.add(time.negate()).sin();
+    position.xz.assign(rotate(position.xz, angle));
+
+    return position;
+  })();
+
+  const mesh = new Mesh(geometry, material);
+  mesh.position.y = 1.83;
+  scene.add(mesh);
 });
 
 // Scene
