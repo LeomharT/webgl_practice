@@ -2,7 +2,16 @@ import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
-import { Fn, positionLocal, rotate, time } from 'three/tsl';
+import {
+  Fn,
+  mx_noise_float,
+  mx_noise_vec3,
+  positionLocal,
+  time,
+  uv,
+  vec2,
+  vec3,
+} from 'three/tsl';
 import {
   Color,
   DoubleSide,
@@ -69,18 +78,36 @@ gltfLoader.load('bakedModel.glb', (data) => {
     depthWrite: false,
     side: DoubleSide,
     transparent: true,
-    wireframe: true,
+    wireframe: false,
   });
 
   // Position
   material.positionNode = Fn(() => {
     const position = positionLocal;
 
-    const angle = position.y.add(time.negate()).sin();
-    position.xz.assign(rotate(position.xz, angle));
+    const angle = position.y
+      .mul(0.3)
+      .add(time.negate().mul(0.2))
+      .sin()
+      .mul(3);
 
+    const windCoordinates = position
+      .sub(vec3(0, time.mul(0.3), 0))
+      .mul(0.4);
+    const windStrength = uv().y.mul(5);
+    const wind = mx_noise_vec3(windCoordinates).mul(windStrength);
+
+    // position.addAssign(wind);
+    // position.xz.assign(rotate(position.xz, angle));
     return position;
   })();
+
+  const smoke = mx_noise_float(
+    uv()
+      .mul(vec2(3, 2))
+      .sub(vec2(0, time.mul(0.1))),
+  );
+  material.opacityNode = smoke;
 
   const mesh = new Mesh(geometry, material);
   mesh.position.y = 1.83;
