@@ -2,6 +2,9 @@ varying vec2 vUv;
 
 uniform float uTime;
 
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+
 #include <worley3D>
 
 void main() {
@@ -13,7 +16,9 @@ void main() {
   vec3 worleyInput = vec3(uv, uTime * 0.2);
   vec2 noise = worley(worleyInput, 1.0, false);
 
-  color = vec3(noise.x);
+  float worley = noise.x;
+
+  color = mix(uColorA, uColorB, worley);
 
   gl_FragColor = vec4(color, 1.0);
 }
