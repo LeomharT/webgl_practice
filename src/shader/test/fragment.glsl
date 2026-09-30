@@ -2,21 +2,18 @@ varying vec2 vUv;
 
 uniform float uTime;
 
-#include <random2D>
-#include <simplex2DNoise>
+#include <worley3D>
 
 void main() {
   vec3 color = vec3(1.0);
+
   vec2 uv = vUv;
-  uv *= 5.0;
+  uv *= 10.0;
 
-  float noise = snoise(uv);
-  noise *= 5.0;
-  noise += uTime;
-  noise = fract(noise);
-  noise = step(noise, 0.8);
+  vec3 worleyInput = vec3(uv, uTime * 0.2);
+  vec2 noise = worley(worleyInput, 1.0, false);
 
-  color = vec3(1.0 - noise);
+  color = vec3(noise.x);
 
   gl_FragColor = vec4(color, 1.0);
 }

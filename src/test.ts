@@ -18,6 +18,8 @@ import {
 import { Pane } from 'tweakpane';
 import random2D from './shader/include/random2D.glsl?raw';
 import simplex2DNoise from './shader/include/simplex2DNoise.glsl?raw';
+import worley2D from './shader/include/worley2D.glsl?raw';
+import worley3D from './shader/include/worley3D.glsl?raw';
 import fragmentShader from './shader/test/fragment.glsl?raw';
 import vertexShader from './shader/test/vertex.glsl?raw';
 import './style.css';
@@ -26,6 +28,8 @@ CameraControls.install({ THREE: await import('three') });
 
 (ShaderChunk as any)['random2D'] = random2D;
 (ShaderChunk as any)['simplex2DNoise'] = simplex2DNoise;
+(ShaderChunk as any)['worley2D'] = worley2D;
+(ShaderChunk as any)['worley3D'] = worley3D;
 
 const size = {
   width: window.innerWidth,
@@ -61,6 +65,7 @@ camera.lookAt(scene.position);
 
 const controls = new CameraControls(camera, renderer.domElement);
 controls.dollySpeed = 0.5;
+controls.maxDistance = 2;
 
 const timer = new Timer();
 
