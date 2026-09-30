@@ -4,9 +4,12 @@ import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import {
   Fn,
+  min,
+  mul,
   mx_noise_float,
   mx_noise_vec3,
   positionLocal,
+  rotate,
   time,
   uv,
   vec2,
@@ -79,26 +82,21 @@ gltfLoader.load('bakedModel.glb', (data) => {
     side: DoubleSide,
     transparent: true,
     wireframe: false,
+    color: 0x7e583a
   });
 
   // Position
   material.positionNode = Fn(() => {
     const position = positionLocal;
 
-    const angle = position.y
-      .mul(0.3)
-      .add(time.negate().mul(0.2))
-      .sin()
-      .mul(3);
+    const angle = position.y.mul(0.3).add(time.negate().mul(0.2)).sin().mul(3);
 
-    const windCoordinates = position
-      .sub(vec3(0, time.mul(0.3), 0))
-      .mul(0.4);
+    const windCoordinates = position.sub(vec3(0, time.mul(0.3), 0)).mul(0.4);
     const windStrength = uv().y.mul(5);
     const wind = mx_noise_vec3(windCoordinates).mul(windStrength);
 
-    // position.addAssign(wind);
-    // position.xz.assign(rotate(position.xz, angle));
+    position.addAssign(wind);
+    position.xz.assign(rotate(position.xz, angle));
     return position;
   })();
 
@@ -107,7 +105,14 @@ gltfLoader.load('bakedModel.glb', (data) => {
       .mul(vec2(3, 2))
       .sub(vec2(0, time.mul(0.1))),
   );
-  material.opacityNode = smoke;
+  const edgeFade = min(
+    uv().y.mul(10),
+    uv().y.oneMinus(),
+    uv().x.mul(5),
+    uv().x.oneMinus().mul(5)
+  );
+
+  material.opacityNode = mul(smoke, edgeFade).clamp(0, 1);
 
   const mesh = new Mesh(geometry, material);
   mesh.position.y = 1.83;
