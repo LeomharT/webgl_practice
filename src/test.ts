@@ -47,6 +47,9 @@ floorTexture.colorSpace = SRGBColorSpace;
 const noiseTexture = textureLoader.load('noiseTexture.png');
 noiseTexture.wrapS = noiseTexture.wrapT = MirroredRepeatWrapping;
 
+const uvCheck = textureLoader.load('uv_checker.png');
+uvCheck.colorSpace = SRGBColorSpace;
+
 // BASE
 const renderer = new WebGLRenderer({
   alpha: true,
@@ -73,6 +76,7 @@ const uniforms = {
   uTime: new Uniform(0),
   uColorA: new Uniform(new Color(Colors.GREEN5)),
   uColorB: new Uniform(new Color(Colors.BLACK)),
+  uUvChecker: new Uniform(uvCheck)
 };
 
 // WORLD
