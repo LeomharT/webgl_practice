@@ -13,7 +13,7 @@ void main() {
   vec3 color = vec3(1.0);
 
   vec2 uv = vUv;
-  uv *= 20.0;
+  uv *= 10.0;
 
   vec4 textureColor = texture2D(uUvChecker, vUv);
 
@@ -21,7 +21,7 @@ void main() {
   vec2 noise = worley(worleyInput, 1.0, false);
 
   float worley = noise.x;
-  worley = pow(worley, 2.0);
+  worley = pow(worley, 4.0);
 
   color = vec3(worley);
 
