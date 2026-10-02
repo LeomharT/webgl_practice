@@ -17,13 +17,13 @@ void main() {
 
   vec4 textureColor = texture2D(uUvChecker, vUv);
 
-  vec3 worleyInput = vec3(uv, 0.0);
+  vec3 worleyInput = vec3(uv, uTime);
   vec2 noise = worley(worleyInput, 1.0, false);
 
   float worley = noise.x;
   worley = pow(worley, 2.0);
 
-  color = mix(textureColor.rgb, uColorA, worley);
+  color = vec3(worley);
 
   gl_FragColor = vec4(color, 1.0);
 }
