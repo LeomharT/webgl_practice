@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import { distance, texture, uv, vec2 } from 'three/tsl';
 import {
+  ACESFilmicToneMapping,
   Color,
   DirectionalLight,
   Mesh,
@@ -36,6 +37,7 @@ renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(sizes.pixelRatio);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = PCFShadowMap;
+renderer.toneMapping = ACESFilmicToneMapping;
 el?.append(renderer.domElement);
 
 const scene = new Scene();
@@ -47,7 +49,7 @@ const camera = new PerspectiveCamera(
   0.01,
   1000,
 );
-camera.position.set(2, 2, 3);
+camera.position.set(6, 4, 6);
 camera.lookAt(scene.position);
 
 const inspector = new Inspector();
@@ -62,7 +64,7 @@ const timer = new Timer();
 const floorTexture = textureLoader.load('floor-color.jpg');
 
 // Scene
-const floorGeometry = new PlaneGeometry(2, 2, 1, 1);
+const floorGeometry = new PlaneGeometry(10, 10, 1, 1);
 const floorMaterial = new MeshStandardNodeMaterial({
   transparent: true,
 });
@@ -72,8 +74,16 @@ floorMaterial.opacityNode = opacity;
 floorMaterial.colorNode = texture(floorTexture, uv());
 
 const floor = new Mesh(floorGeometry, floorMaterial);
+floor.receiveShadow = true;
 floor.rotation.x = -Math.PI / 2;
 scene.add(floor);
+
+gltfLoader.load('/anvil.glb', (data) => {
+  const model = data.scene;
+  model.castShadow = true;
+
+  scene.add(model);
+});
 
 const directionalLight = new DirectionalLight(0xffffff, 4.5);
 directionalLight.position.set(2, 0.75, -1).normalize().multiplyScalar(10);
