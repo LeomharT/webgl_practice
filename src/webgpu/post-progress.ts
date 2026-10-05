@@ -2,11 +2,13 @@ import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
+import { SkyMesh } from 'three/examples/jsm/objects/SkyMesh.js';
 import { distance, texture, uv, vec2 } from 'three/tsl';
 import {
   ACESFilmicToneMapping,
   Color,
   DirectionalLight,
+  MathUtils,
   Mesh,
   MeshStandardNodeMaterial,
   PCFShadowMap,
@@ -15,6 +17,7 @@ import {
   Scene,
   TextureLoader,
   Timer,
+  Vector3,
   WebGPURenderer,
 } from 'three/webgpu';
 CameraControls.install({ THREE: await import('three') });
@@ -38,6 +41,8 @@ renderer.setPixelRatio(sizes.pixelRatio);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = PCFShadowMap;
 renderer.toneMapping = ACESFilmicToneMapping;
+// Post progress
+
 el?.append(renderer.domElement);
 
 const scene = new Scene();
@@ -49,7 +54,7 @@ const camera = new PerspectiveCamera(
   0.01,
   1000,
 );
-camera.position.set(6, 4, 6);
+camera.position.set(5, 4, 3);
 camera.lookAt(scene.position);
 
 const inspector = new Inspector();
@@ -64,6 +69,41 @@ const timer = new Timer();
 const floorTexture = textureLoader.load('floor-color.jpg');
 
 // Scene
+const sky = new SkyMesh();
+sky.scale.setScalar(1000);
+scene.add(sky);
+const effectController = {
+  turbidity: 5.5,
+  rayleigh: 1.25,
+  mieCoefficient: 0.02,
+  mieDirectionalG: 0.35,
+  elevation: 0.4,
+  azimuth: 100,
+  cloudCoverage: 0.4,
+  cloudDensity: 0.4,
+  cloudElevation: 0.5,
+};
+const sun = new Vector3();
+
+const skyChanged = () => {
+  sky.turbidity.value = effectController.turbidity;
+  sky.rayleigh.value = effectController.rayleigh;
+  sky.mieCoefficient.value = effectController.mieCoefficient;
+  sky.mieDirectionalG.value = effectController.mieDirectionalG;
+  sky.cloudCoverage.value = effectController.cloudCoverage;
+  sky.cloudDensity.value = effectController.cloudDensity;
+  sky.cloudElevation.value = effectController.cloudElevation;
+
+  const phi = MathUtils.degToRad(90 - effectController.elevation);
+  const theta = MathUtils.degToRad(effectController.azimuth);
+
+  sun.setFromSphericalCoords(1, phi, theta);
+
+  sky.sunPosition.value.copy(sun);
+};
+
+skyChanged();
+
 const floorGeometry = new PlaneGeometry(10, 10, 1, 1);
 const floorMaterial = new MeshStandardNodeMaterial({
   transparent: true,
@@ -80,7 +120,9 @@ scene.add(floor);
 
 gltfLoader.load('/anvil.glb', (data) => {
   const model = data.scene;
-  model.castShadow = true;
+  model.traverse((obj) => {
+    if (obj instanceof Mesh) obj.castShadow = true;
+  });
 
   scene.add(model);
 });
@@ -94,7 +136,7 @@ directionalLight.shadow.camera.left = -10;
 directionalLight.shadow.camera.near = 0.01;
 directionalLight.shadow.camera.far = 20;
 directionalLight.castShadow = true;
-directionalLight.shadow.radius = 3;
+directionalLight.shadow.radius = 5;
 directionalLight.shadow.normalBias = 0.1;
 scene.add(directionalLight);
 
