@@ -6,6 +6,7 @@ import { SkyMesh } from 'three/examples/jsm/objects/SkyMesh.js';
 import { distance, texture, uv, vec2 } from 'three/tsl';
 import {
   ACESFilmicToneMapping,
+  CameraHelper,
   Color,
   DirectionalLight,
   MathUtils,
@@ -139,6 +140,8 @@ directionalLight.castShadow = true;
 directionalLight.shadow.radius = 5;
 directionalLight.shadow.normalBias = 0.1;
 scene.add(directionalLight);
+const cameraHelper = new CameraHelper(directionalLight.shadow.camera);
+scene.add(cameraHelper);
 
 const light_pane = inspector.createParameters('direction light');
 light_pane.add(directionalLight.shadow, 'radius', 0, 10, 0.01);
