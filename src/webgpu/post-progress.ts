@@ -140,6 +140,10 @@ directionalLight.shadow.radius = 5;
 directionalLight.shadow.normalBias = 0.1;
 scene.add(directionalLight);
 
+const light_pane = inspector.createParameters('direction light');
+light_pane.add(directionalLight.shadow, 'radius', 0, 10, 0.01);
+light_pane.add(directionalLight.shadow, 'normalBias', 0, 1, 0.01);
+
 function render() {
   // UPDATE
   timer.update();
