@@ -3,6 +3,7 @@ import CameraControls from 'camera-controls';
 import {
   AmbientLight,
   AxesHelper,
+  CircleGeometry,
   Color,
   DirectionalLight,
   LineBasicMaterial,
@@ -20,13 +21,16 @@ import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import type { ParametersGroup } from 'three/examples/jsm/inspector/tabs/Parameters.js';
 import {
   atan,
+  color,
   cos,
   distance,
+  float,
   Fn,
   mix,
   mul,
   mx_noise_float,
   mx_worley_noise_float,
+  parallaxUV,
   PI,
   PI2,
   rand,
@@ -38,6 +42,7 @@ import {
 import {
   MeshBasicNodeMaterial,
   MeshStandardNodeMaterial,
+  Node,
   WebGPURenderer,
 } from 'three/webgpu';
 import simplex4DNoise from '../shader/include/simplex4DNoise.glsl?raw';
@@ -110,7 +115,7 @@ floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-const planeGeometry = new PlaneGeometry(2, 2, 1, 1);
+const geometry = new CircleGeometry(2, 32);
 const planeMaterial = new MeshBasicNodeMaterial({});
 
 //
@@ -158,13 +163,35 @@ planeMaterial.colorNode = vec3(worleyNoise);
 // );
 
 //
+const depthUv = (parallaxUV(uv(), float(0.5)) as Node<'vec3'>).xy;
+const causticsInput = vec3(depthUv.mul(6), time.mul(0.3));
+const causticsNoise = mx_worley_noise_float(causticsInput).pow4();
+const depthColor = mix(color(0x1b3956), color(0x11eeff), causticsNoise);
 
-const causticsNoise = mx_worley_noise_float(uv().mul(10));
+const formInput = uv().mul(5);
+const formNoise = mx_noise_float(vec3(formInput, time.mul(0.1)));
+const formMast = formNoise.abs().step(0.05).oneMinus();
+const formColor = color(0xe5f7ff);
 
-planeMaterial.colorNode = vec3(causticsNoise);
+const lilyPadInput = vec3(uv().mul(4), 0.0);
+const lilyPadNoise = mx_worley_noise_float(lilyPadInput).pow2();
+const lilyPadMask = lilyPadNoise.step(0.2).oneMinus();
+const lilyPadColor = mix(
+  color(0xd7e689),
+  color(0x329a89),
+  lilyPadNoise.div(0.2),
+);
+const final = mix(depthColor, formColor, formMast);
 
-const plane = new Mesh(planeGeometry, planeMaterial);
+planeMaterial.colorNode = mix(
+  final,
+  vec3(lilyPadColor).mul(lilyPadMask),
+  lilyPadMask,
+);
+
+const plane = new Mesh(geometry, planeMaterial);
 plane.position.y = 1;
+plane.rotation.x = -Math.PI / 2;
 scene.add(plane);
 
 // KORUS KNOT
