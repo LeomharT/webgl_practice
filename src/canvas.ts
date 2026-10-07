@@ -36,18 +36,31 @@ function drawCursor(x: number, y: number) {
   ctx.restore();
 }
 
+const center = {
+  x: canvas.width / 2,
+  y: canvas.height / 2,
+};
+
+let isPending = false;
+
 let accelerationY = 0;
 let translateY = 0;
 
 function render() {
-  // Update
-
-  accelerationY += (POINT.y - translateY) * 0.02; // Update Speed
-  accelerationY *= 0.9; // Bounce strength
-  translateY += accelerationY;
-
   clean();
-  drawCursor(POINT.x, translateY);
+  // drawCursor(POINT.x, translateY);
+  if (isPending) {
+    translateY = POINT.y;
+    accelerationY = 0;
+
+    drawCursor(center.x, POINT.y);
+  } else {
+    accelerationY += (center.y - translateY) * 0.02; // Update Speed
+    accelerationY *= 0.9; // Bounce strength
+    translateY += accelerationY;
+
+    drawCursor(center.x, translateY);
+  }
 
   requestAnimationFrame(render);
 }
@@ -63,12 +76,28 @@ function resize() {
 
   canvas.style.width = sizes.width + 'px';
   canvas.style.height = sizes.height + 'px';
+
+  center.x = canvas.width / 2;
+  center.y = canvas.height / 2;
 }
 resize();
 
 window.addEventListener('resize', resize);
 
+window.addEventListener('pointerdown', (e) => {
+  canvas.setPointerCapture(e.pointerId);
+  isPending = true;
+});
+window.addEventListener('pointerup', (e) => {
+  canvas.releasePointerCapture(e.pointerId);
+  isPending = false;
+});
+
 window.addEventListener('pointermove', (e) => {
+  if (!isPending) return;
+
   POINT.x = e.clientX;
   POINT.y = e.clientY;
+
+  console.log(POINT);
 });
