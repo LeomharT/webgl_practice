@@ -64,6 +64,7 @@ renderer.inspector = inspector;
 const controls = new CameraControls(camera, renderer.domElement);
 controls.enabled = true;
 controls.dollySpeed = 0.8;
+controls.maxDistance = 20;
 
 const timer = new Timer();
 
@@ -143,9 +144,12 @@ scene.add(directionalLight);
 const cameraHelper = new CameraHelper(directionalLight.shadow.camera);
 scene.add(cameraHelper);
 
-const light_pane = inspector.createParameters('direction light');
+const light_pane = inspector.createParameters('Directional Light');
 light_pane.add(directionalLight.shadow, 'radius', 0, 10, 0.01);
 light_pane.add(directionalLight.shadow, 'normalBias', 0, 1, 0.01);
+light_pane
+  .add(cameraHelper, 'visible')
+  .name('Camera Helper Visiblity');
 
 function render() {
   // UPDATE
