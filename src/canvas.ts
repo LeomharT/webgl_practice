@@ -1,4 +1,5 @@
 import { Colors } from '@blueprintjs/colors';
+import { MathUtils } from 'three';
 
 const sizes = {
   width: window.innerWidth,
@@ -36,30 +37,41 @@ function drawCursor(x: number, y: number) {
   ctx.restore();
 }
 
-const center = {
-  x: canvas.width / 2,
-  y: canvas.height / 2,
-};
-
 let isPending = false;
+let prevTime = 0;
+
+const p = {
+  y: 0
+};
 
 let accelerationY = 0;
 let translateY = 0;
 
-function render() {
-  clean();
-  // drawCursor(POINT.x, translateY);
-  if (isPending) {
-    translateY = POINT.y;
-    accelerationY = 0;
+function render(time: number = 0) {
+  // Update
+  const dt = (time - prevTime) / 1000;
+  prevTime = time;
 
-    drawCursor(center.x, POINT.y);
+  const t = 1.0 - Math.exp(-5.0 * dt);
+
+  if (isPending) {
+    console.log(p.y, POINT.y);
+
+    p.y = MathUtils.lerp(p.y, POINT.y, t);
+    translateY = p.y;
+
+    clean();
+    drawCursor(POINT.x, translateY);
   } else {
-    accelerationY += (center.y - translateY) * 0.02; // Update Speed
-    accelerationY *= 0.9; // Bounce strength
+    accelerationY += (sizes.height / 2 - translateY) * 0.02;
+    accelerationY *= 0.9;
+
     translateY += accelerationY;
 
-    drawCursor(center.x, translateY);
+    p.y = translateY;
+
+    clean();
+    drawCursor(POINT.x, translateY);
   }
 
   requestAnimationFrame(render);
@@ -77,8 +89,8 @@ function resize() {
   canvas.style.width = sizes.width + 'px';
   canvas.style.height = sizes.height + 'px';
 
-  center.x = canvas.width / 2;
-  center.y = canvas.height / 2;
+  POINT.x = sizes.width / 2;
+  POINT.y = sizes.height / 2;
 }
 resize();
 
@@ -87,6 +99,8 @@ window.addEventListener('resize', resize);
 window.addEventListener('pointerdown', (e) => {
   canvas.setPointerCapture(e.pointerId);
   isPending = true;
+
+  POINT.y = e.clientY;
 });
 window.addEventListener('pointerup', (e) => {
   canvas.releasePointerCapture(e.pointerId);
@@ -96,8 +110,6 @@ window.addEventListener('pointerup', (e) => {
 window.addEventListener('pointermove', (e) => {
   if (!isPending) return;
 
-  POINT.x = e.clientX;
+  // POINT.x = e.clientX;
   POINT.y = e.clientY;
-
-  console.log(POINT);
 });
