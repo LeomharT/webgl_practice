@@ -20,7 +20,7 @@ function clean() {
   ctx.save();
   ctx.resetTransform();
   ctx.fillStyle = Colors.BLACK;
-  ctx.fillRect(0, 0, canvas.width, canvas.width);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.restore();
 }
 
@@ -41,11 +41,17 @@ let isPending = false;
 let prevTime = 0;
 
 const p = {
+  x: 0,
   y: 0
 };
 
+let accelerationX = 0;
+let translateX = 0;
+
 let accelerationY = 0;
 let translateY = 0;
+
+
 
 function render(time: number = 0) {
   // Update
@@ -55,23 +61,29 @@ function render(time: number = 0) {
   const t = 1.0 - Math.exp(-5.0 * dt);
 
   if (isPending) {
-    console.log(p.y, POINT.y);
+    p.x = MathUtils.lerp(p.x, POINT.x, t);
+    translateX = p.x;
 
     p.y = MathUtils.lerp(p.y, POINT.y, t);
     translateY = p.y;
 
     clean();
-    drawCursor(POINT.x, translateY);
+    drawCursor(translateX, translateY);
   } else {
+    accelerationX += (sizes.width / 2 - translateX) * 0.02;
+    accelerationX *= 0.9;
+
+    translateX += accelerationX;
+    p.x = translateX;
+
     accelerationY += (sizes.height / 2 - translateY) * 0.02;
     accelerationY *= 0.9;
 
     translateY += accelerationY;
-
     p.y = translateY;
 
     clean();
-    drawCursor(POINT.x, translateY);
+    drawCursor(translateX, translateY);
   }
 
   requestAnimationFrame(render);
@@ -100,6 +112,7 @@ window.addEventListener('pointerdown', (e) => {
   canvas.setPointerCapture(e.pointerId);
   isPending = true;
 
+  POINT.x = e.clientX;
   POINT.y = e.clientY;
 });
 window.addEventListener('pointerup', (e) => {
@@ -110,6 +123,6 @@ window.addEventListener('pointerup', (e) => {
 window.addEventListener('pointermove', (e) => {
   if (!isPending) return;
 
-  // POINT.x = e.clientX;
+  POINT.x = e.clientX;
   POINT.y = e.clientY;
 });
