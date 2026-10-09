@@ -22,8 +22,10 @@ const transform = {
 };
 
 const MAJOR_CELL = 100;
+const MINOR_CELL = MAJOR_CELL / 5;
 
 const MOJOR_COLOR = Colors.DARK_GRAY3;
+const MINOR_COLOR = Colors.DARK_GRAY2;
 
 function clean() {
   ctx.save();
@@ -33,18 +35,22 @@ function clean() {
   ctx.restore();
 }
 
-function renderGrid(step: number) {
+function renderGrid(step: number, color: string, dash?: [number, number]) {
   ctx.save();
 
   step *= transform.scale;
 
-  ctx.strokeStyle = MOJOR_COLOR;
+  ctx.strokeStyle = color;
   ctx.lineWidth = 1;
 
   ctx.setTransform(sizes.dpr, 0, 0, sizes.dpr, 0, 0);
+  if (dash) ctx.setLineDash(dash);
 
   // Render y axes
   ctx.beginPath();
+  if (dash) {
+    ctx.lineDashOffset = -transform.y % (dash[0] + dash[1]);
+  }
   for (let i = mod(transform.x, step); i < canvas.width; i += step) {
     ctx.moveTo(i, 0);
     ctx.lineTo(i, canvas.height);
@@ -53,6 +59,9 @@ function renderGrid(step: number) {
 
   // Render x axes
   ctx.beginPath();
+  if (dash) {
+    ctx.lineDashOffset = -transform.x % (dash[0] + dash[1]);
+  }
   for (let i = mod(transform.y, step); i < canvas.height; i += step) {
     ctx.moveTo(0, i);
     ctx.lineTo(canvas.width, i);
@@ -65,7 +74,8 @@ function renderGrid(step: number) {
 function render() {
   clean();
 
-  renderGrid(MAJOR_CELL);
+  renderGrid(MINOR_CELL, MINOR_COLOR, [3, 3]);
+  renderGrid(MAJOR_CELL, MOJOR_COLOR);
 }
 
 function resize() {
@@ -85,11 +95,7 @@ resize();
 
 window.addEventListener('resize', resize);
 
-let isPending = false;
-const prev = {
-  x: 0,
-  y: 0
-};
+const prev = { x: 0, y: 0 };
 
 canvas.addEventListener('pointerdown', e => {
   canvas.setPointerCapture(e.pointerId);
@@ -115,3 +121,22 @@ canvas.addEventListener('pointermove', e => {
 
   render();
 });
+
+window.addEventListener('wheel', e => {
+  e.preventDefault();
+
+  const next = clamp(
+    transform.scale * Math.exp(-e.deltaY * 0.001), // Scale speed
+    0.2,
+    100
+  );
+
+  const k = next / transform.scale;
+
+  transform.x = e.clientX - (e.clientX - transform.x) * k;
+  transform.y = e.clientY - (e.clientY - transform.y) * k;
+
+  transform.scale = next;
+
+  render();
+}, { passive: false });
