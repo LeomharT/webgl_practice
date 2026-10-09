@@ -72,6 +72,8 @@ const controls = new CameraControls(camera, renderer.domElement);
 controls.enabled = true;
 controls.dollySpeed = 0.8;
 controls.maxDistance = 20;
+controls.minPolarAngle = 0;
+controls.maxPolarAngle = Math.PI / 2.2;
 
 const timer = new Timer();
 
@@ -162,14 +164,14 @@ renderer_pane.add(renderer, 'toneMapping', {
   AgXToneMapping: AgXToneMapping,
   NeutralToneMapping: NeutralToneMapping,
 });
-renderer_pane.add(renderer, 'toneMappingExposure', 0, 10, 0.01).name("Exposure");
+renderer_pane
+  .add(renderer, 'toneMappingExposure', 0, 10, 0.01)
+  .name('Exposure');
 
 const light_pane = inspector.createParameters('Directional Light');
 light_pane.add(directionalLight.shadow, 'radius', 0, 10, 0.01);
 light_pane.add(directionalLight.shadow, 'normalBias', 0, 1, 0.01);
-light_pane
-  .add(cameraHelper, 'visible')
-  .name('Camera Helper Visiblity');
+light_pane.add(cameraHelper, 'visible').name('Camera Helper Visiblity');
 
 function render() {
   // UPDATE
