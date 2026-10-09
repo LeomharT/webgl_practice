@@ -6,15 +6,22 @@ import { SkyMesh } from 'three/examples/jsm/objects/SkyMesh.js';
 import { distance, texture, uv, vec2 } from 'three/tsl';
 import {
   ACESFilmicToneMapping,
+  AgXToneMapping,
   CameraHelper,
+  CineonToneMapping,
   Color,
+  CustomToneMapping,
   DirectionalLight,
+  LinearToneMapping,
   MathUtils,
   Mesh,
   MeshStandardNodeMaterial,
+  NeutralToneMapping,
+  NoToneMapping,
   PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
+  ReinhardToneMapping,
   Scene,
   TextureLoader,
   Timer,
@@ -143,6 +150,19 @@ directionalLight.shadow.normalBias = 0.1;
 scene.add(directionalLight);
 const cameraHelper = new CameraHelper(directionalLight.shadow.camera);
 scene.add(cameraHelper);
+
+const renderer_pane = inspector.createParameters('Renderer Settings');
+renderer_pane.add(renderer, 'toneMapping', {
+  NoToneMapping: NoToneMapping,
+  LinearToneMapping: LinearToneMapping,
+  ReinhardToneMapping: ReinhardToneMapping,
+  CineonToneMapping: CineonToneMapping,
+  ACESFilmicToneMapping: ACESFilmicToneMapping,
+  CustomToneMapping: CustomToneMapping,
+  AgXToneMapping: AgXToneMapping,
+  NeutralToneMapping: NeutralToneMapping,
+});
+renderer_pane.add(renderer, 'toneMappingExposure', 0, 10, 0.01).name("Exposure");
 
 const light_pane = inspector.createParameters('Directional Light');
 light_pane.add(directionalLight.shadow, 'radius', 0, 10, 0.01);
