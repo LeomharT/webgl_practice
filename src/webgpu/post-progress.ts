@@ -155,16 +155,18 @@ cameraHelper.visible = false;
 scene.add(cameraHelper);
 
 const renderer_pane = inspector.createParameters('Renderer Settings');
-renderer_pane.add(renderer, 'toneMapping', {
-  NoToneMapping: NoToneMapping,
-  LinearToneMapping: LinearToneMapping,
-  ReinhardToneMapping: ReinhardToneMapping,
-  CineonToneMapping: CineonToneMapping,
-  ACESFilmicToneMapping: ACESFilmicToneMapping,
-  CustomToneMapping: CustomToneMapping,
-  AgXToneMapping: AgXToneMapping,
-  NeutralToneMapping: NeutralToneMapping,
-});
+renderer_pane
+  .add(renderer, 'toneMapping', {
+    NoToneMapping: NoToneMapping,
+    LinearToneMapping: LinearToneMapping,
+    ReinhardToneMapping: ReinhardToneMapping,
+    CineonToneMapping: CineonToneMapping,
+    ACESFilmicToneMapping: ACESFilmicToneMapping,
+    CustomToneMapping: CustomToneMapping,
+    AgXToneMapping: AgXToneMapping,
+    NeutralToneMapping: NeutralToneMapping,
+  })
+  .name('Tone Mapping');
 renderer_pane
   .add(renderer, 'toneMappingExposure', 0, 10, 0.01)
   .name('Exposure');
