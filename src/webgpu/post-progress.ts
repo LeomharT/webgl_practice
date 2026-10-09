@@ -7,6 +7,7 @@ import { distance, texture, uv, vec2 } from 'three/tsl';
 import {
   ACESFilmicToneMapping,
   AgXToneMapping,
+  AmbientLight,
   CameraHelper,
   CineonToneMapping,
   Color,
@@ -48,7 +49,7 @@ renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(sizes.pixelRatio);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = PCFShadowMap;
-renderer.toneMapping = ACESFilmicToneMapping;
+renderer.toneMapping = CineonToneMapping;
 // Post progress
 
 el?.append(renderer.domElement);
@@ -137,6 +138,9 @@ gltfLoader.load('/anvil.glb', (data) => {
 
   scene.add(model);
 });
+
+const ambientLight = new AmbientLight(0x859dff, 0.75);
+scene.add(ambientLight);
 
 const directionalLight = new DirectionalLight(0xffffff, 4.5);
 directionalLight.position.set(2, 0.75, -1).normalize().multiplyScalar(10);
