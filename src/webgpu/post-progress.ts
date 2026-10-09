@@ -151,6 +151,7 @@ directionalLight.shadow.radius = 5;
 directionalLight.shadow.normalBias = 0.1;
 scene.add(directionalLight);
 const cameraHelper = new CameraHelper(directionalLight.shadow.camera);
+cameraHelper.visible = false;
 scene.add(cameraHelper);
 
 const renderer_pane = inspector.createParameters('Renderer Settings');
