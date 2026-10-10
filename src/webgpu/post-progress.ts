@@ -8,6 +8,7 @@ import {
   ACESFilmicToneMapping,
   AgXToneMapping,
   AmbientLight,
+  AxesHelper,
   CameraHelper,
   CineonToneMapping,
   Color,
@@ -30,6 +31,7 @@ import {
   WebGPURenderer,
 } from 'three/webgpu';
 CameraControls.install({ THREE: await import('three') });
+const WORLD_UP = new Vector3(0, 0, 1);
 
 const gltfLoader = new GLTFLoader();
 const textureLoader = new TextureLoader();
@@ -65,6 +67,7 @@ const camera = new PerspectiveCamera(
 );
 camera.position.set(5, 4, 3);
 camera.lookAt(scene.position);
+camera.up.copy(WORLD_UP);
 
 const inspector = new Inspector();
 renderer.inspector = inspector;
@@ -138,6 +141,9 @@ gltfLoader.load('/anvil.glb', (data) => {
 
   scene.add(model);
 });
+
+const axesHelper = new AxesHelper(10);
+scene.add(axesHelper);
 
 const ambientLight = new AmbientLight(0x859dff, 0.75);
 scene.add(ambientLight);
