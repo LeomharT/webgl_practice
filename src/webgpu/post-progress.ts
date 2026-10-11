@@ -3,7 +3,8 @@ import CameraControls from 'camera-controls';
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import { SkyMesh } from 'three/examples/jsm/objects/SkyMesh.js';
-import { distance, texture, uv, vec2 } from 'three/tsl';
+import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
+import { distance, pass, texture, uv, vec2 } from 'three/tsl';
 import {
   ACESFilmicToneMapping,
   AgXToneMapping,
@@ -24,6 +25,7 @@ import {
   PerspectiveCamera,
   PlaneGeometry,
   ReinhardToneMapping,
+  RenderPipeline,
   Scene,
   TextureLoader,
   Timer,
@@ -80,6 +82,26 @@ controls.maxPolarAngle = Math.PI / 2.2;
 const timer = new Timer();
 
 const floorTexture = textureLoader.load('floor-color.jpg');
+
+// Post progress
+const pipeline = new RenderPipeline(renderer);
+
+// Render scene
+// const scenePass = new RenderPass(scene,camera)
+const scenePass = pass(scene, camera);
+
+const bloomPass = bloom(scenePass);
+bloomPass.threshold.value = 0.35;
+bloomPass.strength.value = 1.0;
+bloomPass.radius.value = 0.5;
+
+const bloomPane = inspector.createParameters('Bloom');
+bloomPane.add(bloomPass.threshold, 'value', 0, 2, 0.01).name('Threshold');
+bloomPane.add(bloomPass.strength, 'value', 0, 10, 0.01).name('Strength');
+bloomPane.add(bloomPass.radius, 'value', 0, 2, 0.01).name('Radius');
+
+const final = scenePass.add(bloomPass);
+pipeline.outputNode = final;
 
 // Scene
 const sky = new SkyMesh();
@@ -192,7 +214,7 @@ function render() {
   controls.update(dt);
 
   // RENDER
-  renderer.render(scene, camera);
+  pipeline.render();
 }
 renderer.setAnimationLoop(render);
 
