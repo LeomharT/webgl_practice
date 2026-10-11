@@ -4,7 +4,8 @@ import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import { SkyMesh } from 'three/examples/jsm/objects/SkyMesh.js';
 import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
-import { distance, pass, texture, uv, vec2 } from 'three/tsl';
+import { chromaticAberration } from 'three/examples/jsm/tsl/display/ChromaticAberrationNode.js';
+import { distance, float, pass, texture, uv, vec2 } from 'three/tsl';
 import {
   ACESFilmicToneMapping,
   AgXToneMapping,
@@ -90,6 +91,9 @@ const pipeline = new RenderPipeline(renderer);
 // const scenePass = new RenderPass(scene,camera)
 const scenePass = pass(scene, camera);
 
+/**
+ * Bloom effect
+ */
 const bloomPass = bloom(scenePass);
 bloomPass.threshold.value = 0.35;
 bloomPass.strength.value = 1.0;
@@ -101,7 +105,14 @@ bloomPane.add(bloomPass.strength, 'value', 0, 10, 0.01).name('Strength');
 bloomPane.add(bloomPass.radius, 'value', 0, 2, 0.01).name('Radius');
 
 const final = scenePass.add(bloomPass);
-pipeline.outputNode = final;
+
+const chromaticAberrationPass = chromaticAberration(
+  final,
+  float(2),
+  vec2(0.5),
+  float(1),
+);
+pipeline.outputNode = chromaticAberrationPass;
 
 // Scene
 const sky = new SkyMesh();
