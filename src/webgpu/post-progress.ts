@@ -31,7 +31,6 @@ import {
   WebGPURenderer,
 } from 'three/webgpu';
 CameraControls.install({ THREE: await import('three') });
-const WORLD_UP = new Vector3(0, 0, 1);
 
 const gltfLoader = new GLTFLoader();
 const textureLoader = new TextureLoader();
@@ -67,7 +66,6 @@ const camera = new PerspectiveCamera(
 );
 camera.position.set(5, 4, 3);
 camera.lookAt(scene.position);
-camera.up.copy(WORLD_UP);
 
 const inspector = new Inspector();
 renderer.inspector = inspector;
