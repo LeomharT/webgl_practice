@@ -5,6 +5,7 @@ import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import { SkyMesh } from 'three/examples/jsm/objects/SkyMesh.js';
 import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
 import { chromaticAberration } from 'three/examples/jsm/tsl/display/ChromaticAberrationNode.js';
+import { pixelationPass } from 'three/examples/jsm/tsl/display/PixelationPassNode.js';
 import { distance, float, pass, texture, uv, vec2 } from 'three/tsl';
 import {
   ACESFilmicToneMapping,
@@ -90,6 +91,10 @@ const pipeline = new RenderPipeline(renderer);
 // Render scene
 // const scenePass = new RenderPass(scene,camera)
 const scenePass = pass(scene, camera);
+pipeline.outputNode = scenePass;
+
+const _pixelationPass = pixelationPass(scene, camera, 6, 0.3, 0.4);
+pipeline.outputNode = _pixelationPass;
 
 /**
  * Bloom effect
@@ -98,16 +103,15 @@ const bloomPass = bloom(scenePass);
 bloomPass.threshold.value = 0.35;
 bloomPass.strength.value = 1.0;
 bloomPass.radius.value = 0.5;
+pipeline.outputNode = _pixelationPass.add(bloomPass);
 
 const bloomPane = inspector.createParameters('Bloom');
 bloomPane.add(bloomPass.threshold, 'value', 0, 2, 0.01).name('Threshold');
 bloomPane.add(bloomPass.strength, 'value', 0, 10, 0.01).name('Strength');
 bloomPane.add(bloomPass.radius, 'value', 0, 2, 0.01).name('Radius');
 
-const final = scenePass.add(bloomPass);
-
 const chromaticAberrationPass = chromaticAberration(
-  final,
+  pipeline.outputNode,
   float(2),
   vec2(0.5),
   float(1),
