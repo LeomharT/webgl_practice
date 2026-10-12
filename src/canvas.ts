@@ -29,13 +29,14 @@ function clean() {
 }
 
 
-function drawGrid(step: number) {
+function drawGrid(step: number, color: string, dash?: [number, number]) {
     ctx.save();
 
     ctx.setTransform(sizes.dpr, 0, 0, sizes.dpr, 0, 0);
 
     ctx.lineWidth = 1;
-    ctx.strokeStyle = Colors.DARK_GRAY5;
+    ctx.strokeStyle = color;
+    if (dash) ctx.setLineDash(dash);
 
     // Storke Y
     ctx.beginPath();
@@ -58,10 +59,14 @@ function drawGrid(step: number) {
 
 function render() {
     const MAJOR_CELL_SIZE = 100 * transform.scale;
+    const MINOR_CELL_SIZE = MAJOR_CELL_SIZE / 5;
 
     clean();
 
-    drawGrid(MAJOR_CELL_SIZE);
+    if (transform.scale > 0.5) {
+        drawGrid(MINOR_CELL_SIZE, transform.scale < 0.7 ? Colors.DARK_GRAY1 : Colors.DARK_GRAY2, [3, 3]);
+    }
+    drawGrid(MAJOR_CELL_SIZE, Colors.DARK_GRAY5);
 }
 
 function resize() {
