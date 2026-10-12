@@ -40,6 +40,7 @@ function drawGrid(step: number, color: string, dash?: [number, number]) {
 
     // Storke Y
     ctx.beginPath();
+    if (dash) ctx.lineDashOffset = mod(-transform.y, dash[0] + dash[1]);
     for (let i = mod(transform.x, step); i < canvas.width; i += step) {
         ctx.moveTo(i, 0);
         ctx.lineTo(i, canvas.height);
@@ -48,6 +49,7 @@ function drawGrid(step: number, color: string, dash?: [number, number]) {
 
     // Storke X
     ctx.beginPath();
+    if (dash) ctx.lineDashOffset = mod(-transform.x, dash[0] + dash[1]);
     for (let i = mod(transform.y, step); i < canvas.height; i += step) {
         ctx.moveTo(0, i);
         ctx.lineTo(canvas.width, i);
@@ -64,7 +66,7 @@ function render() {
     clean();
 
     if (transform.scale > 0.5) {
-        drawGrid(MINOR_CELL_SIZE, transform.scale < 0.7 ? Colors.DARK_GRAY1 : Colors.DARK_GRAY2, [3, 3]);
+        drawGrid(MINOR_CELL_SIZE, transform.scale < 0.7 ? Colors.DARK_GRAY1 : Colors.DARK_GRAY3, [3, 3]);
     }
     drawGrid(MAJOR_CELL_SIZE, Colors.DARK_GRAY5);
 }
