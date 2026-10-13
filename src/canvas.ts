@@ -27,19 +27,21 @@ function clean() {
 
 const BOX_SIZE = 200;
 
-function renderSqure(x: number, y: number) {
+function renderSqure(x: number, y: number, size: number) {
+    size *= transform.scale;
+
     ctx.save();
 
     ctx.setTransform(sizes.dpr, 0, 0, sizes.dpr, 0, 0);
     ctx.fillStyle = Colors.GRAY3;
-    ctx.fillRect(x, y, BOX_SIZE, BOX_SIZE);
+    ctx.fillRect(x, y, size, size);
 
     ctx.restore();
 }
 
 function render() {
     clean();
-    renderSqure(transform.x, transform.y);
+    renderSqure(transform.x, transform.y, BOX_SIZE);
 }
 
 function resize() {
@@ -84,3 +86,20 @@ canvas.addEventListener('pointermove', e => {
 
     render();
 });
+
+canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+
+    const next = clamp(
+        transform.scale * Math.exp(-e.deltaY * 0.001), 0.2, 100
+    );
+
+    const k = next / transform.scale;
+
+    transform.x = e.clientX - (e.clientX - transform.x) * k;
+    transform.y = e.clientY - (e.clientY - transform.y) * k;
+
+    transform.scale = next;
+
+    render();
+}, { passive: false });
