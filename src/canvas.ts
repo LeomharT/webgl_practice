@@ -52,6 +52,9 @@ function resize() {
     canvas.style.width = sizes.width + 'px';
     canvas.style.height = sizes.height + 'px';
 
+    transform.x = clamp(transform.x, 0, sizes.width - BOX_SIZE);
+    transform.y = clamp(transform.y, 0, sizes.height - BOX_SIZE);
+
     render();
 }
 resize();
