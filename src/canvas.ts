@@ -1,5 +1,5 @@
 import { Colors } from '@blueprintjs/colors';
-import { AxesHelper, Color, MathUtils, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, Scene, WebGLRenderer } from 'three';
+import { AxesHelper, Color, MathUtils, Mesh, MeshBasicMaterial, PerspectiveCamera, Plane, PlaneGeometry, Raycaster, Scene, Vector2, Vector3, WebGLRenderer } from 'three';
 
 const sizes = {
     width: window.innerWidth,
@@ -54,27 +54,62 @@ window.addEventListener('resize', () => {
     camera.updateProjectionMatrix();
 });
 
-renderer.domElement.addEventListener('wheel', e => {
-    e.preventDefault();
+renderer.domElement.addEventListener('pointerdown', e => {
+    console.log((e.clientX / sizes.width) * 2 - 1);
+    console.log(-(e.clientY / sizes.height) * 2 + 1);
+});
 
-    const next = MathUtils.clamp(
-        transform.scale * Math.exp(e.deltaY * 0.001),
-        0.2,
-        100
+const mouse = new Vector2();
+const raycaster = new Raycaster();
+
+// 世界空间中 z = 0 的平面
+const ground = new Plane(
+    new Vector3(0, 0, 1),
+    0
+);
+
+const before = new Vector3();
+const after = new Vector3();
+
+function getWorldPoint(e: WheelEvent, target: Vector3) {
+    const rect = renderer.domElement.getBoundingClientRect();
+
+    mouse.set(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
     );
 
-    const k = next / transform.scale;
+    camera.updateMatrixWorld();
 
-    transform.x = e.clientX - (e.clientX - transform.x) * k;
-    transform.y = e.clientY - (e.clientY - transform.y) * k;
+    raycaster.setFromCamera(mouse, camera);
 
-    transform.scale = next;
+    return raycaster.ray.intersectPlane(ground, target);
+}
 
-    camera.position.x = transform.x * 0.001;
-    camera.position.y = transform.y * 0.001;
+renderer.domElement.addEventListener(
+    'wheel',
+    e => {
+        e.preventDefault();
 
-    console.log(transform);
+        // 1. 缩放前鼠标指向的世界坐标
+        if (!getWorldPoint(e, before)) return;
 
-    camera.position.z = transform.scale;
+        // 2. 计算新的相机距离
+        const nextZ = MathUtils.clamp(
+            camera.position.z * Math.exp(e.deltaY * 0.001),
+            0.2,
+            100
+        );
 
-}, { passive: false });
+        // 3. 修改相机 Z
+        camera.position.z = nextZ;
+
+        // 4. 缩放后再次求交点
+        if (!getWorldPoint(e, after)) return;
+
+        // 5. 根据两次交点差补偿相机位置
+        camera.position.x += before.x - after.x;
+        camera.position.y += before.y - after.y;
+    },
+    { passive: false }
+);
