@@ -1,5 +1,7 @@
 import { Colors } from '@blueprintjs/colors';
 
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(value, min));
+
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight,
@@ -70,6 +72,9 @@ canvas.addEventListener('pointermove', e => {
 
     transform.x += e.clientX - prev.x;
     transform.y += e.clientY - prev.y;
+
+    transform.x = clamp(transform.x, 0, sizes.width - BOX_SIZE);
+    transform.y = clamp(transform.y, 0, sizes.height - BOX_SIZE);
 
     prev.x = e.clientX;
     prev.y = e.clientY;
