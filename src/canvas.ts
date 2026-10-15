@@ -1,5 +1,7 @@
 import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
+import { Color, MathUtils } from 'three';
+import { Pane } from 'tweakpane';
 CameraControls.install({ THREE: await import('three') });
 
 const clamp = (value: number, min: number, max: number) =>
@@ -27,6 +29,9 @@ const transform = {
   scale: 1,
 };
 
+const color = new Color(Colors.BLUE3);
+const targetColor = color.clone();
+
 function clean() {
   ctx.save();
 
@@ -41,7 +46,7 @@ function renderRect(x: number, y: number) {
   ctx.save();
 
   ctx.setTransform(sizes.dpr, 0, 0, sizes.dpr, 0, 0);
-  ctx.fillStyle = Colors.BLUE3;
+  ctx.fillStyle = color.getStyle();
   ctx.fillRect(x, y, BOX_SIZE * transform.scale, BOX_SIZE * transform.scale);
 
   ctx.restore();
@@ -74,7 +79,20 @@ function renderGrid(step: number, color: string, dash?: [number, number]) {
   ctx.restore();
 }
 
-function render() {
+let prevTime = 0;
+
+function render(time: number = 0) {
+  const dt = (time - prevTime) / 1000;
+  prevTime = time;
+
+  const t = 1.0 - Math.exp(-3 * dt);
+
+  const r = MathUtils.lerp(color.r, targetColor.r, t);
+  const g = MathUtils.lerp(color.g, targetColor.g, t);
+  const b = MathUtils.lerp(color.b, targetColor.b, t);
+
+  color.setRGB(r, g, b);
+
   clean();
 
   const MAJOR_CELL_SIZE = 100 * transform.scale;
@@ -89,7 +107,10 @@ function render() {
   }
   renderGrid(MAJOR_CELL_SIZE, Colors.DARK_GRAY4);
   renderRect(transform.x, transform.y);
+
+  requestAnimationFrame(render);
 }
+render();
 
 function resize() {
   sizes.width = window.innerWidth;
@@ -100,8 +121,6 @@ function resize() {
 
   canvas.style.width = sizes.width + 'px';
   canvas.style.height = sizes.height + 'px';
-
-  render();
 }
 resize();
 window.addEventListener('resize', resize);
@@ -125,8 +144,6 @@ canvas.addEventListener('pointermove', (e) => {
 
   prev.x = e.clientX;
   prev.y = e.clientY;
-
-  render();
 });
 canvas.addEventListener(
   'wheel',
@@ -141,8 +158,29 @@ canvas.addEventListener(
     transform.y = e.clientY - (e.clientY - transform.y) * k;
 
     transform.scale = next;
-
-    render();
   },
   { passive: false },
 );
+
+const pane = new Pane({ title: '🚧🚧🚧DEBUG🚧🚧🚧' });
+pane
+  .addButton({
+    title: '🟥RED',
+  })
+  .on('click', () => {
+    targetColor.set(Colors.ROSE4);
+  });
+pane
+  .addButton({
+    title: '🟩GREEN',
+  })
+  .on('click', () => {
+    targetColor.set(Colors.GREEN4);
+  });
+pane
+  .addButton({
+    title: '🟦BLUE',
+  })
+  .on('click', () => {
+    targetColor.set(Colors.BLUE4);
+  });
