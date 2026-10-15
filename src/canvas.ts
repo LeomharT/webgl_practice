@@ -1,6 +1,5 @@
 import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
-import { AxesHelper, BoxGeometry, Color, Mesh, MeshBasicMaterial, PerspectiveCamera, Scene, Timer, WebGLRenderer } from 'three';
 CameraControls.install({ THREE: await import("three") });
 
 const sizes = {
@@ -10,52 +9,77 @@ const sizes = {
 };
 const el = document.querySelector('#root') as HTMLDivElement;
 
-const renderer = new WebGLRenderer({ antialias: true, alpha: true });
-renderer.setSize(sizes.width, sizes.height);
-renderer.setPixelRatio(sizes.dpr);
-el.append(renderer.domElement);
+const canvas = document.createElement('canvas');
+el.append(canvas);
 
-const scene = new Scene();
-scene.background = new Color(Colors.BLACK);
+const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
-const camera = new PerspectiveCamera(70, sizes.width / sizes.height, 0.01, 100);
-camera.position.set(0, 0, 1);
-camera.lookAt(scene.position);
+const transform = {
+    x: 0, y: 0, scale: 1
+};
 
-const c = new CameraControls(camera, renderer.domElement);
-c.enabled = true;
-c.dollySpeed = 0.2;
-c.dollyToCursor = true;
+function clean() {
+    ctx.save();
 
-const t = new Timer();
+    ctx.resetTransform();
+    ctx.fillStyle = Colors.BLACK;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-// Scene
-const planeGeometry = new BoxGeometry(0.3, 0.3, 0.3, 2, 2, 2);
-const planeMaterial = new MeshBasicMaterial({ color: 'white' });
-const plane = new Mesh(planeGeometry, planeMaterial);
-scene.add(plane);
+    ctx.restore();
+}
 
-const axesHelper = new AxesHelper();
-scene.add(axesHelper);
+const BOX_SIZE = 200;
+
+function renderRect(x: number, y: number) {
+    ctx.save();
+
+    ctx.setTransform(sizes.dpr, 0, 0, sizes.dpr, 0, 0);
+    ctx.fillStyle = Colors.BLUE3;
+    ctx.fillRect(x, y, BOX_SIZE, BOX_SIZE);
+
+    ctx.restore();
+};
 
 function render() {
-    t.update();
+    clean();
 
-    const dt = t.getDelta();
-    c.update(dt);
-
-    renderer.render(scene, camera);
-
-    requestAnimationFrame(render);
+    renderRect(transform.x, transform.y);
 }
-render();
 
-window.addEventListener('resize', () => {
+function resize() {
     sizes.width = window.innerWidth;
     sizes.height = window.innerHeight;
 
-    renderer.setSize(sizes.width, sizes.height);
+    canvas.width = sizes.width * sizes.dpr;
+    canvas.height = sizes.height * sizes.dpr;
 
-    camera.aspect = sizes.width / sizes.height;
-    camera.updateProjectionMatrix();
+    canvas.style.width = sizes.width + 'px';
+    canvas.style.height = sizes.height + 'px';
+
+    render();
+};
+resize();
+window.addEventListener('resize', resize);
+
+const prev = { x: 0, y: 0 };
+canvas.addEventListener('pointerdown', e => {
+    canvas.setPointerCapture(e.pointerId);
+
+    prev.x = e.clientX;
+    prev.y = e.clientY;
+});
+canvas.addEventListener('pointerup', e => {
+    if (canvas.hasPointerCapture(e.pointerId))
+        canvas.releasePointerCapture(e.pointerId);
+});
+canvas.addEventListener("pointermove", e => {
+    if (!canvas.hasPointerCapture(e.pointerId)) return;
+
+    transform.x += e.clientX - prev.x;
+    transform.y += e.clientY - prev.y;
+
+    prev.x = e.clientX;
+    prev.y = e.clientY;
+
+    render();
 });
