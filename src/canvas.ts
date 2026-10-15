@@ -2,6 +2,8 @@ import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
 CameraControls.install({ THREE: await import("three") });
 
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(value, min));
+
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight,
@@ -35,7 +37,7 @@ function renderRect(x: number, y: number) {
 
     ctx.setTransform(sizes.dpr, 0, 0, sizes.dpr, 0, 0);
     ctx.fillStyle = Colors.BLUE3;
-    ctx.fillRect(x, y, BOX_SIZE, BOX_SIZE);
+    ctx.fillRect(x, y, BOX_SIZE * transform.scale, BOX_SIZE * transform.scale);
 
     ctx.restore();
 };
@@ -83,3 +85,20 @@ canvas.addEventListener("pointermove", e => {
 
     render();
 });
+canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+
+    const next = clamp(
+        transform.scale * Math.exp(-e.deltaY * 0.001),
+        0.2, 100
+    );
+
+    const k = next / transform.scale;
+
+    transform.x = e.clientX - (e.clientX - transform.x) * k;
+    transform.y = e.clientY - (e.clientY - transform.y) * k;
+
+    transform.scale = next;
+
+    render();
+}, { passive: false });
