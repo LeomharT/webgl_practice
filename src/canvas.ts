@@ -79,12 +79,11 @@ const colors = [
   '#9E2B0E',
 ];
 
-const positions = Array.from({ length: 100 }).map(() => ({
+const positions = Array.from({ length: 1000 }).map(() => ({
   x: sizes.width * Math.random(),
   y: sizes.height * Math.random(),
   length: MathUtils.randFloat(100, 200),
   angle: Math.random() * (Math.PI * 2),
-  speed: MathUtils.randFloat(0.1, 5),
 }));
 
 function renderLine() {
@@ -98,9 +97,10 @@ function renderLine() {
     ctx.beginPath();
     const p = positions[i];
     const c = colors[i % colors.length];
+    const a = p.angle;
 
-    ctx.transform(1, 0, 0, 1, p.x, p.y);
-    ctx.rotate(p.angle);
+    const mtx = [Math.cos(a), -Math.sin(a), Math.sin(a), Math.cos(a)];
+    ctx.transform(mtx[0], mtx[2], mtx[1], mtx[3], p.x, p.y);
 
     ctx.strokeStyle = c;
 
@@ -122,11 +122,6 @@ let prevTime = 0;
 function render(time: number = 0) {
   const dt = (time - prevTime) / 1000;
   prevTime = time;
-
-  positions.forEach((value) => {
-    value.angle += dt * value.speed;
-    value.angle %= Math.PI * 2;
-  });
 
   clean();
 
@@ -152,6 +147,10 @@ canvas.addEventListener('pointerup', (e) => {
 canvas.addEventListener('pointermove', (e) => {
   prev.x = e.clientX;
   prev.y = e.clientY;
+
+  positions.forEach((value) => {
+    value.angle = Math.atan2(prev.y - value.y, prev.x - value.x) + Math.PI / 2;
+  });
 });
 
 const pane = new Pane({ title: '🚧🚧🚧DEBUG🚧🚧🚧' });
