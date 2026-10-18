@@ -1,4 +1,5 @@
 import { Colors } from '@blueprintjs/colors';
+import { MathUtils } from 'three';
 
 const sizes = {
   width: window.innerWidth,
@@ -26,9 +27,12 @@ function clean() {
   ctx.restore();
 }
 
-const positions = Array.from({ length: 100 }, () => ({
+const positions = Array.from({ length: 1500 }, () => ({
   x: Math.random() * sizes.width,
   y: Math.random() * sizes.height,
+  length: MathUtils.randFloat(100, 300),
+  angle: Math.random() * (Math.PI * 2),
+  speed: MathUtils.randFloat(0.5, 2),
 }));
 
 const colors = [
@@ -54,8 +58,44 @@ const colors = [
   '#1F4B99',
 ];
 
-function render() {
+function renderLine() {
+  ctx.save();
+
+  ctx.setTransform(sizes.dpr, 0, 0, sizes.dpr, 0, 0);
+
+  for (let i = 0; i < positions.length; i++) {
+    const p = positions[i];
+    const w = p.length / 2;
+
+    const c = Math.cos(p.angle) * sizes.dpr;
+    const s = Math.sin(p.angle) * sizes.dpr;
+
+    ctx.setTransform(c, s, -s, c, p.x, p.y);
+
+    ctx.beginPath();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = colors[i % colors.length];
+
+    ctx.moveTo(-w, 0);
+    ctx.lineTo(w, 0);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+let prevTime = 0;
+
+function render(time: number = 0) {
+  const dt = (time - prevTime) / 1000;
+  prevTime = time;
+
+  positions.forEach((value) => (value.angle += dt * value.speed));
+
   clean();
+
+  renderLine();
+
   requestAnimationFrame(render);
 }
 render();
