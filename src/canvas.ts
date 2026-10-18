@@ -67,8 +67,8 @@ function renderLine() {
     const p = positions[i];
     const w = p.length / 2;
 
-    const c = Math.cos(p.angle) * sizes.dpr * trasnform.scale;
-    const s = Math.sin(p.angle) * sizes.dpr * trasnform.scale;
+    const c = Math.cos(p.angle) * sizes.dpr;
+    const s = Math.sin(p.angle) * sizes.dpr;
 
     ctx.setTransform(c, s, -s, c, p.x + trasnform.x, p.y + trasnform.y);
 
@@ -145,7 +145,18 @@ canvas.addEventListener(
 
     const k = next / trasnform.scale;
 
+    trasnform.x = e.clientX - (e.clientX - trasnform.x) * k;
+    trasnform.y = e.clientY - (e.clientY - trasnform.y) * k;
+
     trasnform.scale = next;
+
+    if (trasnform.scale === 0.2 || trasnform.scale === 100) return;
+    positions.forEach((value) => {
+      value.x = Math.random() * sizes.width * trasnform.scale;
+      value.y = Math.random() * sizes.height * trasnform.scale;
+
+      value.length = MathUtils.randFloat(100, 300) * trasnform.scale;
+    });
   },
   { passive: false },
 );
