@@ -70,7 +70,7 @@ function renderLine() {
     const c = Math.cos(p.angle) * sizes.dpr;
     const s = Math.sin(p.angle) * sizes.dpr;
 
-    ctx.setTransform(c, s, -s, c, p.x, p.y);
+    ctx.setTransform(c, s, -s, c, p.x + trasnform.x, p.y + trasnform.y);
 
     ctx.beginPath();
     ctx.lineWidth = 4;
@@ -113,3 +113,23 @@ function resize() {
 resize();
 
 window.addEventListener('resize', resize);
+const prev = { x: 0, y: 0 };
+canvas.addEventListener('pointerdown', (e) => {
+  canvas.setPointerCapture(e.pointerId);
+
+  prev.x = e.clientX;
+  prev.y = e.clientY;
+});
+canvas.addEventListener('pointerup', (e) => {
+  if (canvas.hasPointerCapture(e.pointerId))
+    canvas.releasePointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (!canvas.hasPointerCapture(e.pointerId)) return;
+
+  trasnform.x += e.clientX - prev.x;
+  trasnform.y += e.clientY - prev.y;
+
+  prev.x = e.clientX;
+  prev.y = e.clientY;
+});
