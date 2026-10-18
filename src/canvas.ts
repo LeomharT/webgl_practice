@@ -67,8 +67,8 @@ function renderLine() {
     const p = positions[i];
     const w = p.length / 2;
 
-    const c = Math.cos(p.angle) * sizes.dpr;
-    const s = Math.sin(p.angle) * sizes.dpr;
+    const c = Math.cos(p.angle) * sizes.dpr * trasnform.scale;
+    const s = Math.sin(p.angle) * sizes.dpr * trasnform.scale;
 
     ctx.setTransform(c, s, -s, c, p.x + trasnform.x, p.y + trasnform.y);
 
@@ -133,3 +133,19 @@ canvas.addEventListener('pointermove', (e) => {
   prev.x = e.clientX;
   prev.y = e.clientY;
 });
+
+canvas.addEventListener(
+  'wheel',
+  (e) => {
+    const next = MathUtils.clamp(
+      trasnform.scale * Math.exp(-e.deltaY * 0.001),
+      0.2,
+      100,
+    );
+
+    const k = next / trasnform.scale;
+
+    trasnform.scale = next;
+  },
+  { passive: false },
+);
