@@ -16,7 +16,7 @@ const transform = {
 };
 
 const defaultParams = {
-  transform: 'rotate',
+  transform: 'translate',
   grid: false,
   color: Colors.BLUE5,
   size: 300,
@@ -59,7 +59,17 @@ function renderRect() {
   const x = transform.x * sizes.dpr;
   const y = transform.y * sizes.dpr;
 
-  ctx.setTransform(sizes.dpr, 0, 0, sizes.dpr, x, y);
+  const c = Math.cos(transform.rotate);
+  const s = Math.sin(transform.rotate);
+
+  ctx.setTransform(
+    c * sizes.dpr,
+    s * sizes.dpr,
+    -s * sizes.dpr,
+    c * sizes.dpr,
+    x,
+    y,
+  );
 
   const w = params.size;
   ctx.fillStyle = params.color;
@@ -135,11 +145,18 @@ canvas.addEventListener('pointerup', (e) => {
 canvas.addEventListener('pointermove', (e) => {
   if (!canvas.hasPointerCapture(e.pointerId)) return;
 
-  transform.x += e.clientX - prev.x;
-  transform.y += e.clientY - prev.y;
+  if (params.transform === 'translate') {
+    transform.x += e.clientX - prev.x;
+    transform.y += e.clientY - prev.y;
 
-  prev.x = e.clientX;
-  prev.y = e.clientY;
+    prev.x = e.clientX;
+    prev.y = e.clientY;
+  }
+
+  if (params.transform === 'rotate') {
+    const theta = Math.atan2(e.clientY - transform.y, e.clientX - transform.x);
+    transform.rotate = theta;
+  }
 
   render();
 });
