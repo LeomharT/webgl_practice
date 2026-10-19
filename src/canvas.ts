@@ -130,22 +130,29 @@ pane
 
 window.addEventListener('resize', resize);
 
-const prev = { x: 0, y: 0 };
+const prev = { x: 0, y: 0, rotare: 0 };
 canvas.addEventListener('pointerdown', (e) => {
   canvas.setPointerCapture(e.pointerId);
 
   prev.x = e.clientX;
   prev.y = e.clientY;
+
+  prev.rotare = Math.atan2(e.clientY - transform.y, e.clientX - transform.x);
 });
 canvas.addEventListener('pointerup', (e) => {
-  if (canvas.hasPointerCapture(e.pointerId))
+  if (canvas.hasPointerCapture(e.pointerId)) {
     canvas.releasePointerCapture(e.pointerId);
+  }
+
+  prev.rotare = 0;
+  prev.x = 0;
+  prev.y = 0;
 });
 
 canvas.addEventListener('pointermove', (e) => {
   if (!canvas.hasPointerCapture(e.pointerId)) return;
 
-  if (params.transform === 'translate') {
+  if (params.transform === 'translate' || e.buttons === 2) {
     transform.x += e.clientX - prev.x;
     transform.y += e.clientY - prev.y;
 
@@ -155,10 +162,15 @@ canvas.addEventListener('pointermove', (e) => {
 
   if (params.transform === 'rotate') {
     const theta = Math.atan2(e.clientY - transform.y, e.clientX - transform.x);
-    transform.rotate = theta;
+    transform.rotate += theta - prev.rotare;
+    prev.rotare = theta;
   }
 
   render();
+});
+
+canvas.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
 });
 
 canvas.addEventListener(
