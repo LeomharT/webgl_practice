@@ -11,6 +11,19 @@ const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 document.querySelector('#root')?.append(canvas);
 
+function resize() {
+  sizes.width = window.innerWidth;
+  sizes.height = window.innerHeight;
+
+  canvas.width = sizes.width * sizes.dpr;
+  canvas.height = sizes.height * sizes.dpr;
+
+  canvas.style.width = sizes.width + 'px';
+  canvas.style.height = sizes.height + 'px';
+}
+
+resize();
+
 const trasnform = {
   x: 0,
   y: 0,
@@ -22,14 +35,14 @@ function clean() {
 
   ctx.resetTransform();
   ctx.fillStyle = Colors.BLACK;
-  ctx.fillRect(0, 0, sizes.width, sizes.height);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.restore();
 }
 
 const positions = Array.from({ length: 1500 }, () => ({
-  x: Math.random() * sizes.width,
-  y: Math.random() * sizes.height,
+  x: Math.random() * canvas.width,
+  y: Math.random() * canvas.height,
   length: MathUtils.randFloat(100, 300),
   angle: Math.random() * (Math.PI * 2),
   speed: MathUtils.randFloat(0.5, 2),
@@ -61,8 +74,6 @@ const colors = [
 function renderLine() {
   ctx.save();
 
-  ctx.setTransform(sizes.dpr, 0, 0, sizes.dpr, 0, 0);
-
   for (let i = 0; i < positions.length; i++) {
     const p = positions[i];
     const w = p.length / 2;
@@ -70,7 +81,10 @@ function renderLine() {
     const c = Math.cos(p.angle) * sizes.dpr;
     const s = Math.sin(p.angle) * sizes.dpr;
 
-    ctx.setTransform(c, s, -s, c, p.x + trasnform.x, p.y + trasnform.y);
+    const x = p.x + trasnform.x * sizes.dpr;
+    const y = p.y + trasnform.y * sizes.dpr;
+
+    ctx.setTransform(c, s, -s, c, x, y);
 
     ctx.beginPath();
     ctx.lineWidth = 4;
@@ -99,18 +113,6 @@ function render(time: number = 0) {
   requestAnimationFrame(render);
 }
 render();
-
-function resize() {
-  sizes.width = window.innerWidth;
-  sizes.height = window.innerHeight;
-
-  canvas.width = sizes.width * sizes.dpr;
-  canvas.height = sizes.height * sizes.dpr;
-
-  canvas.style.width = sizes.width + 'px';
-  canvas.style.height = sizes.height + 'px';
-}
-resize();
 
 window.addEventListener('resize', resize);
 const prev = { x: 0, y: 0 };
@@ -152,8 +154,8 @@ canvas.addEventListener(
 
     if (trasnform.scale === 0.2 || trasnform.scale === 100) return;
     positions.forEach((value) => {
-      value.x = Math.random() * sizes.width * trasnform.scale;
-      value.y = Math.random() * sizes.height * trasnform.scale;
+      value.x = Math.random() * canvas.width * trasnform.scale;
+      value.y = Math.random() * canvas.height * trasnform.scale;
 
       value.length = MathUtils.randFloat(100, 300) * trasnform.scale;
     });
