@@ -1,4 +1,5 @@
 import { Colors } from '@blueprintjs/colors';
+import { MathUtils } from 'three';
 import { Pane } from 'tweakpane';
 
 const sizes = {
@@ -50,7 +51,7 @@ function renderRect() {
   const boxWidth = params.size;
   ctx.fillStyle = params.color;
 
-  ctx.fillRect(0, 0, boxWidth, boxWidth);
+  ctx.fillRect(0, 0, boxWidth * transform.scale, boxWidth * transform.scale);
 
   ctx.restore();
 }
@@ -136,3 +137,26 @@ canvas.addEventListener('pointermove', (e) => {
 
   render();
 });
+
+canvas.addEventListener(
+  'wheel',
+  (e) => {
+    e.preventDefault();
+
+    const next = MathUtils.clamp(
+      transform.scale * Math.exp(-e.deltaY * 0.001),
+      0.2,
+      100,
+    );
+
+    const k = next / transform.scale;
+
+    transform.x = e.clientX - (e.clientX - transform.x) * k;
+    transform.y = e.clientY - (e.clientY - transform.y) * k;
+
+    transform.scale = next;
+
+    render();
+  },
+  { passive: false },
+);
