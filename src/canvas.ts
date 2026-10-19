@@ -42,10 +42,15 @@ function clean() {
 function renderRect() {
   ctx.save();
 
+  const x = transform.x * sizes.dpr;
+  const y = transform.y * sizes.dpr;
+
+  ctx.setTransform(sizes.dpr, 0, 0, sizes.dpr, x, y);
+
   const boxWidth = params.size;
   ctx.fillStyle = params.color;
 
-  ctx.fillRect(transform.x, transform.y, boxWidth, boxWidth);
+  ctx.fillRect(0, 0, boxWidth, boxWidth);
 
   ctx.restore();
 }
@@ -57,7 +62,6 @@ function render() {
 }
 
 function updateParams() {
-  localStorage.setItem('params', JSON.stringify(params));
   render();
 }
 
@@ -99,4 +103,36 @@ pane
     window.location.reload();
   });
 
+pane
+  .addButton({
+    title: 'Save',
+  })
+  .on('click', () => {
+    localStorage.setItem('params', JSON.stringify(params));
+  });
+
 window.addEventListener('resize', resize);
+
+const prev = { x: 0, y: 0 };
+canvas.addEventListener('pointerdown', (e) => {
+  canvas.setPointerCapture(e.pointerId);
+
+  prev.x = e.clientX;
+  prev.y = e.clientY;
+});
+canvas.addEventListener('pointerup', (e) => {
+  if (canvas.hasPointerCapture(e.pointerId))
+    canvas.releasePointerCapture(e.pointerId);
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!canvas.hasPointerCapture(e.pointerId)) return;
+
+  transform.x += e.clientX - prev.x;
+  transform.y += e.clientY - prev.y;
+
+  prev.x = e.clientX;
+  prev.y = e.clientY;
+
+  render();
+});
