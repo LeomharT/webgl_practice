@@ -14,10 +14,16 @@ const transform = {
   rotate: 0,
 };
 
-const action = {
+const defaultParams = {
   transform: 'translate',
   grid: false,
+  color: Colors.BLUE5,
+  size: 300,
 };
+
+const params: typeof defaultParams = localStorage.getItem('params')
+  ? { ...defaultParams, ...JSON.parse(localStorage.getItem('params')!) }
+  : defaultParams;
 
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
@@ -26,11 +32,33 @@ document.querySelector('#root')?.append(canvas);
 function clean() {
   ctx.save();
 
-  ctx.setTransform(sizes.dpr, 0, 0, sizes.dpr, 0, 0);
+  ctx.resetTransform();
   ctx.fillStyle = Colors.BLACK;
-  ctx.fillRect(0, 0, sizes.width, sizes.height);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.restore();
+}
+
+function renderRect() {
+  ctx.save();
+
+  const boxWidth = params.size;
+  ctx.fillStyle = params.color;
+
+  ctx.fillRect(transform.x, transform.y, boxWidth, boxWidth);
+
+  ctx.restore();
+}
+
+function render() {
+  clean();
+
+  renderRect();
+}
+
+function updateParams() {
+  localStorage.setItem('params', JSON.stringify(params));
+  render();
 }
 
 function resize() {
@@ -43,19 +71,32 @@ function resize() {
   canvas.style.width = sizes.width + 'px';
   canvas.style.height = sizes.height + 'px';
 
-  clean();
+  render();
 }
 resize();
 
 const pane = new Pane({ title: '🚧🚧🚧 Debug Pane 🚧🚧🚧' });
-pane.addBinding(action, 'transform', {
-  view: 'list',
-  label: 'Transform',
-  options: [
-    { text: 'Translate', value: 'translate' },
-    { text: 'Rotate', value: 'rotate' },
-  ],
-});
-pane.addBinding(action, 'grid');
+pane
+  .addBinding(params, 'transform', {
+    view: 'list',
+    label: 'Transform',
+    options: [
+      { text: 'Translate', value: 'translate' },
+      { text: 'Rotate', value: 'rotate' },
+    ],
+  })
+  .on('change', updateParams);
+pane.addBinding(params, 'grid').on('change', updateParams);
+pane.addBinding(params, 'color').on('change', updateParams);
+pane.addBinding(params, 'size', { min: 0 }).on('change', updateParams);
+
+pane
+  .addButton({
+    title: 'Reset',
+  })
+  .on('click', () => {
+    localStorage.clear();
+    window.location.reload();
+  });
 
 window.addEventListener('resize', resize);
