@@ -9,14 +9,14 @@ const sizes = {
 };
 
 const transform = {
-  x: 0,
-  y: 0,
+  x: sizes.width / 2,
+  y: sizes.height / 2,
   scale: 1,
   rotate: 0,
 };
 
 const defaultParams = {
-  transform: 'translate',
+  transform: 'rotate',
   grid: false,
   color: Colors.BLUE5,
   size: 300,
@@ -29,6 +29,19 @@ const params: typeof defaultParams = localStorage.getItem('params')
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 document.querySelector('#root')?.append(canvas);
+
+function resize() {
+  sizes.width = window.innerWidth;
+  sizes.height = window.innerHeight;
+
+  canvas.width = sizes.width * sizes.dpr;
+  canvas.height = sizes.height * sizes.dpr;
+
+  canvas.style.width = sizes.width + 'px';
+  canvas.style.height = sizes.height + 'px';
+
+  render();
+}
 
 function clean() {
   ctx.save();
@@ -48,10 +61,15 @@ function renderRect() {
 
   ctx.setTransform(sizes.dpr, 0, 0, sizes.dpr, x, y);
 
-  const boxWidth = params.size;
+  const w = params.size;
   ctx.fillStyle = params.color;
 
-  ctx.fillRect(0, 0, boxWidth * transform.scale, boxWidth * transform.scale);
+  ctx.fillRect(
+    -(w / 2) * transform.scale,
+    -(w / 2) * transform.scale,
+    w * transform.scale,
+    w * transform.scale,
+  );
 
   ctx.restore();
 }
@@ -66,18 +84,6 @@ function updateParams() {
   render();
 }
 
-function resize() {
-  sizes.width = window.innerWidth;
-  sizes.height = window.innerHeight;
-
-  canvas.width = sizes.width * sizes.dpr;
-  canvas.height = sizes.height * sizes.dpr;
-
-  canvas.style.width = sizes.width + 'px';
-  canvas.style.height = sizes.height + 'px';
-
-  render();
-}
 resize();
 
 const pane = new Pane({ title: '🚧🚧🚧 Debug Pane 🚧🚧🚧' });
