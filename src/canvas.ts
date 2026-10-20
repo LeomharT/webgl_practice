@@ -1,5 +1,5 @@
 import { Colors } from '@blueprintjs/colors';
-import { MathUtils } from 'three';
+import { Color, MathUtils, Vector3 } from 'three';
 import { Pane } from 'tweakpane';
 
 const sizes = {
@@ -15,10 +15,16 @@ const transform = {
   rotate: 0,
 };
 
+const color = new Color();
+const targetColor = new Color();
+
+const v1 = new Vector3();
+const v2 = new Vector3();
+
 const defaultParams = {
   transform: 'translate',
   grid: false,
-  color: Colors.BLUE5,
+  color: Colors.BLUE3,
   size: 300,
 };
 
@@ -110,6 +116,54 @@ pane
 pane.addBinding(params, 'grid').on('change', updateParams);
 pane.addBinding(params, 'color').on('change', updateParams);
 pane.addBinding(params, 'size', { min: 0 }).on('change', updateParams);
+
+const color_folder = pane.addFolder({ title: 'Colors' });
+color_folder.addButton({ title: '🟥 Red' }).on('click', () => {
+  setColor(Colors.RED3);
+});
+color_folder.addButton({ title: '🟩 Green' }).on('click', () => {
+  setColor(Colors.GREEN3);
+});
+color_folder.addButton({ title: '🟦 Blue' }).on('click', () => {
+  setColor(Colors.BLUE3);
+});
+
+let renderId: number | null = null;
+let prevTime = 0;
+
+function setColor(color: string) {
+  targetColor.set(color);
+  v2.setFromColor(targetColor);
+
+  if (!renderId) {
+    prevTime = performance.now();
+    renderId = requestAnimationFrame(lerpToColor);
+  }
+}
+
+function lerpToColor(time: number = 0) {
+  const dt = (time - prevTime) / 1000;
+  prevTime = time;
+
+  const t = 1.0 - Math.exp(-5.0 * dt);
+
+  color.lerp(targetColor, t);
+  v1.setFromColor(color);
+
+  params.color = '#' + color.getHexString();
+
+  render();
+
+  if (v1.distanceToSquared(v2) < 0.00001) {
+    color.copy(targetColor);
+    params.color = '#' + color.getHexString();
+    render();
+    renderId = null;
+    return;
+  }
+
+  renderId = requestAnimationFrame(lerpToColor);
+}
 
 pane
   .addButton({
