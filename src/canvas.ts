@@ -15,12 +15,6 @@ const transform = {
   rotate: 0,
 };
 
-const color = new Color();
-const targetColor = new Color();
-
-const v1 = new Vector3();
-const v2 = new Vector3();
-
 const defaultParams = {
   transform: 'translate',
   grid: false,
@@ -31,6 +25,12 @@ const defaultParams = {
 const params: typeof defaultParams = localStorage.getItem('params')
   ? { ...defaultParams, ...JSON.parse(localStorage.getItem('params')!) }
   : defaultParams;
+
+const color = new Color(params.color);
+const targetColor = new Color();
+
+const v1 = new Vector3();
+const v2 = new Vector3();
 
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
@@ -97,6 +97,9 @@ function render() {
 }
 
 function updateParams() {
+  if (colorAnimationId === null) {
+    color.set(params.color);
+  }
   render();
 }
 
@@ -114,7 +117,7 @@ pane
   })
   .on('change', updateParams);
 pane.addBinding(params, 'grid').on('change', updateParams);
-pane.addBinding(params, 'color').on('change', updateParams);
+const p_color = pane.addBinding(params, 'color').on('change', updateParams);
 pane.addBinding(params, 'size', { min: 0 }).on('change', updateParams);
 
 const color_folder = pane.addFolder({ title: 'Colors' });
@@ -128,22 +131,24 @@ color_folder.addButton({ title: '🟦 Blue' }).on('click', () => {
   setColor(Colors.BLUE3);
 });
 
-let renderId: number | null = null;
+let colorAnimationId: number | null = null;
 let prevTime = 0;
 
 function setColor(color: string) {
   targetColor.set(color);
   v2.setFromColor(targetColor);
 
-  if (!renderId) {
+  if (colorAnimationId === null) {
     prevTime = performance.now();
-    renderId = requestAnimationFrame(lerpToColor);
+    colorAnimationId = requestAnimationFrame(lerpToColor);
   }
 }
 
 function lerpToColor(time: number = 0) {
   const dt = (time - prevTime) / 1000;
   prevTime = time;
+
+  console.log(time, prevTime, dt);
 
   const t = 1.0 - Math.exp(-5.0 * dt);
 
@@ -152,17 +157,20 @@ function lerpToColor(time: number = 0) {
 
   params.color = '#' + color.getHexString();
 
-  render();
+  const finished = v1.distanceToSquared(v2) < 0.00001;
 
-  if (v1.distanceToSquared(v2) < 0.00001) {
+  if (finished) {
     color.copy(targetColor);
     params.color = '#' + color.getHexString();
-    render();
-    renderId = null;
-    return;
   }
 
-  renderId = requestAnimationFrame(lerpToColor);
+  p_color.refresh();
+
+  if (finished) {
+    return (colorAnimationId = null);
+  }
+
+  colorAnimationId = requestAnimationFrame(lerpToColor);
 }
 
 pane
