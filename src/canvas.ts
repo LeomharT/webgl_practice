@@ -1,4 +1,5 @@
 import { Colors } from '@blueprintjs/colors';
+import { MathUtils } from 'three';
 
 const sizes = {
   width: window.innerWidth,
@@ -11,6 +12,14 @@ const el = document.querySelector('#root');
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 el?.append(canvas);
+
+const transform = {
+  x: 0,
+  y: 0,
+  scale: 1,
+};
+
+const colors = Object.entries(Colors).map((value) => value[1]);
 
 function resize() {
   sizes.width = window.innerWidth;
@@ -34,9 +43,45 @@ function clean() {
   ctx.restore();
 }
 
+const positions = Array.from({ length: 500 }, (_, index) => ({
+  x: Math.random() * sizes.width,
+  y: Math.random() * sizes.height,
+  color: colors[index % colors.length],
+  length: MathUtils.randFloat(100, 300),
+}));
+
+function drawLines() {
+  ctx.save();
+
+  for (const p of positions) {
+    ctx.save();
+
+    ctx.strokeStyle = p.color;
+    ctx.lineWidth = 2;
+
+    const w = p.length / 2;
+
+    ctx.beginPath();
+    ctx.moveTo(-w, p.y);
+    ctx.lineTo(w, p.y);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
 function render() {
   // Clear canvas on each frame
   clean();
+
+  positions.forEach((value) => {
+    value.y += 2;
+    value.y = value.y % sizes.height;
+  });
+
+  drawLines();
 
   requestAnimationFrame(render);
 }
