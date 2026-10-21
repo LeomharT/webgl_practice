@@ -1,6 +1,8 @@
 import { Colors } from '@blueprintjs/colors';
 import { MathUtils } from 'three';
 
+const mod = (n: number, m: number) => ((n % m) + m) % m;
+
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
@@ -77,8 +79,8 @@ function render() {
   clean();
 
   positions.forEach((value) => {
-    value.y += 2;
-    value.y = value.y % sizes.height;
+    value.y -= 2;
+    value.y = mod(value.y, sizes.height);
   });
 
   drawLines();
