@@ -6,7 +6,7 @@ const mod = (n: number, m: number) => ((n % m) + m) % m;
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
-  pixelRatio: Math.min(2, window.devicePixelRatio),
+  pixelRatio: 2,
 };
 
 const el = document.querySelector('#root');
@@ -63,6 +63,7 @@ function drawLines() {
     const c = Math.cos(p.angle);
     const s = Math.sin(p.angle);
 
+    ctx.scale(sizes.pixelRatio, sizes.pixelRatio);
     ctx.transform(c, s, -s, c, p.x, p.y);
 
     ctx.strokeStyle = p.color;
