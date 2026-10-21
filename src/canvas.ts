@@ -50,6 +50,8 @@ const positions = Array.from({ length: 500 }, (_, index) => ({
   y: Math.random() * sizes.height,
   color: colors[index % colors.length],
   length: MathUtils.randFloat(100, 300),
+  angle: MathUtils.randFloat(0, Math.PI * 2),
+  speed: MathUtils.randFloat(0.1, 1),
 }));
 
 function drawLines() {
@@ -58,14 +60,20 @@ function drawLines() {
   for (const p of positions) {
     ctx.save();
 
+    const c = Math.cos(p.angle);
+    const s = Math.sin(p.angle);
+
+    ctx.transform(c, s, -s, c, p.x, p.y);
+
     ctx.strokeStyle = p.color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'round';
 
     const w = p.length / 2;
 
     ctx.beginPath();
-    ctx.moveTo(-w, p.y);
-    ctx.lineTo(w, p.y);
+    ctx.moveTo(-w, 0);
+    ctx.lineTo(w, 0);
     ctx.stroke();
 
     ctx.restore();
@@ -79,8 +87,8 @@ function render() {
   clean();
 
   positions.forEach((value) => {
-    value.y -= 2;
-    value.y = mod(value.y, sizes.height);
+    value.angle += 0.1 * value.speed;
+    value.angle = value.angle % (Math.PI * 2);
   });
 
   drawLines();
