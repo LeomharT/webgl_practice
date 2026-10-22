@@ -17,6 +17,8 @@ const el = document.querySelector('#root');
 
 const canvas = document.createElement('canvas');
 canvas.style.imageRendering = 'pixelated';
+canvas.style.touchAction = 'none';
+canvas.style.userSelect = 'none';
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 el?.append(canvas);
 
@@ -186,13 +188,21 @@ function parsePGM(arrayBuffer: ArrayBuffer) {
   }
 }
 
+let minScale = 0.1;
+
 void (async function () {
-  const res = await fetch('/park081302.pgm');
+  const res = await fetch('/jiaoyegongyuan091101.pgm');
 
   const pgmData = parsePGM(await res.arrayBuffer());
   if (!pgmData) return;
 
-  const { width, height, data } = pgmData;
+  const { width, height, data } = downsampleMin(
+    pgmData.data,
+    pgmData.width,
+    pgmData.height,
+    4,
+  );
+
   offscreenCanvas.width = width;
   offscreenCanvas.height = height;
 
@@ -215,36 +225,88 @@ void (async function () {
   }
 
   offscreenCtx.putImageData(imageData, 0, 0);
-  transform.x = sizes.width / 2 - width / 2;
-  transform.y = sizes.height / 2 - height / 2;
+
+  minScale = Math.min(sizes.width / width, sizes.height / height);
+  transform.scale = minScale;
+
+  transform.x = (sizes.width - width * transform.scale) / 2;
+  transform.y = (sizes.height - height * transform.scale) / 2;
 
   render();
 })();
 
-const prev = { x: 0, y: 0 };
+type Point = { x: number; y: number };
+
+const pointers = new Map<number, Point>();
+let renderPending = false;
+
+function requestRender() {
+  if (renderPending) return;
+  renderPending = true;
+  requestAnimationFrame(() => {
+    renderPending = false;
+    render();
+  });
+}
+
+function canvasPoint(e: MouseEvent): Point {
+  const rect = canvas.getBoundingClientRect();
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function gesture() {
+  const [a, b] = pointers.values();
+  if (!a) return;
+  return {
+    center: b ? { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } : a,
+    distance: b ? Math.hypot(b.x - a.x, b.y - a.y) : 0,
+  };
+}
+
+// Keep the world point under the old center anchored to the new center.
+function moveView(from: Point, to: Point, scale: number) {
+  const next = clamp(scale, Math.min(minScale, 0.1), 100);
+  const k = next / transform.scale;
+  transform.x = to.x - (from.x - transform.x) * k;
+  transform.y = to.y - (from.y - transform.y) * k;
+  transform.scale = next;
+  requestRender();
+}
 
 canvas.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0) return;
   canvas.setPointerCapture(e.pointerId);
-
-  prev.x = e.clientX;
-  prev.y = e.clientY;
+  pointers.set(e.pointerId, canvasPoint(e));
 });
 
-canvas.addEventListener('pointerup', (e) => {
+function endPointer(e: PointerEvent) {
+  pointers.delete(e.pointerId);
   if (canvas.hasPointerCapture(e.pointerId))
     canvas.releasePointerCapture(e.pointerId);
+}
+
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+canvas.addEventListener('lostpointercapture', endPointer);
+
+window.addEventListener('blur', () => {
+  for (const pointerId of pointers.keys()) {
+    if (canvas.hasPointerCapture(pointerId))
+      canvas.releasePointerCapture(pointerId);
+  }
+  pointers.clear();
 });
 
 canvas.addEventListener('pointermove', (e) => {
-  if (!canvas.hasPointerCapture(e.pointerId)) return;
-
-  transform.x += e.clientX - prev.x;
-  transform.y += e.clientY - prev.y;
-
-  prev.x = e.clientX;
-  prev.y = e.clientY;
-
-  render();
+  if (!pointers.has(e.pointerId)) return;
+  const before = gesture()!;
+  pointers.set(e.pointerId, canvasPoint(e));
+  const after = gesture()!;
+  const ratio =
+    before.distance > 0 && after.distance > 0
+      ? after.distance / before.distance
+      : 1;
+  moveView(before.center, after.center, transform.scale * ratio);
 });
 
 canvas.addEventListener(
@@ -252,16 +314,33 @@ canvas.addEventListener(
   (e) => {
     e.preventDefault();
 
-    const next = clamp(transform.scale * Math.exp(-e.deltaY * 0.001), 0.1, 100);
-
-    const k = next / transform.scale;
-
-    transform.x = e.clientX - (e.clientX - transform.x) * k;
-    transform.y = e.clientY - (e.clientY - transform.y) * k;
-
-    transform.scale = next;
-
-    render();
+    const point = canvasPoint(e);
+    moveView(point, point, transform.scale * Math.exp(-e.deltaY * 0.001));
   },
   { passive: false },
 );
+
+function downsampleMin(src: Uint8Array, w: number, h: number, f = 4) {
+  const dw = Math.ceil(w / f);
+  const dh = Math.ceil(h / f);
+  const dst = new Uint8Array(dw * dh);
+
+  for (let dy = 0; dy < dh; dy++) {
+    const y0 = dy * f;
+    const y1 = Math.min(y0 + f, h); // 最后一行块可能不满 4 行
+    for (let dx = 0; dx < dw; dx++) {
+      const x0 = dx * f;
+      const x1 = Math.min(x0 + f, w); // 最后一列块可能不满 4 列
+      let m = 255;
+      for (let y = y0; y < y1; y++) {
+        const row = y * w;
+        for (let x = x0; x < x1; x++) {
+          const v = src[row + x];
+          if (v < m) m = v;
+        }
+      }
+      dst[dy * dw + dx] = m;
+    }
+  }
+  return { data: dst, width: dw, height: dh };
+}
