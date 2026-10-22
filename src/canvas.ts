@@ -2,6 +2,8 @@ import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import { Pane } from 'tweakpane';
 import { Colors } from './constants/color';
 
+const mod = (n: number, m: number) => ((n % m) + m) % m;
+
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
@@ -62,8 +64,33 @@ function renderImageData() {
   ctx.restore();
 }
 
+function renderGrad(step: number, color: string) {
+  ctx.save();
+
+  ctx.setTransform(sizes.pixelRatio, 0, 0, sizes.pixelRatio, 0, 0);
+
+  ctx.strokeStyle = color;
+  ctx.beginPath();
+  for (let x = mod(transform.x, step); x < sizes.width; x += step) {
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, sizes.height);
+  }
+  for (let y = mod(transform.y, step); y < sizes.height; y += step) {
+    ctx.moveTo(0, y);
+    ctx.lineTo(sizes.width, y);
+  }
+  ctx.stroke();
+
+  ctx.restore();
+}
+
 function render() {
   clean();
+
+  const MAJOR_CELL = 100;
+
+  renderGrad(MAJOR_CELL, Colors.SLATE400);
+
   renderImageData();
 }
 
@@ -146,11 +173,11 @@ void (async function () {
     colorSpace: 'srgb',
   });
 
+  const color = { r: 0, g: 0, b: 0 };
+
   for (let i = 0; i < data.length; i++) {
     const pixel = data[i];
     let alpha = 255;
-
-    const color = { r: 0, g: 0, b: 0 };
 
     // Unknow area
     if (pixel === 205) alpha = 0;
@@ -175,9 +202,6 @@ void (async function () {
   }
 
   offscreenCtx.putImageData(imageData, 0, 0);
-
-  transform.x = sizes.width / 2 - width / 2;
-  transform.y = sizes.height / 2 - height / 2;
 
   render();
 })();
