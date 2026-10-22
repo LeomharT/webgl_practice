@@ -44,7 +44,7 @@ function clean() {
   ctx.save();
 
   ctx.resetTransform();
-  ctx.fillStyle = Colors.SLATE800;
+  ctx.fillStyle = Colors.SLATE950;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.restore();
@@ -147,14 +147,37 @@ void (async function () {
   });
 
   for (let i = 0; i < data.length; i++) {
+    const pixel = data[i];
+    let alpha = 255;
+
+    const color = { r: 0, g: 0, b: 0 };
+
+    // Unknow area
+    if (pixel === 205) alpha = 0;
+    // Blocked area
+    if (pixel === 0) {
+      color.r = 229;
+      color.g = 231;
+      color.b = 235;
+    }
+    //
+    if (pixel === 254 || pixel === 255) {
+      color.r = 30;
+      color.g = 41;
+      color.b = 59;
+    }
+
     const i4 = i * 4;
-    imageData.data[i4 + 0] = data[i]; // r
-    imageData.data[i4 + 1] = data[i]; // g
-    imageData.data[i4 + 2] = data[i]; // b
-    imageData.data[i4 + 3] = 255; // a
+    imageData.data[i4 + 0] = color.r;
+    imageData.data[i4 + 1] = color.g;
+    imageData.data[i4 + 2] = color.b;
+    imageData.data[i4 + 3] = alpha;
   }
 
   offscreenCtx.putImageData(imageData, 0, 0);
+
+  transform.x = sizes.width / 2 - width / 2;
+  transform.y = sizes.height / 2 - height / 2;
 
   render();
 })();
