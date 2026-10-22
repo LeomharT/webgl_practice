@@ -1,5 +1,7 @@
-import { Colors } from '@blueprintjs/colors';
+import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import { MathUtils } from 'three';
+import { Pane } from 'tweakpane';
+import { Colors } from './constants/color';
 
 const mod = (n: number, m: number) => ((n % m) + m) % m;
 
@@ -39,7 +41,7 @@ function clean() {
   ctx.save();
 
   ctx.resetTransform();
-  ctx.fillStyle = Colors.BLACK;
+  ctx.fillStyle = Colors.GRAY950;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.restore();
@@ -60,11 +62,10 @@ function drawLines() {
   for (const p of positions) {
     ctx.save();
 
-    const c = Math.cos(p.angle);
-    const s = Math.sin(p.angle);
+    const c = Math.cos(p.angle) * sizes.pixelRatio;
+    const s = Math.sin(p.angle) * sizes.pixelRatio;
 
-    ctx.scale(sizes.pixelRatio, sizes.pixelRatio);
-    ctx.transform(c, s, -s, c, p.x, p.y);
+    ctx.transform(c, s, -s, c, p.x * sizes.pixelRatio, p.y * sizes.pixelRatio);
 
     ctx.strokeStyle = p.color;
     ctx.lineWidth = 10;
@@ -75,6 +76,7 @@ function drawLines() {
     ctx.beginPath();
     ctx.moveTo(-w, 0);
     ctx.lineTo(w, 0);
+
     ctx.stroke();
 
     ctx.restore();
@@ -83,19 +85,71 @@ function drawLines() {
   ctx.restore();
 }
 
+function drawCursor(x: number, y: number) {
+  ctx.save();
+
+  ctx.setTransform(sizes.pixelRatio, 0, 0, sizes.pixelRatio, 0, 0);
+
+  ctx.fillStyle = Colors.BLUE500;
+  ctx.beginPath();
+  ctx.arc(x, y, 40, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+const pane = new Pane({ title: 'Debug pand' });
+
+// Register plugin to the pane
+pane.registerPlugin(EssentialsPlugin);
+
+// Add a FPS graph
+const fpsGraph: any = pane.addBlade({
+  view: 'fpsgraph',
+  label: undefined,
+  rows: 3,
+});
+
+let velocityX = 0;
+let translateX = 0;
+
+let velocityY = 0;
+let translateY = 0;
+
 function render() {
+  fpsGraph.begin();
+
+  // Update
+  velocityX += (transform.x - translateX) * 0.02; // Speed
+  velocityX *= 0.9; // Damping
+
+  translateX += velocityX;
+
+  velocityY += (transform.y - translateY) * 0.02; // Speed
+  velocityY *= 0.9; // Damping
+
+  translateY += velocityY;
+
+  positions.forEach((value) => {
+    value.angle = Math.atan2(translateY - value.y, translateX - value.x);
+    value.angle += Math.PI / 2;
+  });
+
   // Clear canvas on each frame
   clean();
 
-  positions.forEach((value) => {
-    value.angle += 0.1 * value.speed;
-    value.angle = value.angle % (Math.PI * 2);
-  });
-
   drawLines();
+  drawCursor(translateX, translateY);
 
   requestAnimationFrame(render);
+
+  fpsGraph.end();
 }
 render();
 
 window.addEventListener('resize', resize);
+
+canvas.addEventListener('pointermove', (e) => {
+  transform.x = e.clientX;
+  transform.y = e.clientY;
+});
