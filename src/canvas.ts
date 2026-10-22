@@ -3,11 +3,14 @@ import { Pane } from 'tweakpane';
 import { Colors } from './constants/color';
 
 const mod = (n: number, m: number) => ((n % m) + m) % m;
+const snap = (v: number) => Math.round(v * sizes.pixelRatio) / sizes.pixelRatio;
+const clamp = (v: number, min: number, max: number) =>
+  Math.min(max, Math.max(v, min));
 
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
-  pixelRatio: 2,
+  pixelRatio: Math.min(2, window.devicePixelRatio),
 };
 
 const el = document.querySelector('#root');
@@ -46,7 +49,7 @@ function clean() {
   ctx.save();
 
   ctx.resetTransform();
-  ctx.fillStyle = Colors.SLATE950;
+  ctx.fillStyle = Colors.GRAY100;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.restore();
@@ -58,24 +61,38 @@ function renderImageData() {
   const tx = transform.x * sizes.pixelRatio;
   const ty = transform.y * sizes.pixelRatio;
 
-  ctx.setTransform(sizes.pixelRatio, 0, 0, sizes.pixelRatio, tx, ty);
+  const s = sizes.pixelRatio * transform.scale;
+
+  ctx.setTransform(s, 0, 0, s, tx, ty);
+  ctx.imageSmoothingEnabled = s < 1;
   ctx.drawImage(offscreenCanvas, 0, 0);
 
   ctx.restore();
 }
 
-function renderGrad(step: number, color: string) {
+function renderGrad(step: number, color: string, dash?: [number, number]) {
   ctx.save();
 
   ctx.setTransform(sizes.pixelRatio, 0, 0, sizes.pixelRatio, 0, 0);
-
   ctx.strokeStyle = color;
+  ctx.lineWidth = 2 / sizes.pixelRatio;
+
+  const xsnap = snap(transform.x);
+  const ysnap = snap(transform.y);
+
+  if (dash) ctx.setLineDash(dash);
+
   ctx.beginPath();
-  for (let x = mod(transform.x, step); x < sizes.width; x += step) {
+  if (dash) ctx.lineDashOffset = -ysnap % (dash[0] + dash[1]);
+  for (let x = mod(xsnap, step); x < sizes.width; x += step) {
     ctx.moveTo(x, 0);
     ctx.lineTo(x, sizes.height);
   }
-  for (let y = mod(transform.y, step); y < sizes.height; y += step) {
+  ctx.stroke();
+
+  ctx.beginPath();
+  if (dash) ctx.lineDashOffset = -xsnap % (dash[0] + dash[1]);
+  for (let y = mod(ysnap, step); y < sizes.height; y += step) {
     ctx.moveTo(0, y);
     ctx.lineTo(sizes.width, y);
   }
@@ -87,9 +104,19 @@ function renderGrad(step: number, color: string) {
 function render() {
   clean();
 
-  const MAJOR_CELL = 100;
+  const MAJOR_CELL = 100 * transform.scale;
+  const MINOR_CELL = MAJOR_CELL / 5;
 
-  renderGrad(MAJOR_CELL, Colors.SLATE400);
+  if (transform.scale > 0.5)
+    renderGrad(
+      MINOR_CELL,
+      transform.scale > 0.7 ? Colors.GRAY300 : Colors.GRAY200,
+      [3, 3],
+    );
+  renderGrad(
+    MAJOR_CELL,
+    transform.scale > 0.5 ? Colors.GRAY300 : Colors.GRAY200,
+  );
 
   renderImageData();
 }
@@ -160,7 +187,7 @@ function parsePGM(arrayBuffer: ArrayBuffer) {
 }
 
 void (async function () {
-  const res = await fetch('/16f01.pgm');
+  const res = await fetch('/park081302.pgm');
 
   const pgmData = parsePGM(await res.arrayBuffer());
   if (!pgmData) return;
@@ -173,35 +200,23 @@ void (async function () {
     colorSpace: 'srgb',
   });
 
-  const color = { r: 0, g: 0, b: 0 };
-
   for (let i = 0; i < data.length; i++) {
     const pixel = data[i];
     let alpha = 255;
 
     // Unknow area
     if (pixel === 205) alpha = 0;
-    // Blocked area
-    if (pixel === 0) {
-      color.r = 229;
-      color.g = 231;
-      color.b = 235;
-    }
-    //
-    if (pixel === 254 || pixel === 255) {
-      color.r = 30;
-      color.g = 41;
-      color.b = 59;
-    }
 
     const i4 = i * 4;
-    imageData.data[i4 + 0] = color.r;
-    imageData.data[i4 + 1] = color.g;
-    imageData.data[i4 + 2] = color.b;
+    imageData.data[i4 + 0] = pixel;
+    imageData.data[i4 + 1] = pixel;
+    imageData.data[i4 + 2] = pixel;
     imageData.data[i4 + 3] = alpha;
   }
 
   offscreenCtx.putImageData(imageData, 0, 0);
+  transform.x = sizes.width / 2 - width / 2;
+  transform.y = sizes.height / 2 - height / 2;
 
   render();
 })();
@@ -231,3 +246,22 @@ canvas.addEventListener('pointermove', (e) => {
 
   render();
 });
+
+canvas.addEventListener(
+  'wheel',
+  (e) => {
+    e.preventDefault();
+
+    const next = clamp(transform.scale * Math.exp(-e.deltaY * 0.001), 0.1, 100);
+
+    const k = next / transform.scale;
+
+    transform.x = e.clientX - (e.clientX - transform.x) * k;
+    transform.y = e.clientY - (e.clientY - transform.y) * k;
+
+    transform.scale = next;
+
+    render();
+  },
+  { passive: false },
+);
