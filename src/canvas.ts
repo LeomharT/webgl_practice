@@ -11,16 +11,14 @@ const sizes = {
 const el = document.querySelector('#root');
 
 const canvas = document.createElement('canvas');
+canvas.style.imageRendering = 'pixelated';
 const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 el?.append(canvas);
 
-let pgmMap:
-  | {
-      imageData: ImageData;
-      width: number;
-      height: number;
-    }
-  | undefined;
+const offscreenCanvas = document.createElement('canvas');
+const offscreenCtx = offscreenCanvas.getContext(
+  '2d',
+) as CanvasRenderingContext2D;
 
 const transform = {
   x: 0,
@@ -52,19 +50,21 @@ function clean() {
   ctx.restore();
 }
 
-function renderImageData(pgm: typeof pgmMap) {
-  if (!pgm) return;
-
+function renderImageData() {
   ctx.save();
 
-  ctx.putImageData(pgm.imageData, -pgm.width / 2, -pgm.height / 2);
+  const tx = transform.x * sizes.pixelRatio;
+  const ty = transform.y * sizes.pixelRatio;
+
+  ctx.setTransform(sizes.pixelRatio, 0, 0, sizes.pixelRatio, tx, ty);
+  ctx.drawImage(offscreenCanvas, 0, 0);
 
   ctx.restore();
 }
 
 function render() {
   clean();
-  renderImageData(pgmMap);
+  renderImageData();
 }
 
 const pane = new Pane({ title: 'Debug pand' });
@@ -87,11 +87,6 @@ function tick() {
 tick();
 
 window.addEventListener('resize', resize);
-
-canvas.addEventListener('pointermove', (e) => {
-  transform.x = e.clientX;
-  transform.y = e.clientY;
-});
 
 // Utils
 function read(view: DataView, offset: number, isNumber: boolean = false) {
@@ -144,23 +139,48 @@ void (async function () {
   if (!pgmData) return;
 
   const { width, height, data } = pgmData;
-  const imageData = ctx.createImageData(width, height, {
+  offscreenCanvas.width = width;
+  offscreenCanvas.height = height;
+
+  const imageData = offscreenCtx.createImageData(width, height, {
     colorSpace: 'srgb',
   });
 
   for (let i = 0; i < data.length; i++) {
     const i4 = i * 4;
-    imageData.data[i4 + 0] = data[i];
-    imageData.data[i4 + 1] = data[i];
-    imageData.data[i4 + 2] = data[i];
-    imageData.data[i4 + 3] = 255;
+    imageData.data[i4 + 0] = data[i]; // r
+    imageData.data[i4 + 1] = data[i]; // g
+    imageData.data[i4 + 2] = data[i]; // b
+    imageData.data[i4 + 3] = 255; // a
   }
 
-  pgmMap = {
-    imageData,
-    width,
-    height,
-  };
+  offscreenCtx.putImageData(imageData, 0, 0);
 
   render();
 })();
+
+const prev = { x: 0, y: 0 };
+
+canvas.addEventListener('pointerdown', (e) => {
+  canvas.setPointerCapture(e.pointerId);
+
+  prev.x = e.clientX;
+  prev.y = e.clientY;
+});
+
+canvas.addEventListener('pointerup', (e) => {
+  if (canvas.hasPointerCapture(e.pointerId))
+    canvas.releasePointerCapture(e.pointerId);
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!canvas.hasPointerCapture(e.pointerId)) return;
+
+  transform.x += e.clientX - prev.x;
+  transform.y += e.clientY - prev.y;
+
+  prev.x = e.clientX;
+  prev.y = e.clientY;
+
+  render();
+});
