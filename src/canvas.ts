@@ -3,8 +3,6 @@ import { MathUtils } from 'three';
 import { Pane } from 'tweakpane';
 import { Colors } from './constants/color';
 
-const mod = (n: number, m: number) => ((n % m) + m) % m;
-
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
