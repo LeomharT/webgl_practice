@@ -242,6 +242,7 @@ let renderPending = false;
 
 function requestRender() {
   if (renderPending) return;
+
   renderPending = true;
   requestAnimationFrame(() => {
     renderPending = false;
@@ -266,21 +267,27 @@ function gesture() {
 // Keep the world point under the old center anchored to the new center.
 function moveView(from: Point, to: Point, scale: number) {
   const next = clamp(scale, Math.min(minScale, 0.1), 100);
+
   const k = next / transform.scale;
+
   transform.x = to.x - (from.x - transform.x) * k;
   transform.y = to.y - (from.y - transform.y) * k;
+
   transform.scale = next;
+
   requestRender();
 }
 
 canvas.addEventListener('pointerdown', (e) => {
   if (e.button !== 0) return;
+
   canvas.setPointerCapture(e.pointerId);
   pointers.set(e.pointerId, canvasPoint(e));
 });
 
 function endPointer(e: PointerEvent) {
   pointers.delete(e.pointerId);
+
   if (canvas.hasPointerCapture(e.pointerId))
     canvas.releasePointerCapture(e.pointerId);
 }
