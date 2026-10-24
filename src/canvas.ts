@@ -191,7 +191,7 @@ function parsePGM(arrayBuffer: ArrayBuffer) {
 let minScale = 0.1;
 
 void (async function () {
-  const res = await fetch('/jiaoyegongyuan091101.pgm');
+  const res = await fetch('/park081302.pgm');
 
   const pgmData = parsePGM(await res.arrayBuffer());
   if (!pgmData) return;
@@ -351,3 +351,16 @@ function downsampleMin(src: Uint8Array, w: number, h: number, f = 4) {
   }
   return { data: dst, width: dw, height: dh };
 }
+
+// Mimimap
+const map = document.createElement('div');
+map.style.width = '300px';
+map.style.height = '200px';
+map.style.background = Colors.NEUTRAL200;
+map.style.position = 'absolute';
+map.style.bottom = '24px';
+map.style.right = '24px';
+map.style.borderRadius = '20px';
+map.style.opacity = '0.8';
+
+el?.append(map);
