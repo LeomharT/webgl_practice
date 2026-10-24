@@ -26,6 +26,7 @@ const offscreenCanvas = document.createElement('canvas');
 const offscreenCtx = offscreenCanvas.getContext(
   '2d',
 ) as CanvasRenderingContext2D;
+let mapReady = false;
 
 const transform = {
   x: 0,
@@ -36,6 +37,7 @@ const transform = {
 function resize() {
   sizes.width = window.innerWidth;
   sizes.height = window.innerHeight;
+  sizes.pixelRatio = Math.min(2, window.devicePixelRatio);
 
   canvas.width = sizes.width * sizes.pixelRatio;
   canvas.height = sizes.height * sizes.pixelRatio;
@@ -43,9 +45,15 @@ function resize() {
   canvas.style.width = sizes.width + 'px';
   canvas.style.height = sizes.height + 'px';
 
+  if (mapReady)
+    minScale = Math.min(
+      sizes.width / offscreenCanvas.width,
+      sizes.height / offscreenCanvas.height,
+    );
+
+  resizeMinimap();
   render();
 }
-resize();
 
 function clean() {
   ctx.save();
@@ -121,6 +129,7 @@ function render() {
   );
 
   renderImageData();
+  renderMinimapViewport();
 }
 
 const pane = new Pane({ title: 'Debug pand' });
@@ -136,11 +145,12 @@ const fpsGraph: any = pane.addBlade({
 });
 
 function tick() {
+  if (sizes.pixelRatio !== Math.min(2, window.devicePixelRatio)) resize();
+
   fpsGraph.begin();
   requestAnimationFrame(tick);
   fpsGraph.end();
 }
-tick();
 
 window.addEventListener('resize', resize);
 
@@ -225,6 +235,8 @@ void (async function () {
   }
 
   offscreenCtx.putImageData(imageData, 0, 0);
+  mapReady = true;
+  renderMinimapImage();
 
   minScale = Math.min(sizes.width / width, sizes.height / height);
   transform.scale = minScale;
@@ -352,15 +364,174 @@ function downsampleMin(src: Uint8Array, w: number, h: number, f = 4) {
   return { data: dst, width: dw, height: dh };
 }
 
-// Mimimap
+// Minimap: cache the image separately from the moving viewport overlay.
 const map = document.createElement('div');
-map.style.width = '300px';
-map.style.height = '200px';
+map.style.width = 'min(300px, calc(100vw - 48px))';
+map.style.height = 'min(200px, calc(100vh - 48px))';
 map.style.background = Colors.NEUTRAL200;
 map.style.position = 'absolute';
 map.style.bottom = '24px';
 map.style.right = '24px';
 map.style.borderRadius = '20px';
 map.style.opacity = '0.8';
+map.style.overflow = 'hidden';
+map.style.touchAction = 'none';
+map.style.userSelect = 'none';
+map.style.cursor = 'crosshair';
+map.title = '点击定位，拖动视口移动地图';
 
+const minimapCanvas = document.createElement('canvas');
+minimapCanvas.style.width = '100%';
+minimapCanvas.style.height = '100%';
+minimapCanvas.style.display = 'block';
+minimapCanvas.style.pointerEvents = 'none';
+const minimapCtx = minimapCanvas.getContext('2d') as CanvasRenderingContext2D;
+
+const minimapViewport = document.createElement('div');
+minimapViewport.style.position = 'absolute';
+minimapViewport.style.display = 'none';
+minimapViewport.style.background = `${Colors.BLUE500}22`;
+minimapViewport.style.boxShadow = `inset 0 0 0 2px ${Colors.BLUE500}`;
+minimapViewport.style.cursor = 'grab';
+
+map.append(minimapCanvas, minimapViewport);
 el?.append(map);
+
+const minimap = {
+  width: 0,
+  height: 0,
+  pixelRatio: 0,
+  x: 0,
+  y: 0,
+  scale: 1,
+};
+
+function resizeMinimap() {
+  const width = map.clientWidth;
+  const height = map.clientHeight;
+  if (
+    width === minimap.width &&
+    height === minimap.height &&
+    sizes.pixelRatio === minimap.pixelRatio
+  )
+    return;
+
+  minimap.width = width;
+  minimap.height = height;
+  minimap.pixelRatio = sizes.pixelRatio;
+  renderMinimapImage();
+  renderMinimapViewport();
+}
+
+function renderMinimapImage() {
+  if (!mapReady || minimap.width <= 0 || minimap.height <= 0) return;
+
+  const { width, height } = offscreenCanvas;
+  minimap.scale = Math.min(minimap.width / width, minimap.height / height);
+  minimap.x = (minimap.width - width * minimap.scale) / 2;
+  minimap.y = (minimap.height - height * minimap.scale) / 2;
+
+  minimapCanvas.width = Math.round(minimap.width * minimap.pixelRatio);
+  minimapCanvas.height = Math.round(minimap.height * minimap.pixelRatio);
+  minimapCtx.setTransform(
+    minimapCanvas.width / minimap.width,
+    0,
+    0,
+    minimapCanvas.height / minimap.height,
+    0,
+    0,
+  );
+  minimapCtx.imageSmoothingEnabled = true;
+  minimapCtx.imageSmoothingQuality = 'high';
+  minimapCtx.drawImage(
+    offscreenCanvas,
+    minimap.x,
+    minimap.y,
+    width * minimap.scale,
+    height * minimap.scale,
+  );
+}
+
+function renderMinimapViewport() {
+  if (!mapReady || minimap.width <= 0 || minimap.height <= 0) {
+    minimapViewport.style.display = 'none';
+    return;
+  }
+
+  const { x, y, scale } = transform;
+  const { width, height } = offscreenCanvas;
+  // Intersect the main viewport with the map in downsampled map coordinates.
+  const left = clamp(-x / scale, 0, width);
+  const top = clamp(-y / scale, 0, height);
+  const right = clamp((sizes.width - x) / scale, 0, width);
+  const bottom = clamp((sizes.height - y) / scale, 0, height);
+
+  minimapViewport.style.display =
+    right > left && bottom > top ? 'block' : 'none';
+  minimapViewport.style.left = minimap.x + left * minimap.scale + 'px';
+  minimapViewport.style.top = minimap.y + top * minimap.scale + 'px';
+  minimapViewport.style.width = (right - left) * minimap.scale + 'px';
+  minimapViewport.style.height = (bottom - top) * minimap.scale + 'px';
+}
+
+function minimapPoint(e: PointerEvent): Point {
+  const rect = map.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left - minimap.x) / minimap.scale,
+    y: (e.clientY - rect.top - minimap.y) / minimap.scale,
+  };
+}
+
+let minimapDrag: { pointerId: number; point: Point } | null = null;
+
+map.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0 || !mapReady || minimapDrag) return;
+  e.preventDefault();
+
+  const point = minimapPoint(e);
+  // Grabbing the viewport preserves the grab position; clicking elsewhere jumps.
+  if (e.target !== minimapViewport) {
+    const x = clamp(point.x, 0, offscreenCanvas.width);
+    const y = clamp(point.y, 0, offscreenCanvas.height);
+    transform.x = sizes.width / 2 - x * transform.scale;
+    transform.y = sizes.height / 2 - y * transform.scale;
+    requestRender();
+  }
+
+  minimapDrag = { pointerId: e.pointerId, point };
+  map.setPointerCapture(e.pointerId);
+  map.style.cursor = minimapViewport.style.cursor = 'grabbing';
+});
+
+map.addEventListener('pointermove', (e) => {
+  if (minimapDrag?.pointerId !== e.pointerId) return;
+  const point = minimapPoint(e);
+  transform.x -= (point.x - minimapDrag.point.x) * transform.scale;
+  transform.y -= (point.y - minimapDrag.point.y) * transform.scale;
+  minimapDrag.point = point;
+  requestRender();
+});
+
+function endMinimapPointer() {
+  if (!minimapDrag) return;
+  const { pointerId } = minimapDrag;
+  minimapDrag = null;
+  if (map.hasPointerCapture(pointerId)) map.releasePointerCapture(pointerId);
+  map.style.cursor = 'crosshair';
+  minimapViewport.style.cursor = 'grab';
+}
+
+for (const event of [
+  'pointerup',
+  'pointercancel',
+  'lostpointercapture',
+] as const)
+  map.addEventListener(event, (e) => {
+    if (minimapDrag?.pointerId === e.pointerId) endMinimapPointer();
+  });
+window.addEventListener('blur', endMinimapPointer);
+
+new ResizeObserver(resizeMinimap).observe(map);
+
+resize();
+tick();
