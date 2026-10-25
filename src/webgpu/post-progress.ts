@@ -6,6 +6,7 @@ import { SkyMesh } from 'three/examples/jsm/objects/SkyMesh.js';
 import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
 import { chromaticAberration } from 'three/examples/jsm/tsl/display/ChromaticAberrationNode.js';
 import { pixelationPass } from 'three/examples/jsm/tsl/display/PixelationPassNode.js';
+import { sobel } from 'three/examples/jsm/tsl/display/SobelOperatorNode.js';
 import { distance, float, pass, texture, uv, vec2 } from 'three/tsl';
 import {
   ACESFilmicToneMapping,
@@ -23,6 +24,7 @@ import {
   MeshStandardNodeMaterial,
   NeutralToneMapping,
   NoToneMapping,
+  PassNode,
   PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
@@ -103,7 +105,7 @@ const bloomPass = bloom(scenePass);
 bloomPass.threshold.value = 0.35;
 bloomPass.strength.value = 1.0;
 bloomPass.radius.value = 0.5;
-pipeline.outputNode = _pixelationPass.add(bloomPass);
+pipeline.outputNode = scenePass.add(bloomPass);
 
 const bloomPane = inspector.createParameters('Bloom');
 bloomPane.add(bloomPass.threshold, 'value', 0, 2, 0.01).name('Threshold');
@@ -117,6 +119,10 @@ const chromaticAberrationPass = chromaticAberration(
   float(1),
 );
 pipeline.outputNode = chromaticAberrationPass;
+
+// Sobel pass
+const sobelPass = sobel(pipeline.outputNode);
+pipeline.outputNode = (pipeline.outputNode as PassNode).add(sobelPass);
 
 // Scene
 const sky = new SkyMesh();
