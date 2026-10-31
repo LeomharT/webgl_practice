@@ -28,7 +28,7 @@ function resize() {
 }
 
 let frameId: number | null = null;
-const trasnform = {
+const transform = {
   x: 0,
   y: 0,
   scale: 1,
@@ -48,10 +48,10 @@ function testRender(x: number, y: number) {
   ctx.save();
 
   ctx.transform(
-    sizes.dpr * trasnform.scale,
+    sizes.dpr * transform.scale,
     0,
     0,
-    sizes.dpr * trasnform.scale,
+    sizes.dpr * transform.scale,
     x,
     y,
   );
@@ -61,9 +61,39 @@ function testRender(x: number, y: number) {
   ctx.restore();
 }
 
+const DOT_STEP = 50;
+
+function renderDots(tx: number, ty: number) {
+  ctx.save();
+
+  ctx.setTransform(sizes.dpr, 0, 0, sizes.dpr, 0, 0);
+
+  let radius = 6 * transform.scale;
+  radius = Math.min(2, radius);
+
+  ctx.fillStyle = Colors.WHITE;
+
+  const step = DOT_STEP * transform.scale;
+
+  let i = 0;
+
+  for (let x = tx; x < sizes.width; x += step) {
+    for (let y = ty; y < sizes.height; y += step) {
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      i++;
+    }
+  }
+
+  console.log(i);
+
+  ctx.restore();
+}
+
 function render() {
   clean();
-  testRender(trasnform.x, trasnform.y);
+  renderDots(transform.x, transform.y);
 }
 
 function requestRender() {
@@ -95,8 +125,8 @@ canvas.addEventListener('pointerup', (e) => {
 canvas.addEventListener('pointermove', (e) => {
   if (!canvas.hasPointerCapture(e.pointerId)) return;
 
-  trasnform.x += e.clientX - prev.x;
-  trasnform.y += e.clientY - prev.y;
+  transform.x += e.clientX - prev.x;
+  transform.y += e.clientY - prev.y;
 
   prev.x = e.clientX;
   prev.y = e.clientY;
@@ -110,18 +140,18 @@ canvas.addEventListener(
     e.preventDefault();
 
     const next = MathUtils.clamp(
-      trasnform.scale * Math.exp(-e.deltaY * 0.001),
+      transform.scale * Math.exp(-e.deltaY * 0.001),
       0.2,
       1000,
     );
 
-    const k = next / trasnform.scale;
-    trasnform.x = e.offsetX - (e.offsetX - trasnform.x) * k;
-    trasnform.y = e.offsetY - (e.offsetY - trasnform.y) * k;
+    const k = next / transform.scale;
+    transform.x = e.offsetX - (e.offsetX - transform.x) * k;
+    transform.y = e.offsetY - (e.offsetY - transform.y) * k;
 
-    trasnform.scale = next;
+    transform.scale = next;
 
-    console.log(trasnform.scale);
+    console.log(transform.scale);
 
     requestRender();
   },
