@@ -61,15 +61,16 @@ function testRender(x: number, y: number) {
   ctx.restore();
 }
 
-const DOT_STEP = 50;
+const DOT_STEP = 100;
 
 function renderDots(tx: number, ty: number) {
   ctx.save();
 
   ctx.setTransform(sizes.dpr, 0, 0, sizes.dpr, 0, 0);
 
-  let radius = 6 * transform.scale;
-  radius = Math.min(2, radius);
+  let radius = 2 * transform.scale;
+  radius *= transform.scale;
+  radius = MathUtils.clamp(radius, 1, 4);
 
   ctx.fillStyle = Colors.WHITE;
 
@@ -77,8 +78,8 @@ function renderDots(tx: number, ty: number) {
 
   let i = 0;
 
-  for (let x = tx; x < sizes.width; x += step) {
-    for (let y = ty; y < sizes.height; y += step) {
+  for (let x = tx % step; x < sizes.width; x += step) {
+    for (let y = ty % step; y < sizes.height; y += step) {
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fill();
@@ -150,8 +151,6 @@ canvas.addEventListener(
     transform.y = e.offsetY - (e.offsetY - transform.y) * k;
 
     transform.scale = next;
-
-    console.log(transform.scale);
 
     requestRender();
   },
