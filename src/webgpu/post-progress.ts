@@ -5,6 +5,7 @@ import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import { SkyMesh } from 'three/examples/jsm/objects/SkyMesh.js';
 import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
 import { chromaticAberration } from 'three/examples/jsm/tsl/display/ChromaticAberrationNode.js';
+import { fxaa } from 'three/examples/jsm/tsl/display/FXAANode.js';
 import { pixelationPass } from 'three/examples/jsm/tsl/display/PixelationPassNode.js';
 import { sobel } from 'three/examples/jsm/tsl/display/SobelOperatorNode.js';
 import {
@@ -14,6 +15,7 @@ import {
   normalWorld,
   output,
   pass,
+  renderOutput,
   texture,
   uv,
   vec2,
@@ -100,6 +102,7 @@ const floorTexture = textureLoader.load('floor-color.jpg');
 
 // Post progress
 const pipeline = new RenderPipeline(renderer);
+pipeline.outputColorTransform = false;
 
 // Render scene
 // const scenePass = new RenderPass(scene,camera)
@@ -145,6 +148,13 @@ const sobelPass = (
   sobel(scenePass.getTextureNode('normal')) as unknown as PassNode
 ).remapClamp(0.2, 1, 0, 1);
 pipeline.outputNode = (pipeline.outputNode as PassNode).add(sobelPass);
+
+// With tonemapping and color space
+pipeline.outputNode = renderOutput(pipeline.outputNode);
+
+// FXAA pass
+const fxaaPass = fxaa(pipeline.outputNode);
+pipeline.outputNode = fxaaPass;
 
 // Scene
 const sky = new SkyMesh();
@@ -214,6 +224,7 @@ gltfLoader.load('/anvil.glb', (data) => {
 });
 
 const axesHelper = new AxesHelper(10);
+axesHelper.visible = false;
 scene.add(axesHelper);
 
 const ambientLight = new AmbientLight(0x859dff, 0.75);
