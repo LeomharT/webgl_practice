@@ -61,33 +61,37 @@ function testRender(x: number, y: number) {
   ctx.restore();
 }
 
-const DOT_STEP = 100;
+const DOT_STEP = 20;
+const DOT_SIZE = 1; // Diameter in world coordinates, matching React Flow's size.
+const DOT_OFFSET = 0;
 
 function renderDots(tx: number, ty: number) {
   ctx.save();
 
   ctx.setTransform(sizes.dpr, 0, 0, sizes.dpr, 0, 0);
 
-  let radius = 2 * transform.scale;
-  radius *= transform.scale;
-  radius = MathUtils.clamp(radius, 1, 4);
+  const radius = (DOT_SIZE * transform.scale) / 2;
 
   ctx.fillStyle = Colors.WHITE;
 
   const step = DOT_STEP * transform.scale;
 
-  let i = 0;
+  // Match the SVG pattern translation and its circle center (radius, radius).
+  const offset = DOT_OFFSET * transform.scale + step / 2;
+  const originX = (tx % step) - offset + radius;
+  const originY = (ty % step) - offset + radius;
+  // Include circles whose centers are outside the viewport but overlap its edge.
+  const startX = originX + Math.ceil((-radius - originX) / step) * step;
+  const startY = originY + Math.ceil((-radius - originY) / step) * step;
 
-  for (let x = tx % step; x < sizes.width; x += step) {
-    for (let y = ty % step; y < sizes.height; y += step) {
-      ctx.beginPath();
+  ctx.beginPath();
+  for (let x = startX; x < sizes.width + radius; x += step) {
+    for (let y = startY; y < sizes.height + radius; y += step) {
+      ctx.moveTo(x + radius, y);
       ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fill();
-      i++;
     }
   }
-
-  console.log(i);
+  ctx.fill();
 
   ctx.restore();
 }

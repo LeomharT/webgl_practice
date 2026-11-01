@@ -7,7 +7,18 @@ import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
 import { chromaticAberration } from 'three/examples/jsm/tsl/display/ChromaticAberrationNode.js';
 import { pixelationPass } from 'three/examples/jsm/tsl/display/PixelationPassNode.js';
 import { sobel } from 'three/examples/jsm/tsl/display/SobelOperatorNode.js';
-import { distance, float, pass, texture, uv, vec2 } from 'three/tsl';
+import {
+  distance,
+  float,
+  mrt,
+  normalWorld,
+  output,
+  pass,
+  texture,
+  uv,
+  vec2,
+  vec4,
+} from 'three/tsl';
 import {
   ACESFilmicToneMapping,
   AgXToneMapping,
@@ -92,8 +103,8 @@ const pipeline = new RenderPipeline(renderer);
 
 // Render scene
 // const scenePass = new RenderPass(scene,camera)
-const scenePass = pass(scene, camera);
-pipeline.outputNode = scenePass;
+const _scene = pass(scene, camera);
+pipeline.outputNode = _scene;
 
 const _pixelationPass = pixelationPass(scene, camera, 6, 0.3, 0.4);
 pipeline.outputNode = _pixelationPass;
@@ -101,11 +112,11 @@ pipeline.outputNode = _pixelationPass;
 /**
  * Bloom effect
  */
-const bloomPass = bloom(scenePass);
+const bloomPass = bloom(_scene);
 bloomPass.threshold.value = 0.35;
 bloomPass.strength.value = 1.0;
 bloomPass.radius.value = 0.5;
-pipeline.outputNode = scenePass.add(bloomPass);
+pipeline.outputNode = _scene.add(bloomPass);
 
 const bloomPane = inspector.createParameters('Bloom');
 bloomPane.add(bloomPass.threshold, 'value', 0, 2, 0.01).name('Threshold');
@@ -120,12 +131,27 @@ const chromaticAberrationPass = chromaticAberration(
 );
 pipeline.outputNode = chromaticAberrationPass;
 
+const scenePass = pass(scene, camera);
+scenePass.setMRT(
+  mrt({
+    output,
+    normal: normalWorld,
+  }),
+);
+pipeline.outputNode = scenePass.getTextureNode('output');
+
 // Sobel pass
-const sobelPass = sobel(pipeline.outputNode);
+const sobelPass = (
+  sobel(scenePass.getTextureNode('normal')) as unknown as PassNode
+).remapClamp(0.2, 1, 0, 1);
 pipeline.outputNode = (pipeline.outputNode as PassNode).add(sobelPass);
 
 // Scene
 const sky = new SkyMesh();
+sky.material.mrtNode = mrt({
+  output,
+  normal: vec4(1),
+});
 sky.scale.setScalar(1000);
 scene.add(sky);
 const effectController = {
@@ -167,6 +193,10 @@ const floorMaterial = new MeshStandardNodeMaterial({
 
 const opacity = distance(uv(), vec2(0.5)).smoothstep(0.2, 0.5).oneMinus();
 floorMaterial.opacityNode = opacity;
+floorMaterial.mrtNode = mrt({
+  output,
+  normal: vec4(1),
+});
 floorMaterial.colorNode = texture(floorTexture, uv());
 
 const floor = new Mesh(floorGeometry, floorMaterial);
