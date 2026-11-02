@@ -176,8 +176,10 @@ pipeline.outputNode = fxaaPass;
 
   const subdivision = uniform(3);
   const seed = uniform(18, 'int');
-  const progress = uniform(0.01, 'float');
+  const progress = uniform(0, 'float');
   const thickness = uniform(0.02, 'float');
+  const _color = uniform(color(0xff824d));
+  const colorStrgenth = uniform(3);
 
   const shatterPass = shatter(
     pipeline.outputNode,
@@ -185,14 +187,24 @@ pipeline.outputNode = fxaaPass;
     seed,
     progress,
     thickness,
+    _color,
+    colorStrgenth,
   );
   pipeline.outputNode = shatterPass;
 
   const shatterGui = inspector.createParameters('shatter');
   shatterGui.add(subdivision, 'value', 1, 10, 1).name('subdivision');
   shatterGui.add(seed, 'value', 0, 100, 1).name('seed');
-  shatterGui.add(progress, 'value', 0.01, 1, 0.01).name('progress');
+  shatterGui.add(progress, 'value', 0, 1, 0.01).name('progress');
   shatterGui.add(thickness, 'value', 0.01, 1, 0.01).name('thickness');
+  shatterGui.addColor(_color, 'value').name('color');
+  shatterGui.add(colorStrgenth, 'value', 1, 10, 0.1).name('colorStrgenth');
+
+  const bloomPass = bloom(pipeline.outputNode as PassNode);
+  bloomPass.threshold.value = 0.35;
+  bloomPass.strength.value = 1.0;
+  bloomPass.radius.value = 0.5;
+  pipeline.outputNode = (pipeline.outputNode as PassNode).add(bloomPass);
 
   // Do the tonemapping at the very end
   pipeline.outputNode = renderOutput(pipeline.outputNode);

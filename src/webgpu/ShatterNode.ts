@@ -1,13 +1,18 @@
 import {
+  convertToTexture,
   max,
+  mix,
   mx_noise_float,
   nodeObject,
-  vec3,
-  vec4,
+  sqrt,
+  texture,
+  TWO_PI,
+  vec2,
   viewportCoordinate,
   viewportSize,
+  viewportUV,
 } from 'three/tsl';
-import { Node, TempNode, UniformNode } from 'three/webgpu';
+import { Color, Node, TempNode, TextureNode, UniformNode } from 'three/webgpu';
 import { voronoi } from '../voronoi';
 export default class ShatterNode extends TempNode {
   static get type() {
@@ -15,11 +20,13 @@ export default class ShatterNode extends TempNode {
   }
 
   constructor(
-    textureNode: Node,
+    textureNode: TextureNode,
     subdivision: UniformNode<'float', number>,
     seed: UniformNode<'int', number>,
     progress: UniformNode<'float', number>,
     thickness: UniformNode<'float', number>,
+    color: UniformNode<'color', Color>,
+    colorStrgenth: UniformNode<'float', number>,
   ) {
     super('vec4');
 
@@ -28,13 +35,17 @@ export default class ShatterNode extends TempNode {
     this._seed = seed;
     this._progress = progress;
     this._thickness = thickness;
+    this._color = color;
+    this._colorStrgenth = colorStrgenth;
   }
 
-  private _textureNode: Node;
+  private _textureNode: TextureNode;
   private _subdivision: UniformNode<'float', number>;
   private _seed: UniformNode<'int', number>;
   private _progress: UniformNode<'float', number>;
   private _thickness: UniformNode<'float', number>;
+  private _color: UniformNode<'color', Color>;
+  private _colorStrgenth: UniformNode<'float', number>;
 
   public setup() {
     const viewportMaxSize = max(viewportSize.x, viewportSize.y);
@@ -47,8 +58,16 @@ export default class ShatterNode extends TempNode {
     const cracks = voronoiColor.g.step(
       this._progress.sub(cracksNoise).mul(this._thickness),
     );
+    const cracksColor = this._color.mul(this._colorStrgenth);
 
-    return vec4(vec3(cracks), 1.0);
+    // Offset UV
+    const goldenRatio = sqrt(5).add(1).div(2);
+    const goldenAngle = goldenRatio.mul(TWO_PI);
+    const angle = voronoiColor.a.mul(goldenAngle);
+    const offset = vec2(angle.cos(), angle.sin()).mul(this._progress);
+    const offsetUv = viewportUV.add(offset.mul(0.02));
+
+    return mix(cracksColor, texture(this._textureNode, offsetUv), cracks);
   }
 }
 
@@ -58,11 +77,15 @@ export const shatter = (
   seed: UniformNode<'int', number>,
   progress: UniformNode<'float', number>,
   thickness: UniformNode<'float', number>,
+  color: UniformNode<'color', Color>,
+  colorStrgenth: UniformNode<'float', number>,
 ) =>
   new ShatterNode(
-    textureNode,
+    convertToTexture(textureNode),
     nodeObject(subdivision),
     nodeObject(seed),
     nodeObject(progress),
     nodeObject(thickness),
+    nodeObject(color),
+    nodeObject(colorStrgenth),
   );
