@@ -9,6 +9,8 @@ import { fxaa } from 'three/examples/jsm/tsl/display/FXAANode.js';
 import { pixelationPass } from 'three/examples/jsm/tsl/display/PixelationPassNode.js';
 import { sobel } from 'three/examples/jsm/tsl/display/SobelOperatorNode.js';
 import {
+  color,
+  convertToTexture,
   distance,
   float,
   mrt,
@@ -17,6 +19,8 @@ import {
   pass,
   renderOutput,
   texture,
+  time,
+  uniform,
   uv,
   vec2,
   vec4,
@@ -49,6 +53,7 @@ import {
   Vector3,
   WebGPURenderer,
 } from 'three/webgpu';
+import { shatter } from './ShatterNode';
 CameraControls.install({ THREE: await import('three') });
 
 const gltfLoader = new GLTFLoader();
@@ -149,6 +154,15 @@ const sobelPass = (
 ).remapClamp(0.2, 1, 0, 1);
 pipeline.outputNode = (pipeline.outputNode as PassNode).add(sobelPass);
 
+// Custom pass
+const drunkTexture = convertToTexture(pipeline.outputNode);
+const waveUv = vec2(
+  uv().x,
+  uv().y.add(uv().x.add(time.mul(0.2)).mul(7).sin().mul(0.1)),
+);
+
+pipeline.outputNode = texture(drunkTexture, waveUv).mul(color('aquamarine'));
+
 // With tonemapping and color space
 pipeline.outputNode = renderOutput(pipeline.outputNode);
 
@@ -156,6 +170,34 @@ pipeline.outputNode = renderOutput(pipeline.outputNode);
 const fxaaPass = fxaa(pipeline.outputNode);
 pipeline.outputNode = fxaaPass;
 
+// Import tant
+{
+  pipeline.outputNode = pass(scene, camera);
+
+  const subdivision = uniform(3);
+  const seed = uniform(18, 'int');
+  const progress = uniform(0.01, 'float');
+  const thickness = uniform(0.02, 'float');
+
+  const shatterPass = shatter(
+    pipeline.outputNode,
+    subdivision,
+    seed,
+    progress,
+    thickness,
+  );
+  pipeline.outputNode = shatterPass;
+
+  const shatterGui = inspector.createParameters('shatter');
+  shatterGui.add(subdivision, 'value', 1, 10, 1).name('subdivision');
+  shatterGui.add(seed, 'value', 0, 100, 1).name('seed');
+  shatterGui.add(progress, 'value', 0.01, 1, 0.01).name('progress');
+  shatterGui.add(thickness, 'value', 0.01, 1, 0.01).name('thickness');
+
+  // Do the tonemapping at the very end
+  pipeline.outputNode = renderOutput(pipeline.outputNode);
+  pipeline.outputNode = fxaa(pipeline.outputNode);
+}
 // Scene
 const sky = new SkyMesh();
 sky.material.mrtNode = mrt({
