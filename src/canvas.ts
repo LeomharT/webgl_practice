@@ -1,5 +1,4 @@
 import { Colors } from '@blueprintjs/colors';
-import { MathUtils } from 'three';
 
 const sizes = {
   width: window.innerWidth,
@@ -29,9 +28,10 @@ function resize() {
 
 let frameId: number | null = null;
 const transform = {
-  x: 0,
-  y: 0,
+  x: sizes.width / 2,
+  y: sizes.height / 2,
   scale: 1,
+  rotate: 0,
 };
 
 function clean() {
@@ -44,61 +44,33 @@ function clean() {
   ctx.restore();
 }
 
-function testRender(x: number, y: number) {
+function renderRect() {
   ctx.save();
 
-  ctx.transform(
-    sizes.dpr * transform.scale,
-    0,
-    0,
-    sizes.dpr * transform.scale,
-    x,
-    y,
+  const c = Math.cos(transform.rotate) * sizes.dpr;
+  const s = Math.sin(transform.rotate) * sizes.dpr;
+
+  const size = 100;
+
+  ctx.setTransform(
+    c,
+    s,
+    -s,
+    c,
+    transform.x * sizes.dpr,
+    transform.y * sizes.dpr,
   );
-  ctx.fillStyle = Colors.ROSE5;
-  ctx.fillRect(0, 0, 200, 200);
 
-  ctx.restore();
-}
-
-const DOT_STEP = 20;
-const DOT_SIZE = 1; // Diameter in world coordinates, matching React Flow's size.
-const DOT_OFFSET = 0;
-
-function renderDots(tx: number, ty: number) {
-  ctx.save();
-
-  ctx.setTransform(sizes.dpr, 0, 0, sizes.dpr, 0, 0);
-
-  const radius = (DOT_SIZE * transform.scale) / 2;
-
-  ctx.fillStyle = Colors.WHITE;
-
-  const step = DOT_STEP * transform.scale;
-
-  // Match the SVG pattern translation and its circle center (radius, radius).
-  const offset = DOT_OFFSET * transform.scale + step / 2;
-  const originX = (tx % step) - offset + radius;
-  const originY = (ty % step) - offset + radius;
-  // Include circles whose centers are outside the viewport but overlap its edge.
-  const startX = originX + Math.ceil((-radius - originX) / step) * step;
-  const startY = originY + Math.ceil((-radius - originY) / step) * step;
-
-  ctx.beginPath();
-  for (let x = startX; x < sizes.width + radius; x += step) {
-    for (let y = startY; y < sizes.height + radius; y += step) {
-      ctx.moveTo(x + radius, y);
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-    }
-  }
-  ctx.fill();
+  ctx.fillStyle = Colors.CERULEAN4;
+  ctx.fillRect(-size / 2, -size / 2, size, size);
 
   ctx.restore();
 }
 
 function render() {
   clean();
-  renderDots(transform.x, transform.y);
+
+  renderRect();
 }
 
 function requestRender() {
@@ -113,13 +85,15 @@ function requestRender() {
 resize();
 window.addEventListener('resize', resize);
 
-const prev = { x: 0, y: 0 };
+const prev = { x: 0, y: 0, rotate: 0 };
 
 canvas.addEventListener('pointerdown', (e) => {
   canvas.setPointerCapture(e.pointerId);
 
   prev.x = e.clientX;
   prev.y = e.clientY;
+
+  prev.rotate = Math.atan2(prev.y - transform.y, prev.x - transform.x);
 });
 
 canvas.addEventListener('pointerup', (e) => {
@@ -130,33 +104,16 @@ canvas.addEventListener('pointerup', (e) => {
 canvas.addEventListener('pointermove', (e) => {
   if (!canvas.hasPointerCapture(e.pointerId)) return;
 
-  transform.x += e.clientX - prev.x;
-  transform.y += e.clientY - prev.y;
+  // transform.x += e.clientX - prev.x;
+  // transform.y += e.clientY - prev.y;
 
   prev.x = e.clientX;
   prev.y = e.clientY;
 
+  const angle = Math.atan2(prev.y - transform.y, prev.x - transform.x);
+
+  transform.rotate += angle - prev.rotate;
+  prev.rotate = angle;
+
   requestRender();
 });
-
-canvas.addEventListener(
-  'wheel',
-  (e) => {
-    e.preventDefault();
-
-    const next = MathUtils.clamp(
-      transform.scale * Math.exp(-e.deltaY * 0.001),
-      0.2,
-      1000,
-    );
-
-    const k = next / transform.scale;
-    transform.x = e.offsetX - (e.offsetX - transform.x) * k;
-    transform.y = e.offsetY - (e.offsetY - transform.y) * k;
-
-    transform.scale = next;
-
-    requestRender();
-  },
-  { passive: false },
-);
