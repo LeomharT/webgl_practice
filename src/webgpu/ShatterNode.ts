@@ -63,7 +63,9 @@ export default class ShatterNode extends TempNode {
     // Offset UV
     const goldenRatio = sqrt(5).add(1).div(2);
     const goldenAngle = goldenRatio.mul(TWO_PI);
+
     const angle = voronoiColor.a.mul(goldenAngle);
+
     const offset = vec2(angle.cos(), angle.sin()).mul(this._progress);
     const offsetUv = viewportUV.add(offset.mul(0.02));
 
