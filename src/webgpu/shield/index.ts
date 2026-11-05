@@ -3,11 +3,12 @@ import CameraControls from 'camera-controls';
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import { SkyMesh } from 'three/examples/jsm/objects/SkyMesh.js';
-import { distance, pass, texture, uv, vec2 } from 'three/tsl';
+import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
+import { fxaa } from 'three/examples/jsm/tsl/display/FXAANode.js';
+import { distance, pass, renderOutput, texture, uv, vec2 } from 'three/tsl';
 import {
   AmbientLight,
   AxesHelper,
-  CameraHelper,
   Color,
   DirectionalLight,
   MathUtils,
@@ -67,9 +68,32 @@ const timer = new Timer();
 
 // Renderer pipeline
 const renderPipeline = new RenderPipeline(renderer);
+const pipeline_pane = inspector.createParameters('Pipline');
+pipeline_pane.add(renderPipeline, 'outputColorTransform').onChange((value) => {
+  renderPipeline.outputColorTransform = value;
+  renderPipeline.needsUpdate = true;
+});
 
 const scenePass = pass(scene, camera);
-renderPipeline.outputNode = scenePass;
+const scenePassColor = scenePass.getTextureNode('output');
+
+const bloomPass = bloom(scenePassColor);
+bloomPass.threshold.value = 0;
+bloomPass.strength.value = 0.05;
+bloomPass.radius.value = 0.5;
+renderPipeline.outputNode = scenePass.add(bloomPass);
+
+const bloomPane = inspector.createParameters('Bloom');
+bloomPane.add(bloomPass.threshold, 'value', 0, 2, 0.01).name('Threshold');
+bloomPane.add(bloomPass.strength, 'value', 0, 10, 0.01).name('Strength');
+bloomPane.add(bloomPass.radius, 'value', 0, 2, 0.01).name('Radius');
+
+// With tonemapping and color space
+renderPipeline.outputNode = renderOutput(renderPipeline.outputNode);
+
+// FXAA pass
+const fxaaPass = fxaa(renderPipeline.outputNode);
+renderPipeline.outputNode = fxaaPass;
 
 // World
 const sky = new SkyMesh();
@@ -81,7 +105,7 @@ const effectController = {
   mieCoefficient: 0.02,
   mieDirectionalG: 0.35,
   elevation: 0.4,
-  azimuth: 100,
+  azimuth: 52,
   cloudCoverage: 0.4,
   cloudDensity: 0.4,
   cloudElevation: 0.5,
@@ -130,24 +154,15 @@ gltfLoader.load('/anvil.glb', (data) => {
   scene.add(model);
 });
 
-const ambientLight = new AmbientLight(0x859dff, 0.75);
+const ambientLight = new AmbientLight(0x859dff, 1.25);
 scene.add(ambientLight);
 
-const directionalLight = new DirectionalLight(0xffffff, 4.5);
-directionalLight.position.set(2, 0.75, -1).normalize().multiplyScalar(10);
-directionalLight.shadow.camera.top = 10;
-directionalLight.shadow.camera.right = 10;
-directionalLight.shadow.camera.bottom = -10;
-directionalLight.shadow.camera.left = -10;
-directionalLight.shadow.camera.near = 0.01;
-directionalLight.shadow.camera.far = 20;
+const directionalLight = new DirectionalLight(0xffaf85, 3);
 directionalLight.castShadow = true;
+directionalLight.position.set(1, 1, 0.75);
 directionalLight.shadow.radius = 5;
 directionalLight.shadow.normalBias = 0.1;
 scene.add(directionalLight);
-const cameraHelper = new CameraHelper(directionalLight.shadow.camera);
-cameraHelper.visible = false;
-scene.add(cameraHelper);
 
 const axesHelper = new AxesHelper();
 scene.add(axesHelper);
