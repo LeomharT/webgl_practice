@@ -1,9 +1,15 @@
-import { Mesh, SphereGeometry } from 'three';
-import { positionLocal, uniform } from 'three/tsl';
-import { MeshBasicNodeMaterial, UniformNode } from 'three/webgpu';
+import { positionLocal, texture, uniform, uv, vec2, vec4 } from 'three/tsl';
+import {
+  Mesh,
+  MeshBasicNodeMaterial,
+  SphereGeometry,
+  Texture,
+  UniformNode,
+} from 'three/webgpu';
 
 export class Shield {
-  constructor(radius: number = 2) {
+  constructor(_texture: Texture, radius: number = 2) {
+    this.texture = _texture;
     this.radius = uniform(radius);
 
     this.geometry = this._setGeometry();
@@ -12,6 +18,8 @@ export class Shield {
   }
 
   public radius: UniformNode<'float', number>;
+
+  public texture: Texture;
 
   public geometry: SphereGeometry;
 
@@ -26,7 +34,13 @@ export class Shield {
   }
 
   private _setMaterial() {
-    const material = new MeshBasicNodeMaterial();
+    const hexagonsColor = texture(this.texture, uv().mul(vec2(6, 4)));
+
+    const material = new MeshBasicNodeMaterial({
+      transparent: true,
+    });
+    material.colorNode = vec4(hexagonsColor.rrr, 0.25);
+
     material.positionNode = positionLocal.mul(this.radius);
 
     return material;

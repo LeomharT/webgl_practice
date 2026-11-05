@@ -19,6 +19,7 @@ import {
   PerspectiveCamera,
   PlaneGeometry,
   RenderPipeline,
+  RepeatWrapping,
   Scene,
   TextureLoader,
   Timer,
@@ -33,6 +34,10 @@ const gltfLoader = new GLTFLoader();
 const textureLoader = new TextureLoader();
 
 const floorTexture = textureLoader.load('floor-color.jpg');
+
+const hexagonsTexture = await textureLoader.loadAsync('hexagons.png');
+hexagonsTexture.wrapS = RepeatWrapping;
+hexagonsTexture.wrapT = RepeatWrapping;
 
 const sizes = {
   width: window.innerWidth,
@@ -163,7 +168,8 @@ gltfLoader.load('/anvil.glb', (data) => {
 });
 
 // Shield
-const shield = new Shield();
+
+const shield = new Shield(hexagonsTexture);
 scene.add(shield.mesh);
 
 // Debug shield
