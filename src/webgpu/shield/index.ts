@@ -1,19 +1,20 @@
 import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
-import { GLTFLoader } from 'three/examples/jsm/Addons.js';
+import { GLTFLoader, TransformControls } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import { SkyMesh } from 'three/examples/jsm/objects/SkyMesh.js';
 import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
 import { fxaa } from 'three/examples/jsm/tsl/display/FXAANode.js';
 import { distance, pass, renderOutput, texture, uv, vec2 } from 'three/tsl';
 import {
+  ACESFilmicToneMapping,
   AmbientLight,
   AxesHelper,
   Color,
   DirectionalLight,
   MathUtils,
   Mesh,
-  MeshBasicNodeMaterial,
+  MeshStandardNodeMaterial,
   PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
@@ -24,6 +25,7 @@ import {
   Vector3,
   WebGPURenderer,
 } from 'three/webgpu';
+import { Shield } from './shield';
 
 CameraControls.install({ THREE: await import('three') });
 
@@ -46,6 +48,7 @@ renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(sizes.pixelRatio);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = PCFShadowMap;
+renderer.toneMapping = ACESFilmicToneMapping;
 renderer.setAnimationLoop(render);
 
 const inspector = new Inspector({});
@@ -63,6 +66,9 @@ camera.lookAt(scene.position);
 const controls = new CameraControls(camera, renderer.domElement);
 controls.enabled = true;
 controls.dollySpeed = 1.25;
+
+controls.minPolarAngle = 0;
+controls.maxPolarAngle = Math.PI / 2;
 
 const timer = new Timer();
 
@@ -132,7 +138,7 @@ const skyChanged = () => {
 skyChanged();
 
 const floorGeometry = new PlaneGeometry(10, 10, 1, 1);
-const floorMaterial = new MeshBasicNodeMaterial({
+const floorMaterial = new MeshStandardNodeMaterial({
   transparent: true,
 });
 floorMaterial.colorNode = texture(floorTexture, uv());
@@ -141,6 +147,8 @@ floorMaterial.opacityNode = distance(uv(), vec2(0.5))
   .oneMinus();
 
 const floor = new Mesh(floorGeometry, floorMaterial);
+floor.receiveShadow = true;
+floor.renderOrder = -1;
 floor.rotation.x = -Math.PI / 2;
 
 scene.add(floor);
@@ -153,6 +161,23 @@ gltfLoader.load('/anvil.glb', (data) => {
 
   scene.add(model);
 });
+
+// Shield
+const shield = new Shield();
+scene.add(shield.mesh);
+
+// Debug shield
+const shieldGui = inspector.createParameters('Shield');
+shieldGui.add(shield.radius, 'value', 0.1, 5, 0.1).name('Radius');
+
+// transform controls
+const transformControls = new TransformControls(camera, renderer.domElement);
+transformControls.attach(shield.mesh);
+transformControls.mode = 'translate';
+transformControls.addEventListener('dragging-changed', (e) => {
+  controls.enabled = !e.value;
+});
+scene.add(transformControls.getHelper());
 
 const ambientLight = new AmbientLight(0x859dff, 1.25);
 scene.add(ambientLight);
