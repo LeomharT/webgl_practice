@@ -1,4 +1,19 @@
-import { positionLocal, texture, uniform, uv, vec2, vec4 } from 'three/tsl';
+import {
+  dot,
+  Fn,
+  mul,
+  normalView,
+  positionLocal,
+  positionViewDirection,
+  texture,
+  time,
+  TWO_PI,
+  uniform,
+  uv,
+  vec2,
+  vec3,
+  vec4,
+} from 'three/tsl';
 import {
   Mesh,
   MeshBasicNodeMaterial,
@@ -34,12 +49,32 @@ export class Shield {
   }
 
   private _setMaterial() {
+    const fresnel = dot(positionViewDirection, normalView).abs().oneMinus();
+
+    // Hexagons
     const hexagonsColor = texture(this.texture, uv().mul(vec2(6, 4)));
+    const hexagonsStep = time
+      .add(hexagonsColor.g.mul(TWO_PI))
+      .sin()
+      .remap(-1, 1);
+    const hexagonsMask = hexagonsStep.step(hexagonsColor.r);
+    const hexagonsPolarMask = uv().y.sub(0.5).abs().remapClamp(0.35, 0.2);
+    const hexagonsFresnelMask = fresnel.pow2();
+    const hexagonsFill = hexagonsColor.r;
+    const hexagons = mul(
+      hexagonsMask,
+      hexagonsColor.b,
+      hexagonsPolarMask,
+      hexagonsFresnelMask,
+      hexagonsFill,
+    );
 
     const material = new MeshBasicNodeMaterial({
       transparent: true,
     });
-    material.colorNode = vec4(hexagonsColor.rrr, 0.25);
+    material.colorNode = Fn(() => {
+      return vec4(vec3(hexagons), 1.0);
+    })();
 
     material.positionNode = positionLocal.mul(this.radius);
 
