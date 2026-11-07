@@ -18,11 +18,14 @@ import {
   PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
+  Raycaster,
   RenderPipeline,
   RepeatWrapping,
   Scene,
+  Sphere,
   TextureLoader,
   Timer,
+  Vector2,
   Vector3,
   WebGPURenderer,
 } from 'three/webgpu';
@@ -55,6 +58,8 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = PCFShadowMap;
 renderer.toneMapping = ACESFilmicToneMapping;
 renderer.setAnimationLoop(render);
+
+const canvas = renderer.domElement;
 
 const inspector = new Inspector({});
 renderer.inspector = inspector;
@@ -105,6 +110,26 @@ renderPipeline.outputNode = renderOutput(renderPipeline.outputNode);
 // FXAA pass
 const fxaaPass = fxaa(renderPipeline.outputNode);
 renderPipeline.outputNode = fxaaPass;
+
+const raycaster = new Raycaster();
+
+canvas.addEventListener('pointerdown', (e) => {
+  const sphere = new Sphere(shield.mesh.position, shield.radius.value);
+
+  const mouse = new Vector2(
+    (e.clientX / sizes.width) * 2 - 1,
+    -(e.clientY / sizes.height) * 2 + 1,
+  );
+
+  raycaster.setFromCamera(mouse, camera);
+
+  let intersects: Vector3 | null = new Vector3();
+  intersects = raycaster.ray.intersectSphere(sphere, intersects);
+
+  if (intersects) {
+    shield.inpacts.add(intersects);
+  }
+});
 
 // World
 const sky = new SkyMesh();
@@ -180,6 +205,7 @@ shieldGui.add(shield.radius, 'value', 0.1, 5, 0.1).name('Radius');
 const transformControls = new TransformControls(camera, renderer.domElement);
 transformControls.attach(shield.mesh);
 transformControls.mode = 'translate';
+transformControls.setSize(0.5);
 transformControls.addEventListener('dragging-changed', (e) => {
   controls.enabled = !e.value;
 });
