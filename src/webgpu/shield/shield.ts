@@ -1,14 +1,18 @@
 import gsap from 'gsap';
 import {
+  add,
+  color,
   dot,
   float,
   Fn,
   Loop,
   max,
+  mix,
   mul,
   normalView,
   positionLocal,
   positionViewDirection,
+  positionWorld,
   texture,
   time,
   TWO_PI,
@@ -17,10 +21,12 @@ import {
   uv,
   vec2,
   vec3,
-  vec4,
 } from 'three/tsl';
 import {
+  AdditiveBlending,
+  Color,
   ConstNode,
+  DoubleSide,
   Mesh,
   MeshBasicNodeMaterial,
   SphereGeometry,
@@ -32,9 +38,18 @@ import {
 } from 'three/webgpu';
 
 export class Shield {
-  constructor(_texture: Texture, radius: number = 2) {
+  constructor(
+    _texture: Texture,
+    radius: number = 2,
+    colorA = color(0x1a5bff),
+    colorB = color(0xff2e43),
+    strength = 7,
+  ) {
     this.texture = _texture;
     this.radius = uniform(radius);
+    this.colorA = uniform(colorA);
+    this.colorB = uniform(colorB);
+    this.strength = uniform(strength);
 
     this._setInpacts();
     this.geometry = this._setGeometry();
@@ -43,6 +58,12 @@ export class Shield {
   }
 
   public radius: UniformNode<'float', number>;
+
+  public colorA: UniformNode<'color', Color>;
+
+  public colorB: UniformNode<'color', Color>;
+
+  public strength: UniformNode<'float', number>;
 
   public texture: Texture;
 
@@ -115,6 +136,9 @@ export class Shield {
   private _setMaterial() {
     const material = new MeshBasicNodeMaterial({
       transparent: true,
+      blending: AdditiveBlending,
+      color: 0x000000,
+      side: DoubleSide,
     });
     material.colorNode = Fn(() => {
       // Inpacts
@@ -153,7 +177,29 @@ export class Shield {
         hexagonsFill,
       );
 
-      return vec4(vec3(hexagons), 1.0);
+      // Lines
+      const linesStrength = positionWorld.y
+        .mul(3)
+        .sub(time)
+        .sin()
+        .remap(-1, 1)
+        .mul(0.05);
+      const lines = positionWorld.y
+        .mul(20)
+        .add(time)
+        .fract()
+        .pow(3)
+        .mul(linesStrength);
+
+      // Emissive
+      const emissiveStrength = add(hexagons, fresnel.pow(5), lines).mul(
+        this.strength,
+      );
+      const emisstive = mix(this.colorA, this.colorB, emissiveStrength).mul(
+        emissiveStrength,
+      );
+
+      return vec3(emisstive);
     })();
 
     material.positionNode = positionLocal.mul(this.radius);
