@@ -5,7 +5,15 @@ import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import { SkyMesh } from 'three/examples/jsm/objects/SkyMesh.js';
 import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
 import { fxaa } from 'three/examples/jsm/tsl/display/FXAANode.js';
-import { distance, pass, renderOutput, texture, uv, vec2 } from 'three/tsl';
+import {
+  distance,
+  materialEmissive,
+  pass,
+  renderOutput,
+  texture,
+  uv,
+  vec2,
+} from 'three/tsl';
 import {
   ACESFilmicToneMapping,
   AmbientLight,
@@ -186,7 +194,11 @@ scene.add(floor);
 gltfLoader.load('/anvil.glb', (data) => {
   const model = data.scene;
   model.traverse((obj) => {
-    if (obj instanceof Mesh) obj.castShadow = true;
+    if (obj instanceof Mesh) {
+      obj.castShadow = true;
+      obj.receiveShadow = true;
+      obj.material.emissiveNode = materialEmissive.add(shield.junctionNode);
+    }
   });
 
   scene.add(model);
@@ -200,6 +212,10 @@ scene.add(shield.mesh);
 // Debug shield
 const shieldGui = inspector.createParameters('Shield');
 shieldGui.add(shield.radius, 'value', 0.1, 5, 0.1).name('Radius');
+shieldGui.addColor(shield.colorA, 'value').name('ColorA');
+shieldGui.addColor(shield.colorB, 'value').name('ColorB');
+
+floorMaterial.emissiveNode = materialEmissive.add(shield.junctionNode);
 
 // transform controls
 const transformControls = new TransformControls(camera, renderer.domElement);

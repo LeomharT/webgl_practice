@@ -10,6 +10,7 @@ import {
   mix,
   mul,
   normalView,
+  objectPosition,
   positionLocal,
   positionViewDirection,
   positionWorld,
@@ -29,6 +30,7 @@ import {
   DoubleSide,
   Mesh,
   MeshBasicNodeMaterial,
+  Node,
   SphereGeometry,
   Texture,
   UniformArrayNode,
@@ -55,6 +57,7 @@ export class Shield {
     this.geometry = this._setGeometry();
     this.material = this._setMaterial();
     this.mesh = this._setMesh();
+    this.junctionNode = this._setJunctionNode();
   }
 
   public radius: UniformNode<'float', number>;
@@ -79,6 +82,8 @@ export class Shield {
     uniforms: UniformArrayNode<string>;
     add: (position: Vector3, radius?: number) => void;
   } = {} as typeof this.inpacts;
+
+  public junctionNode: Node<'vec3'>;
 
   private _setInpacts = () => {
     this.inpacts.count = 5;
@@ -210,5 +215,25 @@ export class Shield {
   private _setMesh() {
     const mesh = new Mesh(this.geometry, this.material);
     return mesh;
+  }
+
+  private _setJunctionNode() {
+    const center = objectPosition(this.mesh);
+
+    return Fn(() => {
+      // Position wrold is from the target mesh
+      const sdf = positionWorld.distance(center).sub(this.radius);
+
+      const mask = sdf.negate().step(0);
+      const strength = sdf
+        .remapClamp(0, -0.2, 1, 0)
+        .mul(mask)
+        .pow(3)
+        .mul(this.strength);
+
+      const _color = mix(this.colorA, this.colorB, strength).mul(strength);
+
+      return _color;
+    })();
   }
 }
