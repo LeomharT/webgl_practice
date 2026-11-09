@@ -83,7 +83,7 @@ camera.lookAt(scene.position);
 
 const controls = new CameraControls(camera, renderer.domElement);
 controls.enabled = true;
-controls.dollySpeed = 1.25;
+controls.dollySpeed = 0.25;
 
 controls.minPolarAngle = 0;
 controls.maxPolarAngle = Math.PI / 2;
@@ -201,12 +201,13 @@ gltfLoader.load('/anvil.glb', (data) => {
     }
   });
 
-  scene.add(model);
+  // scene.add(model);
 });
 
 // Shield
 
 const shield = new Shield(hexagonsTexture);
+shield.mesh.visible = false;
 scene.add(shield.mesh);
 
 // Debug shield
@@ -215,8 +216,8 @@ shieldGui.add(shield.radius, 'value', 0.1, 5, 0.1).name('Radius');
 shieldGui.addColor(shield.colorA, 'value').name('ColorA');
 shieldGui.addColor(shield.colorB, 'value').name('ColorB');
 
-floorMaterial.emissiveNode = materialEmissive.add(shield.junctionNode);
-
+// floorMaterial.emissiveNode = materialEmissive.add(shield.junctionNode);
+floorMaterial.colorNode = shield.junctionNode;
 // transform controls
 const transformControls = new TransformControls(camera, renderer.domElement);
 transformControls.attach(shield.mesh);

@@ -1,4 +1,11 @@
+varying vec3 vPosition;
+
 void main() {
-  #include <begin_vertex>
-  #include <project_vertex>
+  vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+  vec4 viewPosition = viewMatrix * worldPosition;
+  vec4 projectionPosition = projectionMatrix * viewPosition;
+
+  gl_Position = projectionPosition;
+
+  vPosition = worldPosition.xyz;
 }
