@@ -1,9 +1,14 @@
 import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
 import {
+  ACESFilmicToneMapping,
   AdditiveBlending,
+  AmbientLight,
   Color,
+  DirectionalLight,
   Mesh,
+  MeshStandardMaterial,
+  PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
@@ -13,6 +18,7 @@ import {
   Uniform,
   WebGLRenderer,
 } from 'three';
+import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 import { GLTFLoader, TransformControls } from 'three/examples/jsm/Addons.js';
 import floorFragmentShader from './shader/floor/fragment.glsl?raw';
 import floorVertexShader from './shader/floor/vertex.glsl?raw';
@@ -35,6 +41,9 @@ const renderer = new WebGLRenderer({
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(sizes.pixelRatio);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = PCFShadowMap;
+renderer.toneMapping = ACESFilmicToneMapping;
 document.querySelector('#root')?.append(renderer.domElement);
 
 const scene = new Scene();
@@ -73,12 +82,14 @@ const uniforms = {
 };
 
 const planeGeometry = new PlaneGeometry(5, 5, 1, 1);
-const planeMaterial = new ShaderMaterial({
+const planeMaterial = new CustomShaderMaterial({
+  baseMaterial: MeshStandardMaterial,
   uniforms,
   vertexShader: floorVertexShader,
   fragmentShader: floorFragmentShader,
 });
 const floor = new Mesh(planeGeometry, planeMaterial);
+floor.receiveShadow = true;
 floor.rotation.x = -Math.PI / 2;
 scene.add(floor);
 
@@ -97,7 +108,12 @@ gltfLoader.load('/anvil.glb', (data) => {
     if (obj instanceof Mesh) {
       obj.castShadow = true;
       obj.receiveShadow = true;
-      obj.material = new ShaderMaterial({
+
+      const m = obj.material;
+
+      obj.material = new CustomShaderMaterial({
+        baseMaterial: MeshStandardMaterial,
+        map: m.map,
         uniforms,
         vertexShader: floorVertexShader,
         fragmentShader: floorFragmentShader,
@@ -107,6 +123,14 @@ gltfLoader.load('/anvil.glb', (data) => {
 
   scene.add(model);
 });
+
+const ambientLisht = new AmbientLight(0xffffff, 0.25);
+scene.add(ambientLisht);
+
+const directionLight = new DirectionalLight(0xfaa312, 1.25);
+directionLight.position.set(3, 3, 3);
+directionLight.castShadow = true;
+scene.add(directionLight);
 
 function render() {
   // Update

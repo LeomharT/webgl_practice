@@ -29,7 +29,7 @@ void main() {
 
   color = vec3(strength);
 
-  gl_FragColor = vec4(color, 1.0);
+  csm_Emissive = color;
 
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
