@@ -11,7 +11,6 @@ import {
   SphereGeometry,
   Timer,
   Uniform,
-  Vector3,
   WebGLRenderer,
 } from 'three';
 import { GLTFLoader, TransformControls } from 'three/examples/jsm/Addons.js';
@@ -54,8 +53,23 @@ controls.maxDistance = 20;
 const timer = new Timer();
 
 // World
+
+const sphereGeometry = new SphereGeometry(1, 32, 32);
+const sphereMaterial = new ShaderMaterial({
+  vertexShader: sphereVertexShader,
+  fragmentShader: sphereFragmentShader,
+  transparent: true,
+  blending: AdditiveBlending,
+});
+const sphere = new Mesh(sphereGeometry, sphereMaterial);
+sphere.visible = true;
+sphere.matrixAutoUpdate = true;
+sphere.updateMatrixWorld();
+sphere.updateMatrix();
+scene.add(sphere);
+
 const uniforms = {
-  uSpherePosition: new Uniform(new Vector3()),
+  uSpherePosition: new Uniform(sphere.matrixWorld),
 };
 
 const planeGeometry = new PlaneGeometry(5, 5, 1, 1);
@@ -68,29 +82,11 @@ const floor = new Mesh(planeGeometry, planeMaterial);
 floor.rotation.x = -Math.PI / 2;
 scene.add(floor);
 
-const sphereGeometry = new SphereGeometry(1, 32, 32);
-const sphereMaterial = new ShaderMaterial({
-  vertexShader: sphereVertexShader,
-  fragmentShader: sphereFragmentShader,
-  transparent: true,
-  blending: AdditiveBlending,
-});
-const sphere = new Mesh(sphereGeometry, sphereMaterial);
-sphere.visible = true;
-scene.add(sphere);
-
 const transformControls = new TransformControls(camera, renderer.domElement);
 transformControls.attach(sphere);
 transformControls.setSize(0.5);
 transformControls.addEventListener('dragging-changed', ({ value }) => {
   controls.enabled = !value;
-});
-transformControls.addEventListener('change', (e) => {
-  const obj = e.target.object;
-  const p = new Vector3();
-
-  obj.getWorldPosition(p);
-  uniforms.uSpherePosition.value.copy(p);
 });
 
 scene.add(transformControls.getHelper());

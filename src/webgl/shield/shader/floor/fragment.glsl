@@ -2,7 +2,7 @@
 
 varying vec3 vPosition;
 
-uniform vec3 uSpherePosition;
+uniform mat4 uSpherePosition;
 
 float remapClamp(
   float v,
@@ -19,7 +19,7 @@ void main() {
   vec3 p = vPosition;
   vec3 color = vec3(0.0);
 
-  float sdf = distance(p, uSpherePosition) - R;
+  float sdf = distance(p, uSpherePosition[3].xyz) - R;
   float mask = step(sdf, 0.0);
 
   float strength = smoothstep(-0.1, 0.0, sdf);
