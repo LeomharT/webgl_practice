@@ -71,7 +71,7 @@ const sphereMaterial = new ShaderMaterial({
   fragmentShader: sphereFragmentShader,
 });
 const sphere = new Mesh(sphereGeometry, sphereMaterial);
-sphere.visible = false;
+sphere.visible = true;
 scene.add(sphere);
 
 const transformControls = new TransformControls(camera, renderer.domElement);

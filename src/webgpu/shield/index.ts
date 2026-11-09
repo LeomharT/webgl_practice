@@ -201,13 +201,12 @@ gltfLoader.load('/anvil.glb', (data) => {
     }
   });
 
-  // scene.add(model);
+  scene.add(model);
 });
 
 // Shield
 
 const shield = new Shield(hexagonsTexture);
-shield.mesh.visible = false;
 scene.add(shield.mesh);
 
 // Debug shield
