@@ -14,13 +14,15 @@ import {
   Vector3,
   WebGLRenderer,
 } from 'three';
-import { TransformControls } from 'three/examples/jsm/Addons.js';
+import { GLTFLoader, TransformControls } from 'three/examples/jsm/Addons.js';
 import floorFragmentShader from './shader/floor/fragment.glsl?raw';
 import floorVertexShader from './shader/floor/vertex.glsl?raw';
 import sphereFragmentShader from './shader/sphere/fragment.glsl?raw';
 import sphereVertexShader from './shader/sphere/vertex.glsl?raw';
 
 CameraControls.install({ THREE: await import('three') });
+
+const gltfLoader = new GLTFLoader();
 
 const sizes = {
   width: window.innerWidth,
@@ -92,6 +94,23 @@ transformControls.addEventListener('change', (e) => {
 });
 
 scene.add(transformControls.getHelper());
+
+gltfLoader.load('/anvil.glb', (data) => {
+  const model = data.scene;
+  model.traverse((obj) => {
+    if (obj instanceof Mesh) {
+      obj.castShadow = true;
+      obj.receiveShadow = true;
+      obj.material = new ShaderMaterial({
+        uniforms,
+        vertexShader: floorVertexShader,
+        fragmentShader: floorFragmentShader,
+      });
+    }
+  });
+
+  scene.add(model);
+});
 
 function render() {
   // Update
