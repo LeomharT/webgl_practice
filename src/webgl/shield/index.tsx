@@ -1,6 +1,7 @@
 import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
 import {
+  AdditiveBlending,
   Color,
   Mesh,
   PerspectiveCamera,
@@ -69,6 +70,8 @@ const sphereGeometry = new SphereGeometry(1, 32, 32);
 const sphereMaterial = new ShaderMaterial({
   vertexShader: sphereVertexShader,
   fragmentShader: sphereFragmentShader,
+  transparent: true,
+  blending: AdditiveBlending,
 });
 const sphere = new Mesh(sphereGeometry, sphereMaterial);
 sphere.visible = true;
