@@ -1,6 +1,7 @@
 #define R 1.0
 
 varying vec3 vPosition;
+varying vec2 vUv;
 
 uniform mat4 uSpherePosition;
 
@@ -18,6 +19,7 @@ float remapClamp(
 void main() {
   vec3 p = vPosition;
   vec3 color = vec3(0.0);
+  vec2 uv = vUv;
 
   float sdf = distance(p, uSpherePosition[3].xyz) - R;
   float mask = step(sdf, 0.0);
@@ -28,6 +30,11 @@ void main() {
   strength *= 3.0;
 
   color = vec3(strength);
+
+  #ifdef IS_FLOOR
+  float dist = length(uv - vec2(0.5));
+  if (dist > 0.5) discard;
+  #endif
 
   csm_Emissive = color;
 

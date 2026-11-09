@@ -7,6 +7,7 @@ import {
   Color,
   DirectionalLight,
   Mesh,
+  MeshPhysicalMaterial,
   MeshStandardMaterial,
   PCFShadowMap,
   PerspectiveCamera,
@@ -87,16 +88,21 @@ const uniforms = {
 
 const planeGeometry = new PlaneGeometry(5, 5, 1, 1);
 const planeMaterial = new CustomShaderMaterial({
-  baseMaterial: MeshStandardMaterial,
+  baseMaterial: MeshPhysicalMaterial,
   uniforms,
   vertexShader: floorVertexShader,
   fragmentShader: floorFragmentShader,
   map: floorTexture,
   blending: AdditiveBlending,
+  transparent: true,
 });
+planeMaterial.defines = {
+  IS_FLOOR: true,
+};
 const floor = new Mesh(planeGeometry, planeMaterial);
 floor.receiveShadow = true;
 floor.rotation.x = -Math.PI / 2;
+floor.renderOrder = -1;
 scene.add(floor);
 
 const transformControls = new TransformControls(camera, renderer.domElement);
