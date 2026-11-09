@@ -14,6 +14,7 @@ import {
   Scene,
   ShaderMaterial,
   SphereGeometry,
+  TextureLoader,
   Timer,
   Uniform,
   WebGLRenderer,
@@ -28,6 +29,9 @@ import sphereVertexShader from './shader/sphere/vertex.glsl?raw';
 CameraControls.install({ THREE: await import('three') });
 
 const gltfLoader = new GLTFLoader();
+const textLoader = new TextureLoader();
+
+const floorTexture = textLoader.load('floor-color.jpg');
 
 const sizes = {
   width: window.innerWidth,
@@ -87,6 +91,8 @@ const planeMaterial = new CustomShaderMaterial({
   uniforms,
   vertexShader: floorVertexShader,
   fragmentShader: floorFragmentShader,
+  map: floorTexture,
+  blending: AdditiveBlending,
 });
 const floor = new Mesh(planeGeometry, planeMaterial);
 floor.receiveShadow = true;
