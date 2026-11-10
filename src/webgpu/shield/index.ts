@@ -215,8 +215,7 @@ shieldGui.add(shield.radius, 'value', 0.1, 5, 0.1).name('Radius');
 shieldGui.addColor(shield.colorA, 'value').name('ColorA');
 shieldGui.addColor(shield.colorB, 'value').name('ColorB');
 
-// floorMaterial.emissiveNode = materialEmissive.add(shield.junctionNode);
-floorMaterial.colorNode = shield.junctionNode;
+floorMaterial.emissiveNode = materialEmissive.add(shield.junctionNode);
 // transform controls
 const transformControls = new TransformControls(camera, renderer.domElement);
 transformControls.attach(shield.mesh);
