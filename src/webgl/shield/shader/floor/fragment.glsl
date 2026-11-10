@@ -1,4 +1,4 @@
-#define R 1.0
+#define R 2.0
 
 varying vec3 vPosition;
 varying vec2 vUv;

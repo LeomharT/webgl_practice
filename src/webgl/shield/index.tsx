@@ -68,7 +68,7 @@ const timer = new Timer();
 
 // World
 
-const sphereGeometry = new SphereGeometry(1, 32, 32);
+const sphereGeometry = new SphereGeometry(2, 32, 32);
 const sphereMaterial = new ShaderMaterial({
   vertexShader: sphereVertexShader,
   fragmentShader: sphereFragmentShader,
@@ -86,7 +86,7 @@ const uniforms = {
   uSpherePosition: new Uniform(sphere.matrixWorld),
 };
 
-const planeGeometry = new PlaneGeometry(5, 5, 1, 1);
+const planeGeometry = new PlaneGeometry(10, 10, 1, 1);
 const planeMaterial = new CustomShaderMaterial({
   baseMaterial: MeshPhysicalMaterial,
   uniforms,
