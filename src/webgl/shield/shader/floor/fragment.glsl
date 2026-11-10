@@ -4,6 +4,7 @@ varying vec3 vPosition;
 varying vec2 vUv;
 
 uniform mat4 uSpherePosition;
+uniform sampler2D uFloorTexture;
 
 float remapClamp(
   float v,
@@ -29,14 +30,20 @@ void main() {
   strength = pow(strength, 3.0);
   strength *= 3.0;
 
-  color = vec3(strength);
+  vec3 emissive = vec3(strength);
+
+  float alpha = 1.0;
 
   #ifdef IS_FLOOR
+  vec4 textureColor = texture2D(uFloorTexture, uv);
+
   float dist = length(uv - vec2(0.5));
-  if (dist > 0.5) discard;
+  dist = smoothstep(0.2, 0.5, dist);
+
+  csm_DiffuseColor = vec4(textureColor.rgb, 1.0 - dist);
   #endif
 
-  csm_Emissive = color;
+  csm_Emissive = emissive;
 
   #include <tonemapping_fragment>
   #include <colorspace_fragment>

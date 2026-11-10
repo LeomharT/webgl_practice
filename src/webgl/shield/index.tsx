@@ -7,7 +7,6 @@ import {
   Color,
   DirectionalLight,
   Mesh,
-  MeshPhysicalMaterial,
   MeshStandardMaterial,
   PCFShadowMap,
   PerspectiveCamera,
@@ -84,15 +83,15 @@ scene.add(sphere);
 
 const uniforms = {
   uSpherePosition: new Uniform(sphere.matrixWorld),
+  uFloorTexture: new Uniform(floorTexture),
 };
 
 const planeGeometry = new PlaneGeometry(10, 10, 1, 1);
 const planeMaterial = new CustomShaderMaterial({
-  baseMaterial: MeshPhysicalMaterial,
+  baseMaterial: MeshStandardMaterial,
   uniforms,
   vertexShader: floorVertexShader,
   fragmentShader: floorFragmentShader,
-  map: floorTexture,
   blending: AdditiveBlending,
   transparent: true,
 });
