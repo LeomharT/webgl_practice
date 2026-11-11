@@ -2,13 +2,24 @@ import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
-import { distance, texture, uv, vec2 } from 'three/tsl';
+import {
+  distance,
+  positionLocal,
+  sin,
+  texture,
+  time,
+  uv,
+  vec2,
+} from 'three/tsl';
 import {
   ACESFilmicToneMapping,
   AmbientLight,
   AxesHelper,
+  BoxGeometry,
   Color,
   DirectionalLight,
+  InstancedMesh,
+  Matrix4,
   Mesh,
   MeshStandardNodeMaterial,
   PCFShadowMap,
@@ -17,6 +28,7 @@ import {
   Scene,
   TextureLoader,
   Timer,
+  Vector3,
   WebGPURenderer,
 } from 'three/webgpu';
 
@@ -81,6 +93,62 @@ floor.receiveShadow = true;
 floor.renderOrder = -1;
 floor.rotation.x = -Math.PI / 2;
 scene.add(floor);
+
+// Common
+const count = 4;
+
+// Geometry
+const geometry = new BoxGeometry(0.5, 1, 0.5, 12, 12, 12);
+
+// Material
+const material = new MeshStandardNodeMaterial();
+
+// Wave
+const wave = sin(time.add(positionLocal.y.mul(3))).mul(0.4);
+
+/**
+ * Method 1
+ * Without instance
+ */
+
+// material.positionNode = Fn(() => {
+//   positionLocal.z.addAssign(wave);
+//   return positionLocal;
+// })();
+
+// for (let i = 0; i < count; i++) {
+//   const mesh = new Mesh(geometry, material);
+//   mesh.castShadow = true;
+//   mesh.receiveShadow = true;
+//   scene.add(mesh);
+
+//   const progress = i / (count - 1);
+//   mesh.position.x = (progress - 0.5) * count;
+//   mesh.position.y = 1;
+//   mesh.rotation.y = progress * 3;
+// }
+
+/**
+ * Method 2
+ * With Instance
+ */
+const mesh = new InstancedMesh(geometry, material, count);
+mesh.position.y = 1;
+mesh.castShadow = true;
+mesh.receiveShadow = true;
+scene.add(mesh);
+
+const dummy = new Matrix4();
+
+for (let i = 0; i < count; i++) {
+  const progress = i / (count - 1);
+
+  dummy.setPosition(new Vector3((progress - 0.5) * 4, 0, 0));
+  dummy.scale(new Vector3(1, 1, 1));
+
+  mesh.setMatrixAt(i, dummy);
+  mesh.updateMatrix();
+}
 
 const ambientLight = new AmbientLight(0x859dff, 1.25);
 scene.add(ambientLight);
