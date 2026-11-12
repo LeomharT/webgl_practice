@@ -4,10 +4,15 @@ import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import {
   distance,
+  Fn,
+  instanceIndex,
+  normalLocal,
   positionLocal,
+  rotate,
   sin,
   texture,
   time,
+  uniform,
   uv,
   vec2,
 } from 'three/tsl';
@@ -18,8 +23,6 @@ import {
   BoxGeometry,
   Color,
   DirectionalLight,
-  InstancedMesh,
-  Matrix4,
   Mesh,
   MeshStandardNodeMaterial,
   PCFShadowMap,
@@ -28,7 +31,6 @@ import {
   Scene,
   TextureLoader,
   Timer,
-  Vector3,
   WebGPURenderer,
 } from 'three/webgpu';
 
@@ -132,23 +134,62 @@ const wave = sin(time.add(positionLocal.y.mul(3))).mul(0.4);
  * Method 2
  * With Instance
  */
-const mesh = new InstancedMesh(geometry, material, count);
+// material.positionNode = Fn(() => {
+//   return positionLocal.add(wave);
+// })();
+
+// const mesh = new InstancedMesh(geometry, material, count);
+// mesh.position.y = 1;
+// mesh.castShadow = true;
+// mesh.receiveShadow = true;
+// scene.add(mesh);
+
+// const dummy = new Matrix4();
+
+// for (let i = 0; i < count; i++) {
+//   const progress = i / (count - 1);
+
+//   dummy.setPosition(new Vector3((progress - 0.5) * 4, 0, 0));
+//   dummy.scale(new Vector3(1, 1, 1));
+
+//   mesh.setMatrixAt(i, dummy);
+//   mesh.updateMatrix();
+// }
+
+/**
+ * Method 3
+ * With `instanceIndex`
+ */
+const countUniform = uniform(count);
+
+material.positionNode = Fn(({ object }) => {
+  const progress = instanceIndex.toFloat().div(countUniform.sub(1));
+
+  positionLocal.z.addAssign(wave);
+
+  // Rotation `do the rotation frist`
+  positionLocal.xz.assign(rotate(positionLocal.xz, progress.mul(3)));
+  normalLocal.xz.assign(rotate(normalLocal.xz, progress.mul(3)));
+
+  // Translation
+  positionLocal.x.addAssign(progress.sub(0.5).mul(countUniform));
+
+  return positionLocal;
+})();
+
+const mesh = new Mesh(geometry, material);
+mesh.count = count;
 mesh.position.y = 1;
 mesh.castShadow = true;
 mesh.receiveShadow = true;
+
 scene.add(mesh);
 
-const dummy = new Matrix4();
-
-for (let i = 0; i < count; i++) {
-  const progress = i / (count - 1);
-
-  dummy.setPosition(new Vector3((progress - 0.5) * 4, 0, 0));
-  dummy.scale(new Vector3(1, 1, 1));
-
-  mesh.setMatrixAt(i, dummy);
-  mesh.updateMatrix();
-}
+// Debug
+const instanceGui = inspector.createParameters('Instance');
+instanceGui.add(mesh, 'count', 1, 100, 1).onChange(() => {
+  countUniform.value = mesh.count;
+});
 
 const ambientLight = new AmbientLight(0x859dff, 1.25);
 scene.add(ambientLight);
