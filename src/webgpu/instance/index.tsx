@@ -5,14 +5,12 @@ import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import {
   distance,
   Fn,
-  instanceIndex,
-  normalLocal,
+  instancedBufferAttribute,
   positionLocal,
   rotate,
   sin,
   texture,
   time,
-  uniform,
   uv,
   vec2,
 } from 'three/tsl';
@@ -23,8 +21,10 @@ import {
   BoxGeometry,
   Color,
   DirectionalLight,
+  InstancedBufferAttribute,
   Mesh,
   MeshStandardNodeMaterial,
+  Node,
   PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
@@ -160,19 +160,74 @@ const wave = sin(time.add(positionLocal.y.mul(3))).mul(0.4);
  * Method 3
  * With `instanceIndex`
  */
-const countUniform = uniform(count);
+// const countUniform = uniform(count);
 
-material.positionNode = Fn(({ object }) => {
-  const progress = instanceIndex.toFloat().div(countUniform.sub(1));
+// material.positionNode = Fn(({ object }) => {
+//   const progress = instanceIndex.toFloat().div(countUniform.sub(1));
 
-  positionLocal.z.addAssign(wave);
+//   positionLocal.z.addAssign(wave);
 
-  // Rotation `do the rotation frist`
-  positionLocal.xz.assign(rotate(positionLocal.xz, progress.mul(3)));
-  normalLocal.xz.assign(rotate(normalLocal.xz, progress.mul(3)));
+//   // Rotation `do the rotation frist`
+//   positionLocal.xz.assign(rotate(positionLocal.xz, progress.mul(3)));
+//   normalLocal.xz.assign(rotate(normalLocal.xz, progress.mul(3)));
 
+//   // Translation
+//   positionLocal.x.addAssign(progress.sub(0.5).mul(countUniform));
+
+//   return positionLocal;
+// })();
+
+// const mesh = new Mesh(geometry, material);
+// mesh.count = count;
+// mesh.position.y = 1;
+// mesh.castShadow = true;
+// mesh.receiveShadow = true;
+// scene.add(mesh);
+
+// Debug
+// const instanceGui = inspector.createParameters('Instance');
+// instanceGui.add(mesh, 'count', 1, 100, 1).onChange(() => {
+//   countUniform.value = mesh.count;
+// });
+
+/**
+ * Method 4
+ * With `InstanceAttribute`
+ */
+
+const rotationArray = new Float32Array(count);
+const positionArray = new Float32Array(count * 3);
+
+const rotationBuffer = new InstancedBufferAttribute(rotationArray, 1);
+const positionBuffer = new InstancedBufferAttribute(positionArray, 3);
+
+for (let i = 0; i < count; i++) {
+  const i3 = i * 3;
+  const progress = i / (count - 1);
+
+  positionArray[i3 + 0] = (progress - 0.5) * 4;
+  positionArray[i3 + 1] = 0;
+  positionArray[i3 + 2] = 0;
+
+  rotationArray[i] = progress * 3;
+}
+
+material.positionNode = Fn(() => {
+  // Buffer
+  const instanceRotation = instancedBufferAttribute(
+    rotationBuffer,
+  ) as unknown as Node<'float'>;
+
+  const instancePosition = instancedBufferAttribute(
+    positionBuffer,
+  ) as unknown as Node<'vec3'>;
+
+  // Rotation
+  positionLocal.xz.assign(rotate(positionLocal.xz, instanceRotation));
   // Translation
-  positionLocal.x.addAssign(progress.sub(0.5).mul(countUniform));
+  positionLocal.addAssign(instancePosition);
+  // Wave
+  positionLocal.z.addAssign(wave);
 
   return positionLocal;
 })();
@@ -182,14 +237,7 @@ mesh.count = count;
 mesh.position.y = 1;
 mesh.castShadow = true;
 mesh.receiveShadow = true;
-
 scene.add(mesh);
-
-// Debug
-const instanceGui = inspector.createParameters('Instance');
-instanceGui.add(mesh, 'count', 1, 100, 1).onChange(() => {
-  countUniform.value = mesh.count;
-});
 
 const ambientLight = new AmbientLight(0x859dff, 1.25);
 scene.add(ambientLight);
