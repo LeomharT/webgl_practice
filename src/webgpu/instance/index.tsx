@@ -4,10 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import {
   distance,
-  Fn,
-  instancedBufferAttribute,
   positionLocal,
-  rotate,
   sin,
   texture,
   time,
@@ -21,10 +18,8 @@ import {
   BoxGeometry,
   Color,
   DirectionalLight,
-  InstancedBufferAttribute,
   Mesh,
   MeshStandardNodeMaterial,
-  Node,
   PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
@@ -195,49 +190,49 @@ const wave = sin(time.add(positionLocal.y.mul(3))).mul(0.4);
  * With `InstanceAttribute`
  */
 
-const rotationArray = new Float32Array(count);
-const positionArray = new Float32Array(count * 3);
+// const rotationArray = new Float32Array(count);
+// const positionArray = new Float32Array(count * 3);
 
-const rotationBuffer = new InstancedBufferAttribute(rotationArray, 1);
-const positionBuffer = new InstancedBufferAttribute(positionArray, 3);
+// const rotationBuffer = new InstancedBufferAttribute(rotationArray, 1);
+// const positionBuffer = new InstancedBufferAttribute(positionArray, 3);
 
-for (let i = 0; i < count; i++) {
-  const i3 = i * 3;
-  const progress = i / (count - 1);
+// for (let i = 0; i < count; i++) {
+//   const i3 = i * 3;
+//   const progress = i / (count - 1);
 
-  positionArray[i3 + 0] = (progress - 0.5) * 4;
-  positionArray[i3 + 1] = 0;
-  positionArray[i3 + 2] = 0;
+//   positionArray[i3 + 0] = (progress - 0.5) * 4;
+//   positionArray[i3 + 1] = 0;
+//   positionArray[i3 + 2] = 0;
 
-  rotationArray[i] = progress * 3;
-}
+//   rotationArray[i] = progress * 3;
+// }
 
-material.positionNode = Fn(() => {
-  // Buffer
-  const instanceRotation = instancedBufferAttribute(
-    rotationBuffer,
-  ) as unknown as Node<'float'>;
+// material.positionNode = Fn(() => {
+//   // Buffer
+//   const instanceRotation = instancedBufferAttribute(
+//     rotationBuffer,
+//   ) as unknown as Node<'float'>;
 
-  const instancePosition = instancedBufferAttribute(
-    positionBuffer,
-  ) as unknown as Node<'vec3'>;
+//   const instancePosition = instancedBufferAttribute(
+//     positionBuffer,
+//   ) as unknown as Node<'vec3'>;
 
-  // Rotation
-  positionLocal.xz.assign(rotate(positionLocal.xz, instanceRotation));
-  // Translation
-  positionLocal.addAssign(instancePosition);
-  // Wave
-  positionLocal.z.addAssign(wave);
+//   // Rotation
+//   positionLocal.xz.assign(rotate(positionLocal.xz, instanceRotation));
+//   // Translation
+//   positionLocal.addAssign(instancePosition);
+//   // Wave
+//   positionLocal.z.addAssign(wave);
 
-  return positionLocal;
-})();
+//   return positionLocal;
+// })();
 
-const mesh = new Mesh(geometry, material);
-mesh.count = count;
-mesh.position.y = 1;
-mesh.castShadow = true;
-mesh.receiveShadow = true;
-scene.add(mesh);
+// const mesh = new Mesh(geometry, material);
+// mesh.count = count;
+// mesh.position.y = 1;
+// mesh.castShadow = true;
+// mesh.receiveShadow = true;
+// scene.add(mesh);
 
 const ambientLight = new AmbientLight(0x859dff, 1.25);
 scene.add(ambientLight);
