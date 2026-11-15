@@ -4,7 +4,11 @@ import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import {
   distance,
+  Fn,
+  instancedBufferAttribute,
+  normalLocal,
   positionLocal,
+  rotate,
   sin,
   texture,
   time,
@@ -18,8 +22,10 @@ import {
   BoxGeometry,
   Color,
   DirectionalLight,
+  InstancedInterleavedBuffer,
   Mesh,
   MeshStandardNodeMaterial,
+  Node,
   PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
@@ -233,6 +239,49 @@ const wave = sin(time.add(positionLocal.y.mul(3))).mul(0.4);
 // mesh.castShadow = true;
 // mesh.receiveShadow = true;
 // scene.add(mesh);
+
+/**
+ * Method 5
+ * With `InstancedInterleavedBuffer`
+ */
+const array = new Float32Array(count * 4);
+const buffer = new InstancedInterleavedBuffer(array, 4);
+
+for (let i = 0; i < count; i++) {
+  const i4 = i * 4;
+  const progress = i / (count - 1);
+
+  array[i4 + 0] = (progress - 0.5) * 4;
+  array[i4 + 1] = 0;
+  array[i4 + 2] = 0;
+  array[i4 + 3] = progress * 3;
+}
+
+material.positionNode = Fn(() => {
+  // Buffer
+  const instancePosition = instancedBufferAttribute(buffer, 'vec3', 0, 0);
+  const instanceRotation = instancedBufferAttribute(buffer, 'float', 0, 3);
+
+  // Rotation
+  positionLocal.xz.assign(
+    rotate(positionLocal.xz, instanceRotation as Node<'float'>),
+  );
+  normalLocal.xz.assign(
+    rotate(normalLocal.xz, instanceRotation as Node<'float'>),
+  );
+
+  // Transform
+  positionLocal.addAssign(instancePosition as Node<'vec3'>);
+
+  return positionLocal;
+})();
+
+const mesh = new Mesh(geometry, material);
+mesh.count = count;
+mesh.position.y = 1;
+mesh.castShadow = true;
+mesh.receiveShadow = true;
+scene.add(mesh);
 
 const ambientLight = new AmbientLight(0x859dff, 1.25);
 scene.add(ambientLight);

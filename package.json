@@ -11,14 +11,14 @@
   "devDependencies": {
     "@tweakpane/core": "^2.0.5",
     "@types/three": "^0.187.0",
-    "prettier": "^3.9.10",
+    "prettier": "^3.10.1",
     "prettier-plugin-glsl": "^0.3.1",
     "typescript": "^7.0.2",
-    "vite": "^8.3.6",
+    "vite": "^8.3.8",
     "vite-plugin-wasm": "^3.6.0"
   },
   "dependencies": {
-    "@babel/runtime": "^8.1.0",
+    "@babel/runtime": "^8.1.2",
     "@blueprintjs/colors": "^5.1.16",
     "@dimforge/rapier3d": "^0.21.0",
     "@tweakpane/plugin-essentials": "^0.2.1",
