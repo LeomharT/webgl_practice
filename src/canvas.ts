@@ -40,6 +40,10 @@ const rect = new Konva.Rect({
   height: 200,
   fill: Colors.VIOLET4,
 });
+group.offset({
+  x: rect.size().width / 2,
+  y: rect.size().height / 2,
+});
 group.add(rect);
 
 rect.on('pointerenter', () => {
@@ -167,6 +171,16 @@ resizeHandleButtomLeft.on('pointermove', () => {
   });
 
   updateHandlesPosition();
+
+  group.offset({
+    x: rect.size().width / 2,
+    y: rect.size().height / 2,
+  });
+
+  group.setPosition({
+    x: group.position().x + dx / 2,
+    y: group.position().y + dy / 2,
+  });
 
   prevCoord.x = cursor.x;
   prevCoord.y = cursor.y;
