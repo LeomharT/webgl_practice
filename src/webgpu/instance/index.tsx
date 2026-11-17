@@ -4,11 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import {
   distance,
-  Fn,
-  instancedBufferAttribute,
-  normalLocal,
   positionLocal,
-  rotate,
   sin,
   texture,
   time,
@@ -22,10 +18,8 @@ import {
   BoxGeometry,
   Color,
   DirectionalLight,
-  InstancedInterleavedBuffer,
   Mesh,
   MeshStandardNodeMaterial,
-  Node,
   PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
@@ -243,38 +237,78 @@ const wave = sin(time.add(positionLocal.y.mul(3))).mul(0.4);
 /**
  * Method 5
  * With `InstancedInterleavedBuffer`
+ * Useless on WebGL
  */
-const array = new Float32Array(count * 4);
-const buffer = new InstancedInterleavedBuffer(array, 4);
+// const array = new Float32Array(count * 4);
+// const buffer = new InstancedInterleavedBuffer(array, 4);
 
-for (let i = 0; i < count; i++) {
-  const i4 = i * 4;
-  const progress = i / (count - 1);
+// for (let i = 0; i < count; i++) {
+//   const i4 = i * 4;
+//   const progress = i / (count - 1);
 
-  array[i4 + 0] = (progress - 0.5) * 4;
-  array[i4 + 1] = 0;
-  array[i4 + 2] = 0;
-  array[i4 + 3] = progress * 3;
-}
+//   array[i4 + 0] = (progress - 0.5) * 4;
+//   array[i4 + 1] = 0;
+//   array[i4 + 2] = 0;
+//   array[i4 + 3] = progress * 3;
+// }
 
-material.positionNode = Fn(() => {
-  // Buffer
-  const instancePosition = instancedBufferAttribute(buffer, 'vec3', 0, 0);
-  const instanceRotation = instancedBufferAttribute(buffer, 'float', 0, 3);
+// material.positionNode = Fn(() => {
+//   // Buffer
+//   const instancePosition = instancedBufferAttribute(buffer, 'vec3', 0, 0);
+//   const instanceRotation = instancedBufferAttribute(buffer, 'float', 0, 3);
 
-  // Rotation
-  positionLocal.xz.assign(
-    rotate(positionLocal.xz, instanceRotation as Node<'float'>),
-  );
-  normalLocal.xz.assign(
-    rotate(normalLocal.xz, instanceRotation as Node<'float'>),
-  );
+//   // Rotation
+//   positionLocal.xz.assign(
+//     rotate(positionLocal.xz, instanceRotation as Node<'float'>),
+//   );
+//   normalLocal.xz.assign(
+//     rotate(normalLocal.xz, instanceRotation as Node<'float'>),
+//   );
 
-  // Transform
-  positionLocal.addAssign(instancePosition as Node<'vec3'>);
+//   // Transform
+//   positionLocal.addAssign(instancePosition as Node<'vec3'>);
 
-  return positionLocal;
-})();
+//   return positionLocal;
+// })();
+
+// const mesh = new Mesh(geometry, material);
+// mesh.count = count;
+// mesh.position.y = 1;
+// mesh.castShadow = true;
+// mesh.receiveShadow = true;
+// scene.add(mesh);
+
+/**
+ * Method 6
+ * With `instanceattribute` and full matrix
+ */
+
+// const matrixArray = new Float32Array(count * 16);
+// const matrixBufferAttribute = new InstancedBufferAttribute(matrixArray, 16);
+
+// for (let i = 0; i < count; i++) {
+//   const progress = i / (count - 1);
+
+//   const translate = new Vector3((progress - 0.5) * 4, 0, 0);
+//   const scale = new Vector3(1, 1, 1);
+//   const rotation = new Quaternion().setFromEuler(
+//     new Euler(0, progress * 3, 0, 'XYZ'),
+//   );
+
+//   const matrix = new Matrix4();
+//   matrix.compose(translate, rotation, scale);
+
+//   matrix.toArray(matrixArray, i * 16);
+// }
+
+// material.positionNode = Fn(() => {
+//   // Wave
+//   positionLocal.z.addAssign(wave);
+
+//   instance(matrixBufferAttribute);
+
+//   return positionLocal;
+// })();
 
 const mesh = new Mesh(geometry, material);
 mesh.count = count;
