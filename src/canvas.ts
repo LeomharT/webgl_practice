@@ -1,5 +1,6 @@
 import { Colors } from '@blueprintjs/colors';
 import Konva from 'konva';
+import { RAD2DEG } from 'three/src/math/MathUtils.js';
 
 // Enable shape event pointer capture
 Konva.capturePointerEventsEnabled = true;
@@ -10,6 +11,8 @@ const stage = new Konva.Stage({
   width: window.innerWidth,
   height: window.innerHeight,
 });
+
+const container = stage.container();
 
 // Layer 0
 const layer = new Konva.Layer({});
@@ -22,11 +25,13 @@ const prevCoord = {
 };
 
 let isDraggin = false;
+let isResizing = false;
+let isRotating = false;
 
 // World
 const group = new Konva.Group({
-  x: window.innerWidth / 2 - 100,
-  y: window.innerHeight / 2 - 100,
+  x: window.innerWidth / 2,
+  y: window.innerHeight / 2,
 });
 layer.add(group);
 
@@ -37,8 +42,15 @@ const rect = new Konva.Rect({
 });
 group.add(rect);
 
+rect.on('pointerenter', () => {
+  container.style.cursor = 'grab';
+});
+rect.on('pointerleave', () => {
+  container.style.cursor = 'default';
+});
 rect.on('pointerdown', () => {
   isDraggin = true;
+  container.style.cursor = 'grabbing';
 
   const position = stage.getPointerPosition()!;
 
@@ -47,6 +59,7 @@ rect.on('pointerdown', () => {
 });
 rect.on('pointerup', () => {
   isDraggin = false;
+  container.style.cursor = 'grab';
 });
 rect.on('pointermove', () => {
   if (!isDraggin) return;
@@ -66,22 +79,106 @@ rect.on('pointermove', () => {
   prevCoord.y = stagePosition.y;
 });
 
-// Transformer
+// Rotation
+const rotationHandleButtomLeft = new Konva.Rect({
+  width: 20,
+  height: 20,
+  stroke: Colors.BLUE5,
+});
+rotationHandleButtomLeft.setPosition({
+  x: rect.size().width,
+  y: rect.size().height,
+});
+rotationHandleButtomLeft.on('pointerdown', () => {
+  isRotating = true;
+
+  const cursor = stage.getPointerPosition()!;
+  const center = group.position();
+
+  prevCoord.theta = Math.atan2(cursor.y - center.y, cursor.x - center.x);
+});
+rotationHandleButtomLeft.on('pointerup', () => {
+  isRotating = false;
+});
+rotationHandleButtomLeft.on('pointermove', () => {
+  if (!isRotating) return;
+
+  const cursor = stage.getPointerPosition()!;
+  const center = group.position();
+
+  const next = Math.atan2(cursor.y - center.y, cursor.x - center.x);
+  const theta = next - prevCoord.theta;
+
+  group.rotate(theta * RAD2DEG);
+
+  prevCoord.theta = next;
+});
+
+group.add(rotationHandleButtomLeft);
+
+// Translate
 const resizeHandleButtomLeft = new Konva.Rect({
-  width: 30,
-  height: 30,
+  width: 10,
+  height: 10,
   stroke: Colors.BLUE5,
 });
 resizeHandleButtomLeft.setPosition({
-  x: 200,
-  y: 200,
+  x: rect.size().width,
+  y: rect.size().height,
 });
-resizeHandleButtomLeft.on('mousedown', () => {
-  const cursor = stage.getPointerPosition();
+resizeHandleButtomLeft.on('pointerenter', () => {
+  container.style.cursor = 'crosshair';
+});
+resizeHandleButtomLeft.on('pointerleave', () => {
+  container.style.cursor = 'default';
+});
+resizeHandleButtomLeft.on('pointerdown', () => {
+  isResizing = true;
 
-  if (cursor) {
-    prevCoord.x = cursor.x;
-    prevCoord.y = cursor.y;
-  }
+  const cursor = stage.getPointerPosition()!;
+
+  prevCoord.x = cursor.x;
+  prevCoord.y = cursor.y;
 });
+resizeHandleButtomLeft.on('pointerup', () => {
+  isResizing = false;
+});
+resizeHandleButtomLeft.on('pointermove', () => {
+  if (!isResizing) return;
+
+  const theta = group.rotation() * (Math.PI / 180);
+
+  const c = Math.cos(theta);
+  const s = Math.sin(theta);
+
+  const cursor = stage.pointerPos;
+  if (!cursor) return;
+
+  const dx = cursor.x - prevCoord.x;
+  const dy = cursor.y - prevCoord.y;
+
+  const localDx = dx * c + dy * s;
+  const localDy = dx * -s + dy * c;
+
+  const targetSize = rect.size();
+  rect.setSize({
+    width: targetSize.width + localDx,
+    height: targetSize.height + localDy,
+  });
+
+  updateHandlesPosition();
+
+  prevCoord.x = cursor.x;
+  prevCoord.y = cursor.y;
+});
+
 group.add(resizeHandleButtomLeft);
+
+function updateHandlesPosition() {
+  for (const h of [resizeHandleButtomLeft, rotationHandleButtomLeft]) {
+    const x = rect.width();
+    const y = rect.height();
+
+    h.position({ x, y });
+  }
+}
