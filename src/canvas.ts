@@ -1,119 +1,87 @@
 import { Colors } from '@blueprintjs/colors';
+import Konva from 'konva';
 
-const sizes = {
+// Enable shape event pointer capture
+Konva.capturePointerEventsEnabled = true;
+
+// Stage
+const stage = new Konva.Stage({
+  container: 'root',
   width: window.innerWidth,
   height: window.innerHeight,
-  dpr: Math.min(2, window.devicePixelRatio),
+});
+
+// Layer 0
+const layer = new Konva.Layer({});
+stage.add(layer);
+
+const prevCoord = {
+  x: 0,
+  y: 0,
+  theta: 0,
 };
 
-const canvas = document.createElement('canvas');
-document.querySelector('#root')?.append(canvas);
+let isDraggin = false;
 
-const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+// World
+const group = new Konva.Group({
+  x: window.innerWidth / 2 - 100,
+  y: window.innerHeight / 2 - 100,
+});
+layer.add(group);
 
-function resize() {
-  sizes.width = window.innerWidth;
-  sizes.height = window.innerHeight;
+const rect = new Konva.Rect({
+  width: 200,
+  height: 200,
+  fill: Colors.VIOLET4,
+});
+group.add(rect);
 
-  sizes.dpr = Math.min(2, window.devicePixelRatio);
+rect.on('pointerdown', () => {
+  isDraggin = true;
 
-  canvas.width = sizes.width * sizes.dpr;
-  canvas.height = sizes.height * sizes.dpr;
+  const position = stage.getPointerPosition()!;
 
-  canvas.style.width = sizes.width + 'px';
-  canvas.style.height = sizes.height + 'px';
+  prevCoord.x = position.x;
+  prevCoord.y = position.y;
+});
+rect.on('pointerup', () => {
+  isDraggin = false;
+});
+rect.on('pointermove', () => {
+  if (!isDraggin) return;
 
-  requestRender();
-}
+  const stagePosition = stage.getPointerPosition()!;
+  const targetPosition = group.getPosition();
 
-let frameId: number | null = null;
-const transform = {
-  x: sizes.width / 2,
-  y: sizes.height / 2,
-  scale: 1,
-  rotate: 0,
-};
+  const tx = stagePosition.x - prevCoord.x;
+  const ty = stagePosition.y - prevCoord.y;
 
-function clean() {
-  ctx.save();
-
-  ctx.fillStyle = Colors.BLACK;
-  ctx.resetTransform();
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.restore();
-}
-
-function renderRect() {
-  ctx.save();
-
-  const c = Math.cos(transform.rotate) * sizes.dpr;
-  const s = Math.sin(transform.rotate) * sizes.dpr;
-
-  const size = 100;
-
-  ctx.setTransform(
-    c,
-    s,
-    -s,
-    c,
-    transform.x * sizes.dpr,
-    transform.y * sizes.dpr,
-  );
-
-  ctx.fillStyle = Colors.CERULEAN4;
-  ctx.fillRect(-size / 2, -size / 2, size, size);
-
-  ctx.restore();
-}
-
-function render() {
-  clean();
-
-  renderRect();
-}
-
-function requestRender() {
-  if (frameId) return;
-
-  frameId = requestAnimationFrame(() => {
-    frameId = null;
-    render();
+  group.setPosition({
+    x: tx + targetPosition.x,
+    y: ty + targetPosition.y,
   });
-}
 
-resize();
-window.addEventListener('resize', resize);
-
-const prev = { x: 0, y: 0, rotate: 0 };
-
-canvas.addEventListener('pointerdown', (e) => {
-  canvas.setPointerCapture(e.pointerId);
-
-  prev.x = e.clientX;
-  prev.y = e.clientY;
-
-  prev.rotate = Math.atan2(prev.y - transform.y, prev.x - transform.x);
+  prevCoord.x = stagePosition.x;
+  prevCoord.y = stagePosition.y;
 });
 
-canvas.addEventListener('pointerup', (e) => {
-  if (canvas.hasPointerCapture(e.pointerId))
-    canvas.releasePointerCapture(e.pointerId);
+// Transformer
+const resizeHandleButtomLeft = new Konva.Rect({
+  width: 30,
+  height: 30,
+  stroke: Colors.BLUE5,
 });
-
-canvas.addEventListener('pointermove', (e) => {
-  if (!canvas.hasPointerCapture(e.pointerId)) return;
-
-  // transform.x += e.clientX - prev.x;
-  // transform.y += e.clientY - prev.y;
-
-  prev.x = e.clientX;
-  prev.y = e.clientY;
-
-  const angle = Math.atan2(prev.y - transform.y, prev.x - transform.x);
-
-  transform.rotate += angle - prev.rotate;
-  prev.rotate = angle;
-
-  requestRender();
+resizeHandleButtomLeft.setPosition({
+  x: 200,
+  y: 200,
 });
+resizeHandleButtomLeft.on('mousedown', () => {
+  const cursor = stage.getPointerPosition();
+
+  if (cursor) {
+    prevCoord.x = cursor.x;
+    prevCoord.y = cursor.y;
+  }
+});
+group.add(resizeHandleButtomLeft);
