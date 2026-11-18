@@ -4,6 +4,9 @@ import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import {
   distance,
+  Fn,
+  instancedArray,
+  instanceIndex,
   positionLocal,
   sin,
   texture,
@@ -310,6 +313,92 @@ const wave = sin(time.add(positionLocal.y.mul(3))).mul(0.4);
 //   return positionLocal;
 // })();
 
+// const mesh = new Mesh(geometry, material);
+// mesh.count = count;
+// mesh.position.y = 1;
+// mesh.castShadow = true;
+// mesh.receiveShadow = true;
+// scene.add(mesh);
+
+/**
+ * Method 7
+ * With `uniformArray`
+ * uniform buffer has max size, so instance case do not use this
+ */
+
+// Buffers
+// const positionArray: Vector3[] = [];
+// const rotationArray: number[] = [];
+
+// for (let i = 0; i < count; i++) {
+//   const progress = i / (count - 1);
+
+//   const position = new Vector3((progress - 0.5) * 4, 0, 0);
+//   const rotation = progress * 3;
+
+//   positionArray.push(position);
+//   rotationArray.push(rotation);
+// }
+
+// const positions = uniformArray(positionArray, 'vec3');
+// const rotations = uniformArray(rotationArray, 'float');
+
+// material.positionNode = Fn(() => {
+//   // Buffers
+//   const instancePosition = positions.element(instanceIndex);
+//   const instanceRotation = rotations.element(instanceIndex);
+
+//   positionLocal.xz.assign(
+//     rotate(positionLocal.xz, instanceRotation as unknown as Node<'float'>),
+//   );
+//   normalLocal.xz.assign(
+//     rotate(normalLocal.xz, instanceRotation as unknown as Node<'float'>),
+//   );
+
+//   positionLocal.addAssign(instancePosition as unknown as Node<'vec3'>);
+//   positionLocal.z.addAssign(wave);
+
+//   return positionLocal;
+// })();
+
+// const mesh = new Mesh(geometry, material);
+// mesh.count = count;
+// mesh.position.y = 1;
+// mesh.castShadow = true;
+// mesh.receiveShadow = true;
+// scene.add(mesh);
+
+/**
+ * Method 8
+ * Compute shader!!!!
+ */
+
+// Buffer
+// const positionBuffer = new StorageInstancedBufferAttribute(count, 3);
+// const positionStorage = storage(positionBuffer, 'vec3', count);
+const positionStorage = instancedArray(count, 'vec3');
+
+const update = Fn(() => {
+  const position = positionStorage.element(instanceIndex);
+  const instanceIndexFloat = instanceIndex.toFloat();
+
+  const progress = instanceIndexFloat.div(count - 1);
+
+  position.x.assign(progress.sub(0.5).mul(4));
+  position.y.assign(time.add(progress).sin());
+})();
+const updateCompute = update.compute(count); // Convert to compute node
+
+// Material
+material.positionNode = Fn(() => {
+  // Buffer
+  const instancePosition = positionStorage.element(instanceIndex);
+
+  positionLocal.addAssign(instancePosition);
+
+  return positionLocal;
+})();
+
 const mesh = new Mesh(geometry, material);
 mesh.count = count;
 mesh.position.y = 1;
@@ -320,7 +409,7 @@ scene.add(mesh);
 const ambientLight = new AmbientLight(0x859dff, 1.25);
 scene.add(ambientLight);
 
-const directionalLight = new DirectionalLight(0xffaf85, 3);
+const directionalLight = new DirectionalLight(0xffaf85, 5);
 directionalLight.castShadow = true;
 directionalLight.position.set(1, 1, 0.75);
 directionalLight.shadow.radius = 5;
@@ -336,6 +425,11 @@ function render() {
 
   const dt = timer.getDelta();
   controls.update(dt);
+
+  // Compute
+  if (typeof updateCompute !== undefined) {
+    renderer.compute(updateCompute);
+  }
 
   // Render
   renderer.render(scene, camera);
