@@ -8,19 +8,25 @@ import {
   Fn,
   HALF_PI,
   instancedBufferAttribute,
+  materialColor,
   mix,
   positionLocal,
+  reflector,
   rotate,
   uv,
 } from 'three/tsl';
 import {
+  AmbientLight,
   BufferAttribute,
   BufferGeometry,
   Color,
+  DirectionalLight,
+  IcosahedronGeometry,
   InstancedBufferAttribute,
   MathUtils,
   Mesh,
   MeshBasicNodeMaterial,
+  MeshStandardNodeMaterial,
   Node,
   PCFShadowMap,
   PerspectiveCamera,
@@ -50,6 +56,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = PCFShadowMap;
 renderer.setAnimationLoop(render);
 renderer.inspector = inspector;
+renderer.autoClear = true;
 document.querySelector('#root')?.append(renderer.domElement);
 
 const scene = new Scene();
@@ -71,9 +78,27 @@ const timer = new Timer();
  */
 
 const floorGeometry = new PlaneGeometry(1, 1, 1, 1);
-const floorMaterial = new MeshBasicNodeMaterial();
+const floorMaterial = new MeshStandardNodeMaterial({
+  roughness: 0.4,
+  metalness: 0.3,
+});
+
 const floor = new Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = -Math.PI / 2;
+floor.position.y = -0.1;
+
+floorMaterial.colorNode = Fn(() => {
+  const color = materialColor.add(
+    reflector({
+      resolutionScale: 1,
+      target: floor,
+      bounces: true,
+      generateMipmaps: false,
+    }),
+  );
+
+  return color;
+})();
 
 scene.add(floor);
 
@@ -138,14 +163,27 @@ grassMaterial.positionNode = Fn(() => {
 })();
 
 grassMaterial.colorNode = Fn(() => {
-  const diffuse = mix(color(Colors.GREEN2), color(Colors.GREEN5), uv().y);
-
+  const diffuse = mix(color(Colors.GREEN1), color(Colors.GREEN5), uv().y);
   return diffuse;
 })();
 
 const grass = new Mesh(grassGeometry, grassMaterial);
 grass.count = count;
-scene.add(grass);
+// scene.add(grass);
+
+const ball = new Mesh(
+  new IcosahedronGeometry(0.1, 3),
+  new MeshStandardNodeMaterial({ color: Colors.BLUE1 }),
+);
+scene.add(ball);
+
+// Lights
+const ambientLight = new AmbientLight(Colors.BLUE1, 2);
+scene.add(ambientLight);
+
+const directionalLight = new DirectionalLight(Colors.WHITE, 3);
+directionalLight.position.set(3, 3, 3);
+scene.add(directionalLight);
 
 // Tick function
 function render() {
