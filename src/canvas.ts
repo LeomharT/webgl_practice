@@ -134,9 +134,11 @@ for (let i = 0; i < count; i++) {
   positionArray[i3 + 1] = 0;
   positionArray[i3 + 2] = MathUtils.randFloat(-0.5, 0.5);
 
-  scaleArray[i3 + 0] = 0.1;
+  const randomScale = MathUtils.randFloat(0.05, 0.1);
+
+  scaleArray[i3 + 0] = randomScale;
   scaleArray[i3 + 1] = 0.1;
-  scaleArray[i3 + 2] = 0.1;
+  scaleArray[i3 + 2] = randomScale;
 }
 
 grassMaterial.positionNode = Fn(() => {
