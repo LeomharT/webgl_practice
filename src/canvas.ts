@@ -4,11 +4,14 @@ import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import {
   atan,
   cameraPosition,
+  color,
   Fn,
   HALF_PI,
   instancedBufferAttribute,
+  mix,
   positionLocal,
   rotate,
+  uv,
 } from 'three/tsl';
 import {
   BufferAttribute,
@@ -132,6 +135,12 @@ grassMaterial.positionNode = Fn(() => {
   positionLocal.addAssign(position);
 
   return positionLocal;
+})();
+
+grassMaterial.colorNode = Fn(() => {
+  const diffuse = mix(color(Colors.GREEN2), color(Colors.GREEN5), uv().y);
+
+  return diffuse;
 })();
 
 const grass = new Mesh(grassGeometry, grassMaterial);
