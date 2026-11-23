@@ -1,23 +1,27 @@
 import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
-import { Fn, instance, positionLocal, rotate, time } from 'three/tsl';
+import {
+  Fn,
+  instancedBufferAttribute,
+  positionLocal,
+  rotate,
+  time,
+} from 'three/tsl';
 import {
   BufferAttribute,
   BufferGeometry,
   Color,
   InstancedBufferAttribute,
   MathUtils,
-  Matrix4,
   Mesh,
   MeshBasicNodeMaterial,
+  Node,
   PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
-  Quaternion,
   Scene,
   Timer,
-  Vector3,
   WebGPURenderer,
 } from 'three/webgpu';
 
@@ -47,7 +51,7 @@ const scene = new Scene();
 scene.background = new Color(Colors.BLACK);
 
 const camera = new PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 1000);
-camera.position.set(0, 1, 2);
+camera.position.set(0, 1, 1);
 camera.lookAt(scene.position);
 
 const controls = new CameraControls(camera, renderer.domElement);
@@ -82,31 +86,39 @@ grassGeometry.setAttribute(
 grassGeometry.setAttribute('uv', new BufferAttribute(grassUVArray, 2));
 grassGeometry.computeVertexNormals();
 
+const grassMaterial = new MeshBasicNodeMaterial({
+  color: new Color(Colors.GREEN4),
+});
+
 const count = 400;
-const matrixArray = new Float32Array(count * 16);
-const matrixBufferAttribute = new InstancedBufferAttribute(matrixArray, 16);
+
+// Translate
+const positionArray = new Float32Array(count * 3);
+const positionBuffer = new InstancedBufferAttribute(positionArray, 3);
+
+const scaleArray = new Float32Array(count * 3);
+const scaleBuffer = new InstancedBufferAttribute(scaleArray, 3);
 
 for (let i = 0; i < count; i++) {
-  const translate = new Vector3(
-    MathUtils.randFloat(-0.5, 0.5),
-    0,
-    MathUtils.randFloat(-0.5, 0.5),
-  );
-  const rotation = new Quaternion();
-  const scale = new Vector3(1.0, 1.0, 1.0);
+  const i3 = i * 3;
 
-  const matrix = new Matrix4();
-  matrix.compose(translate, rotation, scale);
+  positionArray[i3 + 0] = MathUtils.randFloat(-0.5, 0.5);
+  positionArray[i3 + 1] = 0;
+  positionArray[i3 + 2] = MathUtils.randFloat(-0.5, 0.5);
 
-  matrix.toArray(matrixArray, i * 16);
+  scaleArray[i3 + 0] = 0.1;
+  scaleArray[i3 + 1] = 0.1;
+  scaleArray[i3 + 2] = 0.1;
 }
 
-const grassMaterial = new MeshBasicNodeMaterial({
-  color: new Color(Colors.GREEN3),
-});
 grassMaterial.positionNode = Fn(() => {
-  instance(matrixBufferAttribute);
-  positionLocal.xz.assign(rotate(positionLocal.xz, time.mul(0.1)));
+  positionLocal.xz.assign(rotate(positionLocal.xz, time.mul(0.2)));
+
+  const scale = instancedBufferAttribute(scaleBuffer, 'vec3');
+  positionLocal.mulAssign(scale as Node<'vec3'>);
+
+  const position = instancedBufferAttribute(positionBuffer, 'vec3');
+  positionLocal.addAssign(position as Node<'vec3'>);
 
   return positionLocal;
 })();
@@ -126,3 +138,15 @@ function render() {
   // Render
   renderer.render(scene, camera);
 }
+
+window.addEventListener('resize', () => {
+  sizes.width = window.innerWidth;
+  sizes.height = window.innerHeight;
+  sizes.pixelRatio = Math.min(2, window.devicePixelRatio);
+
+  renderer.setSize(sizes.width, sizes.height);
+  renderer.setPixelRatio(sizes.pixelRatio);
+
+  camera.aspect = sizes.width / sizes.height;
+  camera.updateProjectionMatrix();
+});
