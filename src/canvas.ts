@@ -21,7 +21,6 @@ import {
   BufferGeometry,
   Color,
   DirectionalLight,
-  IcosahedronGeometry,
   InstancedBufferAttribute,
   MathUtils,
   Mesh,
@@ -85,7 +84,7 @@ const floorMaterial = new MeshStandardNodeMaterial({
 
 const floor = new Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = -Math.PI / 2;
-floor.position.y = -0.1;
+floor.position.y = -0.01;
 
 floorMaterial.colorNode = Fn(() => {
   const color = materialColor.add(
@@ -169,13 +168,7 @@ grassMaterial.colorNode = Fn(() => {
 
 const grass = new Mesh(grassGeometry, grassMaterial);
 grass.count = count;
-// scene.add(grass);
-
-const ball = new Mesh(
-  new IcosahedronGeometry(0.1, 3),
-  new MeshStandardNodeMaterial({ color: Colors.BLUE1 }),
-);
-scene.add(ball);
+scene.add(grass);
 
 // Lights
 const ambientLight = new AmbientLight(Colors.BLUE1, 2);
