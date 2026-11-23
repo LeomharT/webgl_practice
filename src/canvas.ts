@@ -2,11 +2,13 @@ import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import {
+  atan,
+  cameraPosition,
   Fn,
+  HALF_PI,
   instancedBufferAttribute,
   positionLocal,
   rotate,
-  time,
 } from 'three/tsl';
 import {
   BufferAttribute,
@@ -90,9 +92,8 @@ const grassMaterial = new MeshBasicNodeMaterial({
   color: new Color(Colors.GREEN4),
 });
 
-const count = 400;
+const count = 1000;
 
-// Translate
 const positionArray = new Float32Array(count * 3);
 const positionBuffer = new InstancedBufferAttribute(positionArray, 3);
 
@@ -112,13 +113,23 @@ for (let i = 0; i < count; i++) {
 }
 
 grassMaterial.positionNode = Fn(() => {
-  positionLocal.xz.assign(rotate(positionLocal.xz, time.mul(0.2)));
+  const position = instancedBufferAttribute(
+    positionBuffer,
+    'vec3',
+  ) as Node<'vec3'>;
+  const scale = instancedBufferAttribute(scaleBuffer, 'vec3') as Node<'vec3'>;
 
-  const scale = instancedBufferAttribute(scaleBuffer, 'vec3');
-  positionLocal.mulAssign(scale as Node<'vec3'>);
+  // Rotate
+  const angle = atan(
+    cameraPosition.z.sub(position.z),
+    cameraPosition.x.sub(position.x),
+  ).sub(HALF_PI);
 
-  const position = instancedBufferAttribute(positionBuffer, 'vec3');
-  positionLocal.addAssign(position as Node<'vec3'>);
+  positionLocal.xz.assign(rotate(positionLocal.xz, angle));
+  // Scale
+  positionLocal.mulAssign(scale);
+  // Translate
+  positionLocal.addAssign(position);
 
   return positionLocal;
 })();
