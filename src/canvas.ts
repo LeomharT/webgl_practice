@@ -2,6 +2,7 @@ import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
+import { fxaa } from 'three/examples/jsm/tsl/display/FXAANode.js';
 import {
   and,
   atan,
@@ -18,6 +19,7 @@ import {
   pass,
   positionLocal,
   reflector,
+  renderOutput,
   rotate,
   uniform,
   uv,
@@ -87,12 +89,18 @@ const timer = new Timer();
  */
 
 const renderPipline = new RenderPipeline(renderer);
+renderPipline.outputColorTransform = false;
 
 // Scene pass
 const scenePass = pass(scene, camera);
 
-const bloomPass = bloom(scenePass, 0.78, 0.5, 0.8);
+const bloomPass = bloom(scenePass, 0.78, 0.5, 2.0);
 renderPipline.outputNode = scenePass.add(bloomPass);
+
+renderPipline.outputNode = renderOutput(renderPipline.outputNode);
+
+const fxaaPass = fxaa(renderPipline.outputNode);
+renderPipline.outputNode = fxaaPass;
 
 /**
  * World
@@ -197,14 +205,14 @@ scene.add(grass);
 const progressUniform = uniform(0, 'float');
 
 const ballGui = inspector.createParameters('Ball');
-ballGui.add(progressUniform, 'value', 0, 1, 0.01);
+ballGui.add(progressUniform, 'value', 0, 1, 0.01).name('Progress');
 
 const ballGeometry = new IcosahedronGeometry(0.1, 32);
-const ballMaterial = new MeshBasicNodeMaterial({
+const ballMaterial = new MeshStandardNodeMaterial({
   color: Colors.VIOLET3,
 });
 
-ballMaterial.colorNode = Fn(() => {
+ballMaterial.colorNode = Fn(({ material }) => {
   const random = mx_noise_float(positionLocal.mul(50)).toVar();
   random.assign(random.mul(0.5).add(0.5));
 
@@ -220,7 +228,7 @@ ballMaterial.colorNode = Fn(() => {
       progressUniform.greaterThan(0),
     ),
     () => {
-      color.assign(vec3(1.0));
+      color.assign(vec3(3.0));
     },
   );
 
@@ -232,12 +240,22 @@ ball.position.y = 0.2;
 scene.add(ball);
 
 // Lights
-const ambientLight = new AmbientLight(Colors.BLUE1, 2);
+const lightGui = inspector.createParameters('Lishts');
+
+const ambientLight = new AmbientLight('#5b95e6', 2);
 scene.add(ambientLight);
 
-const directionalLight = new DirectionalLight(Colors.WHITE, 3);
+const ambientLightGui = lightGui.addFolder('Ambient Lisht');
+ambientLightGui.addColor(ambientLight, 'color').name('Ambient Color');
+
+const directionalLight = new DirectionalLight('#f0cc99', 3);
 directionalLight.position.set(3, 3, 3);
 scene.add(directionalLight);
+
+const directionalLightGui = lightGui.addFolder('Ambient Lisht');
+directionalLightGui
+  .addColor(directionalLight, 'color')
+  .name('Directional Color');
 
 // Tick function
 function render() {
