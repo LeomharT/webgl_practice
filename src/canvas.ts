@@ -2,18 +2,24 @@ import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
 import {
+  and,
   atan,
   cameraPosition,
   color,
+  Discard,
   Fn,
   HALF_PI,
+  If,
   instancedBufferAttribute,
   materialColor,
   mix,
+  mx_noise_float,
   positionLocal,
   reflector,
   rotate,
+  uniform,
   uv,
+  vec3,
 } from 'three/tsl';
 import {
   AmbientLight,
@@ -21,6 +27,7 @@ import {
   BufferGeometry,
   Color,
   DirectionalLight,
+  IcosahedronGeometry,
   InstancedBufferAttribute,
   MathUtils,
   Mesh,
@@ -68,7 +75,7 @@ camera.lookAt(scene.position);
 const controls = new CameraControls(camera, renderer.domElement);
 controls.dollySpeed = 0.35;
 controls.maxDistance = 20;
-controls.minDistance = 1;
+controls.minDistance = 0.2;
 
 const timer = new Timer();
 
@@ -171,6 +178,43 @@ grassMaterial.colorNode = Fn(() => {
 const grass = new Mesh(grassGeometry, grassMaterial);
 grass.count = count;
 scene.add(grass);
+
+const progressUniform = uniform(0, 'float');
+
+const ballGui = inspector.createParameters('Ball');
+ballGui.add(progressUniform, 'value', 0, 1, 0.01);
+
+const ballGeometry = new IcosahedronGeometry(0.1, 32);
+const ballMaterial = new MeshBasicNodeMaterial({
+  color: Colors.VIOLET3,
+});
+
+ballMaterial.colorNode = Fn(() => {
+  const random = mx_noise_float(positionLocal.mul(50)).toVar();
+  random.assign(random.mul(0.5).add(0.5));
+
+  const color = materialColor.toVar();
+
+  If(random.lessThanEqual(progressUniform), () => {
+    Discard();
+  });
+
+  If(
+    and(
+      random.lessThanEqual(progressUniform.add(0.1)),
+      progressUniform.greaterThan(0),
+    ),
+    () => {
+      color.assign(vec3(1.0));
+    },
+  );
+
+  return color;
+})();
+
+const ball = new Mesh(ballGeometry, ballMaterial);
+ball.position.y = 0.2;
+scene.add(ball);
 
 // Lights
 const ambientLight = new AmbientLight(Colors.BLUE1, 2);
