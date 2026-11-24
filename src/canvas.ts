@@ -1,6 +1,7 @@
 import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
 import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
+import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
 import {
   and,
   atan,
@@ -14,6 +15,7 @@ import {
   materialColor,
   mix,
   mx_noise_float,
+  pass,
   positionLocal,
   reflector,
   rotate,
@@ -37,6 +39,7 @@ import {
   PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
+  RenderPipeline,
   Scene,
   Timer,
   WebGPURenderer,
@@ -78,6 +81,18 @@ controls.maxDistance = 20;
 controls.minDistance = 0.2;
 
 const timer = new Timer();
+
+/**
+ * Render pipline
+ */
+
+const renderPipline = new RenderPipeline(renderer);
+
+// Scene pass
+const scenePass = pass(scene, camera);
+
+const bloomPass = bloom(scenePass, 0.78, 0.5, 0.8);
+renderPipline.outputNode = scenePass.add(bloomPass);
 
 /**
  * World
@@ -233,7 +248,7 @@ function render() {
   controls.update(dt);
 
   // Render
-  renderer.render(scene, camera);
+  renderPipline.render();
 }
 
 window.addEventListener('resize', () => {
