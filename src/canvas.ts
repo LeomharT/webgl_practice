@@ -14,6 +14,7 @@ import {
   If,
   instancedBufferAttribute,
   materialColor,
+  materialEmissive,
   mix,
   mx_noise_float,
   pass,
@@ -212,15 +213,20 @@ const ballMaterial = new MeshStandardNodeMaterial({
   color: Colors.VIOLET3,
 });
 
-ballMaterial.colorNode = Fn(({ material }) => {
-  const random = mx_noise_float(positionLocal.mul(50)).toVar();
-  random.assign(random.mul(0.5).add(0.5));
+const random = mx_noise_float(positionLocal.mul(50)).mul(0.5).add(0.5).toVar();
 
+ballMaterial.colorNode = Fn(({}) => {
   const color = materialColor.toVar();
 
   If(random.lessThanEqual(progressUniform), () => {
     Discard();
   });
+
+  return color;
+})();
+
+ballMaterial.emissiveNode = Fn(() => {
+  const color = materialEmissive.toVar();
 
   If(
     and(
@@ -228,7 +234,7 @@ ballMaterial.colorNode = Fn(({ material }) => {
       progressUniform.greaterThan(0),
     ),
     () => {
-      color.assign(vec3(3.0));
+      color.assign(vec3(2));
     },
   );
 
