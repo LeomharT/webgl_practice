@@ -206,13 +206,23 @@ scene.add(ball);
 /**
  * Light
  */
-const ambientLight = new AmbientLight(Colors.BLUE3, 1);
+const lightGui = inspector.createParameters('Light');
+
+const ambientLight = new AmbientLight(Colors.BLUE3, 2);
 scene.add(ambientLight);
 
-const directionalLight = new DirectionalLight(Colors.GOLD3, 2);
+const ambientLightGui = lightGui.addFolder('Ambient Light');
+ambientLightGui.addColor(ambientLight, 'color');
+ambientLightGui.add(ambientLight, 'intensity', 0.1, 10, 0.01);
+
+const directionalLight = new DirectionalLight(Colors.GOLD3, 5);
 directionalLight.position.set(3, 3, 3);
 directionalLight.castShadow = true;
 scene.add(directionalLight);
+
+const directionalLightGui = lightGui.addFolder('Directional Light');
+directionalLightGui.addColor(directionalLight, 'color');
+directionalLightGui.add(directionalLight, 'intensity', 0.1, 10, 0.01);
 
 /**
  * Events
