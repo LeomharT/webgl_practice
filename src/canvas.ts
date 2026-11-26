@@ -1,11 +1,28 @@
 import { Colors } from '@blueprintjs/colors';
 import CameraControls from 'camera-controls';
+import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
+import {
+  atan,
+  cameraPosition,
+  color,
+  Fn,
+  HALF_PI,
+  instancedBufferAttribute,
+  materialColor,
+  mix,
+  positionLocal,
+  rotate,
+  uv,
+} from 'three/tsl';
 import {
   BufferGeometry,
   Color,
   Float32BufferAttribute,
+  InstancedBufferAttribute,
+  MathUtils,
   Mesh,
   MeshBasicNodeMaterial,
+  Node,
   PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
@@ -35,6 +52,9 @@ renderer.shadowMap.type = PCFShadowMap;
 renderer.setAnimationLoop(render);
 document.querySelector('#root')?.append(renderer.domElement);
 
+const inspector = new Inspector();
+renderer.inspector = inspector;
+
 const scene = new Scene();
 scene.background = new Color(Colors.BLACK);
 
@@ -51,7 +71,7 @@ const timer = new Timer();
  * World
  */
 
-const floorGeometry = new PlaneGeometry(1, 1, 1, 1);
+const floorGeometry = new PlaneGeometry(1.05, 1.05, 1, 1);
 const floorMaterial = new MeshBasicNodeMaterial();
 const floor = new Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = -Math.PI / 2;
@@ -108,6 +128,50 @@ class Grass {
   private _setupMaterial() {
     const material = new MeshBasicNodeMaterial();
 
+    // Translate
+    const positionsArr = new Float32Array(this._count * 3);
+    const positionBuffer = new InstancedBufferAttribute(positionsArr, 3);
+
+    // Scale
+    const scaleArr = new Float32Array(this._count * 3);
+    const scaleBuffer = new InstancedBufferAttribute(scaleArr, 3);
+
+    for (let i = 0; i < this._count; i++) {
+      const i3 = i * 3;
+
+      positionsArr[i3 + 0] = MathUtils.randFloat(-0.5, 0.5);
+      positionsArr[i3 + 1] = 0;
+      positionsArr[i3 + 2] = MathUtils.randFloat(-0.5, 0.5);
+
+      const randomScale = MathUtils.randFloat(0.05, 0.1);
+      scaleArr[i3 + 0] = randomScale;
+      scaleArr[i3 + 1] = 0.1;
+      scaleArr[i3 + 2] = randomScale;
+    }
+
+    material.positionNode = Fn(() => {
+      const position = instancedBufferAttribute(positionBuffer, 'vec3') as Node<'vec3'>;
+      const scale = instancedBufferAttribute(scaleBuffer, 'vec3') as Node<'vec3'>;
+
+      const angle = atan(cameraPosition.z.sub(position.z), cameraPosition.x.sub(position.x));
+      angle.subAssign(HALF_PI);
+
+      positionLocal.xz.assign(rotate(positionLocal.xz, angle));
+
+      positionLocal.mulAssign(scale);
+      positionLocal.addAssign(position);
+
+      return positionLocal;
+    })();
+
+    material.colorNode = Fn(() => {
+      const c = materialColor.toVar();
+
+      c.assign(mix(color(Colors.GREEN1), color(Colors.GREEN5), uv().y));
+
+      return c;
+    })();
+
     return material;
   }
 
@@ -119,7 +183,7 @@ class Grass {
   }
 }
 
-const grass = new Grass();
+const grass = new Grass(2500);
 scene.add(grass.mesh);
 
 /**
