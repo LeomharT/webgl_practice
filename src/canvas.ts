@@ -153,12 +153,12 @@ class Grass {
       const position = instancedBufferAttribute(positionBuffer, 'vec3') as Node<'vec3'>;
       const scale = instancedBufferAttribute(scaleBuffer, 'vec3') as Node<'vec3'>;
 
+      positionLocal.mulAssign(scale);
+
       const angle = atan(cameraPosition.z.sub(position.z), cameraPosition.x.sub(position.x));
       angle.subAssign(HALF_PI);
-
       positionLocal.xz.assign(rotate(positionLocal.xz, angle));
 
-      positionLocal.mulAssign(scale);
       positionLocal.addAssign(position);
 
       return positionLocal;
