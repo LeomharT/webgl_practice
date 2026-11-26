@@ -15,13 +15,17 @@ import {
   uv,
 } from 'three/tsl';
 import {
+  AmbientLight,
   BufferGeometry,
   Color,
+  DirectionalLight,
   Float32BufferAttribute,
+  IcosahedronGeometry,
   InstancedBufferAttribute,
   MathUtils,
   Mesh,
   MeshBasicNodeMaterial,
+  MeshStandardNodeMaterial,
   Node,
   PCFShadowMap,
   PerspectiveCamera,
@@ -91,7 +95,7 @@ class Grass {
 
   private _geometry: BufferGeometry;
 
-  private _material: MeshBasicNodeMaterial;
+  private _material: MeshStandardNodeMaterial;
 
   public mesh: Mesh;
 
@@ -121,12 +125,13 @@ class Grass {
     const geometry = new BufferGeometry();
     geometry.setAttribute('position', posBuffer);
     geometry.setAttribute('uv', uvBuffer);
+    geometry.computeVertexNormals();
 
     return geometry;
   }
 
   private _setupMaterial() {
-    const material = new MeshBasicNodeMaterial();
+    const material = new MeshStandardNodeMaterial({});
 
     // Translate
     const positionsArr = new Float32Array(this._count * 3);
@@ -178,6 +183,8 @@ class Grass {
   private _setupMesh() {
     const mesh = new Mesh(this._geometry, this._material);
     mesh.count = this._count;
+    mesh.receiveShadow = true;
+    mesh.castShadow = true;
 
     return mesh;
   }
@@ -185,6 +192,27 @@ class Grass {
 
 const grass = new Grass(2500);
 scene.add(grass.mesh);
+
+const ballGeometry = new IcosahedronGeometry(0.2, 5);
+const ballMaterial = new MeshStandardNodeMaterial({
+  color: Colors.VIOLET3,
+});
+const ball = new Mesh(ballGeometry, ballMaterial);
+ball.position.y = 0.2;
+ball.castShadow = true;
+ball.receiveShadow = true;
+scene.add(ball);
+
+/**
+ * Light
+ */
+const ambientLight = new AmbientLight(Colors.BLUE3, 1);
+scene.add(ambientLight);
+
+const directionalLight = new DirectionalLight(Colors.GOLD3, 2);
+directionalLight.position.set(3, 3, 3);
+directionalLight.castShadow = true;
+scene.add(directionalLight);
 
 /**
  * Events
