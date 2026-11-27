@@ -1,287 +1,113 @@
 import { Colors } from '@blueprintjs/colors';
-import CameraControls from 'camera-controls';
-import { Inspector } from 'three/examples/jsm/inspector/Inspector.js';
-import {
-  atan,
-  cameraPosition,
-  color,
-  Discard,
-  float,
-  Fn,
-  HALF_PI,
-  If,
-  instancedBufferAttribute,
-  materialColor,
-  materialEmissive,
-  mix,
-  mx_noise_float,
-  positionLocal,
-  rotate,
-  uniform,
-  uv,
-  vec3,
-} from 'three/tsl';
-import {
-  AmbientLight,
-  BufferGeometry,
-  Color,
-  DirectionalLight,
-  Float32BufferAttribute,
-  IcosahedronGeometry,
-  InstancedBufferAttribute,
-  MathUtils,
-  Mesh,
-  MeshBasicNodeMaterial,
-  MeshStandardNodeMaterial,
-  Node,
-  PCFShadowMap,
-  PerspectiveCamera,
-  PlaneGeometry,
-  RenderPipeline,
-  Scene,
-  Timer,
-  WebGPURenderer,
-} from 'three/webgpu';
-CameraControls.install({ THREE: await import('three') });
 
-const size = {
+const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
   pixelRatio: Math.min(2, window.devicePixelRatio),
 };
 
-/**
- * Basic
- */
-const renderer = new WebGPURenderer({
-  alpha: true,
-  antialias: true,
-});
-renderer.setSize(size.width, size.height);
-renderer.setPixelRatio(size.pixelRatio);
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = PCFShadowMap;
-renderer.setAnimationLoop(render);
-document.querySelector('#root')?.append(renderer.domElement);
+const root = document.querySelector('#root');
 
-const inspector = new Inspector();
-renderer.inspector = inspector;
+const canvas = document.createElement('canvas');
+root?.append(canvas);
 
-const scene = new Scene();
-scene.background = new Color(Colors.BLACK);
+const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
-const camera = new PerspectiveCamera(70, size.width / size.height, 0.1, 1000);
-camera.position.set(0, 1, 1);
-camera.lookAt(scene.position);
+function resize() {
+  sizes.width = window.innerWidth;
+  sizes.height = window.innerHeight;
 
-const controls = new CameraControls(camera, renderer.domElement);
-controls.dollySpeed = 0.256;
+  canvas.width = sizes.width * sizes.pixelRatio;
+  canvas.height = sizes.height * sizes.pixelRatio;
+  canvas.style.width = sizes.width + 'px';
+  canvas.style.height = sizes.height + 'px';
 
-const timer = new Timer();
-
-/**
- * Render pipeline
- */
-
-const renderPipeline = new RenderPipeline(renderer);
-
-/**
- * World
- */
-
-const floorGeometry = new PlaneGeometry(1.05, 1.05, 1, 1);
-const floorMaterial = new MeshBasicNodeMaterial();
-const floor = new Mesh(floorGeometry, floorMaterial);
-floor.rotation.x = -Math.PI / 2;
-scene.add(floor);
-
-// Grass
-class Grass {
-  constructor(count: number = 400) {
-    this._count = count;
-
-    this._geometry = this._setupGeometry();
-    this._material = this._setupMaterial();
-    this.mesh = this._setupMesh();
-  }
-
-  private _count: number;
-
-  private _geometry: BufferGeometry;
-
-  private _material: MeshStandardNodeMaterial;
-
-  public mesh: Mesh;
-
-  private _setupGeometry() {
-    // Position attribute
-    const posArr = new Float32Array([
-      // v1
-      0, 1, 0,
-      // v2
-      -0.5, 0, 0,
-      // v2
-      0.5, 0, 0,
-    ]);
-    const posBuffer = new Float32BufferAttribute(posArr, 3);
-
-    // UV attribute
-    const uvArr = new Float32Array([
-      // v1
-      0.5, 1,
-      // v2
-      0.0, 0.0,
-      // v3
-      1.0, 0.0,
-    ]);
-    const uvBuffer = new Float32BufferAttribute(uvArr, 2);
-
-    const geometry = new BufferGeometry();
-    geometry.setAttribute('position', posBuffer);
-    geometry.setAttribute('uv', uvBuffer);
-    geometry.computeVertexNormals();
-
-    return geometry;
-  }
-
-  private _setupMaterial() {
-    const material = new MeshStandardNodeMaterial({});
-
-    // Translate
-    const positionsArr = new Float32Array(this._count * 3);
-    const positionBuffer = new InstancedBufferAttribute(positionsArr, 3);
-
-    // Scale
-    const scaleArr = new Float32Array(this._count * 3);
-    const scaleBuffer = new InstancedBufferAttribute(scaleArr, 3);
-
-    for (let i = 0; i < this._count; i++) {
-      const i3 = i * 3;
-
-      positionsArr[i3 + 0] = MathUtils.randFloat(-0.5, 0.5);
-      positionsArr[i3 + 1] = 0;
-      positionsArr[i3 + 2] = MathUtils.randFloat(-0.5, 0.5);
-
-      const randomScale = MathUtils.randFloat(0.05, 0.1);
-      scaleArr[i3 + 0] = randomScale;
-      scaleArr[i3 + 1] = 0.1;
-      scaleArr[i3 + 2] = randomScale;
-    }
-
-    material.positionNode = Fn(() => {
-      const position = instancedBufferAttribute(positionBuffer, 'vec3') as Node<'vec3'>;
-      const scale = instancedBufferAttribute(scaleBuffer, 'vec3') as Node<'vec3'>;
-
-      positionLocal.mulAssign(scale);
-
-      const angle = atan(cameraPosition.z.sub(position.z), cameraPosition.x.sub(position.x));
-      angle.subAssign(HALF_PI);
-      positionLocal.xz.assign(rotate(positionLocal.xz, angle));
-
-      positionLocal.addAssign(position);
-
-      return positionLocal;
-    })();
-
-    material.colorNode = Fn(() => {
-      const c = materialColor.toVar();
-
-      c.assign(mix(color(Colors.GREEN1), color(Colors.GREEN5), uv().y));
-
-      return c;
-    })();
-
-    return material;
-  }
-
-  private _setupMesh() {
-    const mesh = new Mesh(this._geometry, this._material);
-    mesh.count = this._count;
-    mesh.receiveShadow = true;
-    mesh.castShadow = true;
-
-    return mesh;
-  }
+  requestRender();
 }
 
-const grass = new Grass(2500);
-scene.add(grass.mesh);
+const prevCoord = {
+  x: 0,
+  y: 0,
+};
+const currCoord = {
+  x: 0,
+  y: 0,
+};
 
-// Ball uniforms
-const progressUniform = uniform(float(0));
+function clean() {
+  ctx.save();
 
-const ballGui = inspector.createParameters('Ball');
-ballGui.add(progressUniform, 'value', 0, 1, 0.01).name('Progress');
+  ctx.resetTransform();
+  ctx.fillStyle = Colors.BLACK;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-const ballGeometry = new IcosahedronGeometry(0.2, 5);
-const ballMaterial = new MeshStandardNodeMaterial({
-  color: Colors.VIOLET3,
-});
+  ctx.restore();
+}
 
-const random = mx_noise_float(positionLocal.mul(20)).mul(0.5).add(0.5);
+function renderLine() {
+  ctx.save();
 
-ballMaterial.colorNode = Fn(() => {
-  const c = materialColor.toVar();
-  If(random.lessThanEqual(progressUniform), () => Discard());
-  return c;
-})();
-ballMaterial.emissiveNode = Fn(() => {
-  const final = materialEmissive.toVar();
-  If(random.lessThanEqual(progressUniform.add(0.1)), () => {
-    final.assign(vec3(1.0));
-  });
-  return final;
-})();
+  ctx.setTransform(sizes.pixelRatio, 0, 0, sizes.pixelRatio, 0, 0);
 
-const ball = new Mesh(ballGeometry, ballMaterial);
-ball.position.y = 0.2;
-ball.castShadow = true;
-ball.receiveShadow = true;
-scene.add(ball);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = Colors.BLUE3;
+  ctx.fillStyle = Colors.WHITE;
+  ctx.setLineDash([9, 3]);
 
-/**
- * Light
- */
-const lightGui = inspector.createParameters('Light');
+  ctx.beginPath();
+  ctx.moveTo(prevCoord.x, prevCoord.y);
+  ctx.lineTo(currCoord.x, currCoord.y);
 
-const ambientLight = new AmbientLight(Colors.BLUE3, 2);
-scene.add(ambientLight);
+  ctx.stroke();
 
-const ambientLightGui = lightGui.addFolder('Ambient Light');
-ambientLightGui.addColor(ambientLight, 'color');
-ambientLightGui.add(ambientLight, 'intensity', 0.1, 10, 0.01);
+  // Render begin rect
+  ctx.setLineDash([0, 0]);
+  ctx.fillRect(prevCoord.x - 5, prevCoord.y - 5, 10, 10);
+  ctx.strokeRect(prevCoord.x - 5, prevCoord.y - 5, 10, 10);
 
-const directionalLight = new DirectionalLight(Colors.GOLD3, 5);
-directionalLight.position.set(3, 3, 3);
-directionalLight.castShadow = true;
-scene.add(directionalLight);
+  // Render end rect
+  ctx.fillRect(currCoord.x - 5, currCoord.y - 5, 10, 10);
+  ctx.strokeRect(currCoord.x - 5, currCoord.y - 5, 10, 10);
 
-const directionalLightGui = lightGui.addFolder('Directional Light');
-directionalLightGui.addColor(directionalLight, 'color');
-directionalLightGui.add(directionalLight, 'intensity', 0.1, 10, 0.01);
+  ctx.restore();
+}
 
-/**
- * Events
- */
 function render() {
-  // Update
-  timer.update();
-  const dt = timer.getDelta();
+  clean();
 
-  controls.update(dt);
-
-  // Render
-  renderer.render(scene, camera);
+  renderLine();
 }
 
-window.addEventListener('resize', () => {
-  size.width = window.innerWidth;
-  size.height = window.innerHeight;
-  size.pixelRatio = Math.min(2, devicePixelRatio);
+let frameId: number | null = null;
+function requestRender() {
+  if (frameId) return;
+  frameId = requestAnimationFrame(() => {
+    frameId = null;
+    render();
+  });
+}
 
-  renderer.setSize(size.width, size.height);
-  renderer.setPixelRatio(size.pixelRatio);
+resize();
+window.addEventListener('resize', resize);
 
-  camera.aspect = size.width / size.height;
-  camera.updateProjectionMatrix();
+canvas.addEventListener('pointerdown', (e) => {
+  canvas.setPointerCapture(e.pointerId);
+
+  prevCoord.x = e.clientX;
+  prevCoord.y = e.clientY;
+});
+
+canvas.addEventListener('pointerup', (e) => {
+  if (canvas.hasPointerCapture(e.pointerId)) {
+    canvas.releasePointerCapture(e.pointerId);
+  }
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!canvas.hasPointerCapture(e.pointerId)) return;
+
+  currCoord.x = e.clientX;
+  currCoord.y = e.clientY;
+
+  requestRender();
 });
