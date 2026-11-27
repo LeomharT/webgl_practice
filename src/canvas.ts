@@ -75,8 +75,6 @@ function renderLine() {
 function renderLabel() {
   ctx.save();
 
-  ctx.setTransform(sizes.pixelRatio, 0, 0, sizes.pixelRatio, 0, 0);
-
   // Pixel length
   const x1 = startCoord;
   const x2 = endCoord;
@@ -91,19 +89,33 @@ function renderLabel() {
     y: (endCoord.y - startCoord.y) / 2 + startCoord.y,
   };
 
+  const theta = Math.atan2(x2.y - x1.y, x2.x - x1.x);
+
+  const c = Math.cos(theta);
+  const s = Math.sin(theta);
+
   ctx.font = 'lighter 30px';
   ctx.textBaseline = 'middle';
+
+  ctx.setTransform(
+    c * sizes.pixelRatio,
+    s * sizes.pixelRatio,
+    -s * sizes.pixelRatio,
+    c * sizes.pixelRatio,
+    center.x * sizes.pixelRatio,
+    center.y * sizes.pixelRatio,
+  );
 
   const rect = {
     width: textMet.width + 10,
     height: 20,
   };
   ctx.fillStyle = Colors.BLUE3;
-  ctx.roundRect(center.x - rect.width / 2, center.y - 10, rect.width, rect.height, 5);
+  ctx.roundRect(-rect.width / 2, -10, rect.width, rect.height, 5);
   ctx.fill();
 
   ctx.fillStyle = Colors.WHITE;
-  ctx.fillText(lengthTxt, center.x - textMet.width / 2, center.y);
+  ctx.fillText(lengthTxt, -textMet.width / 2, 0);
 
   ctx.restore();
 }
