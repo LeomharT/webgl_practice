@@ -12,6 +12,7 @@ import {
   If,
   instancedBufferAttribute,
   materialColor,
+  materialEmissive,
   mix,
   mx_noise_float,
   positionLocal,
@@ -36,6 +37,7 @@ import {
   PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
+  RenderPipeline,
   Scene,
   Timer,
   WebGPURenderer,
@@ -76,6 +78,12 @@ const controls = new CameraControls(camera, renderer.domElement);
 controls.dollySpeed = 0.256;
 
 const timer = new Timer();
+
+/**
+ * Render pipeline
+ */
+
+const renderPipeline = new RenderPipeline(renderer);
 
 /**
  * World
@@ -214,14 +222,17 @@ const random = mx_noise_float(positionLocal.mul(20)).mul(0.5).add(0.5);
 
 ballMaterial.colorNode = Fn(() => {
   const c = materialColor.toVar();
-
   If(random.lessThanEqual(progressUniform), () => Discard());
-  If(random.lessThanEqual(progressUniform.add(0.1)), () => {
-    c.assign(vec3(1.0));
-  });
-
   return c;
 })();
+ballMaterial.emissiveNode = Fn(() => {
+  const final = materialEmissive.toVar();
+  If(random.lessThanEqual(progressUniform.add(0.1)), () => {
+    final.assign(vec3(1.0));
+  });
+  return final;
+})();
+
 const ball = new Mesh(ballGeometry, ballMaterial);
 ball.position.y = 0.2;
 ball.castShadow = true;
