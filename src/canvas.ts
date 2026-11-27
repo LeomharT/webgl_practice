@@ -25,11 +25,11 @@ function resize() {
   requestRender();
 }
 
-const prevCoord = {
+const startCoord = {
   x: 0,
   y: 0,
 };
-const currCoord = {
+const endCoord = {
   x: 0,
   y: 0,
 };
@@ -55,19 +55,19 @@ function renderLine() {
   ctx.setLineDash([9, 3]);
 
   ctx.beginPath();
-  ctx.moveTo(prevCoord.x, prevCoord.y);
-  ctx.lineTo(currCoord.x, currCoord.y);
+  ctx.moveTo(startCoord.x, startCoord.y);
+  ctx.lineTo(endCoord.x, endCoord.y);
 
   ctx.stroke();
 
   // Render begin rect
   ctx.setLineDash([0, 0]);
-  ctx.fillRect(prevCoord.x - 5, prevCoord.y - 5, 10, 10);
-  ctx.strokeRect(prevCoord.x - 5, prevCoord.y - 5, 10, 10);
+  ctx.fillRect(startCoord.x - 5, startCoord.y - 5, 10, 10);
+  ctx.strokeRect(startCoord.x - 5, startCoord.y - 5, 10, 10);
 
   // Render end rect
-  ctx.fillRect(currCoord.x - 5, currCoord.y - 5, 10, 10);
-  ctx.strokeRect(currCoord.x - 5, currCoord.y - 5, 10, 10);
+  ctx.fillRect(endCoord.x - 5, endCoord.y - 5, 10, 10);
+  ctx.strokeRect(endCoord.x - 5, endCoord.y - 5, 10, 10);
 
   ctx.restore();
 }
@@ -93,8 +93,8 @@ window.addEventListener('resize', resize);
 canvas.addEventListener('pointerdown', (e) => {
   canvas.setPointerCapture(e.pointerId);
 
-  prevCoord.x = e.clientX;
-  prevCoord.y = e.clientY;
+  startCoord.x = e.clientX;
+  startCoord.y = e.clientY;
 });
 
 canvas.addEventListener('pointerup', (e) => {
@@ -106,14 +106,14 @@ canvas.addEventListener('pointerup', (e) => {
 canvas.addEventListener('pointermove', (e) => {
   if (!canvas.hasPointerCapture(e.pointerId)) return;
 
-  currCoord.x = e.clientX;
-  currCoord.y = e.clientY;
+  endCoord.x = e.clientX;
+  endCoord.y = e.clientY;
 
   requestRender();
 
   // Pixel length
-  const x1 = prevCoord;
-  const x2 = currCoord;
+  const x1 = startCoord;
+  const x2 = endCoord;
 
   const length = Math.hypot(x2.x - x1.x, x2.y - x1.y);
 
