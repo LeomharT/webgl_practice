@@ -72,10 +72,50 @@ function renderLine() {
   ctx.restore();
 }
 
+function renderLabel() {
+  ctx.save();
+
+  ctx.setTransform(sizes.pixelRatio, 0, 0, sizes.pixelRatio, 0, 0);
+
+  // Pixel length
+  const x1 = startCoord;
+  const x2 = endCoord;
+
+  const length = Math.hypot(x2.x - x1.x, x2.y - x1.y);
+  const lengthTxt = length.toFixed(2) + 'm';
+
+  const textMet = ctx.measureText(lengthTxt);
+
+  const center = {
+    x: (endCoord.x - startCoord.x) / 2 + startCoord.x,
+    y: (endCoord.y - startCoord.y) / 2 + startCoord.y,
+  };
+
+  ctx.font = 'lighter 30px';
+  ctx.textBaseline = 'middle';
+
+  const rect = {
+    width: textMet.width + 10,
+    height: 20,
+  };
+  ctx.fillStyle = Colors.BLUE3;
+  ctx.roundRect(center.x - rect.width / 2, center.y - 10, rect.width, rect.height, 5);
+  ctx.fill();
+
+  ctx.fillStyle = Colors.WHITE;
+  ctx.fillText(lengthTxt, center.x - textMet.width / 2, center.y);
+
+  ctx.restore();
+}
+
 function render() {
   clean();
 
+  if (startCoord.x === 0 && endCoord.x === 0) return;
+  if (startCoord.y === 0 && endCoord.y === 0) return;
+
   renderLine();
+  renderLabel();
 }
 
 let frameId: number | null = null;
@@ -110,12 +150,4 @@ canvas.addEventListener('pointermove', (e) => {
   endCoord.y = e.clientY;
 
   requestRender();
-
-  // Pixel length
-  const x1 = startCoord;
-  const x2 = endCoord;
-
-  const length = Math.hypot(x2.x - x1.x, x2.y - x1.y);
-
-  console.log(length);
 });
