@@ -237,3 +237,15 @@ function render() {
   // Render
   renderer.render(scene, camera);
 }
+
+window.addEventListener('resize', () => {
+  size.width = window.innerWidth;
+  size.height = window.innerHeight;
+  size.pixelRatio = Math.min(2, devicePixelRatio);
+
+  renderer.setSize(size.width, size.height);
+  renderer.setPixelRatio(size.pixelRatio);
+
+  camera.aspect = size.width / size.height;
+  camera.updateProjectionMatrix();
+});
