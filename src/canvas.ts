@@ -110,4 +110,12 @@ canvas.addEventListener('pointermove', (e) => {
   currCoord.y = e.clientY;
 
   requestRender();
+
+  // Pixel length
+  const x1 = prevCoord;
+  const x2 = currCoord;
+
+  const length = Math.hypot(x2.x - x1.x, x2.y - x1.y);
+
+  console.log(length);
 });
