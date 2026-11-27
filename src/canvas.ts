@@ -75,7 +75,7 @@ function renderLine() {
 function renderLabel() {
   ctx.save();
 
-  ctx.font = 'lighter 12px mono';
+  ctx.font = 'lighter 12px default';
   ctx.textBaseline = 'middle';
 
   // Pixel length
@@ -83,7 +83,7 @@ function renderLabel() {
   const x2 = endCoord;
 
   const length = Math.hypot(x2.x - x1.x, x2.y - x1.y);
-  const lengthTxt = length.toFixed(2) + 'm';
+  const lengthTxt = length.toFixed(2) + 'px';
 
   const textMet = ctx.measureText(lengthTxt);
 
@@ -92,7 +92,14 @@ function renderLabel() {
     y: (endCoord.y - startCoord.y) / 2 + startCoord.y,
   };
 
-  const theta = Math.atan2(x2.y - x1.y, x2.x - x1.x);
+  let theta = Math.atan2(x2.y - x1.y, x2.x - x1.x);
+  const offset = 20;
+
+  if (theta >= Math.PI / 2) {
+    theta -= Math.PI;
+  } else if (theta < -Math.PI / 2) {
+    theta += Math.PI;
+  }
 
   const c = Math.cos(theta);
   const s = Math.sin(theta);
@@ -111,11 +118,12 @@ function renderLabel() {
     height: 20,
   };
   ctx.fillStyle = Colors.BLUE3;
-  ctx.roundRect(-rect.width / 2, -10, rect.width, rect.height, 5);
+  ctx.beginPath();
+  ctx.roundRect(-rect.width / 2, -10 + offset, rect.width, rect.height, 5);
   ctx.fill();
 
   ctx.fillStyle = Colors.WHITE;
-  ctx.fillText(lengthTxt, -textMet.width / 2, 0);
+  ctx.fillText(lengthTxt, -textMet.width / 2, offset);
 
   ctx.restore();
 }
