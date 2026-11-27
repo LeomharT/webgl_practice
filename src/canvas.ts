@@ -5,14 +5,20 @@ import {
   atan,
   cameraPosition,
   color,
+  Discard,
+  float,
   Fn,
   HALF_PI,
+  If,
   instancedBufferAttribute,
   materialColor,
   mix,
+  mx_noise_float,
   positionLocal,
   rotate,
+  uniform,
   uv,
+  vec3,
 } from 'three/tsl';
 import {
   AmbientLight,
@@ -193,10 +199,29 @@ class Grass {
 const grass = new Grass(2500);
 scene.add(grass.mesh);
 
+// Ball uniforms
+const progressUniform = uniform(float(0));
+
+const ballGui = inspector.createParameters('Ball');
+ballGui.add(progressUniform, 'value', 0, 1, 0.01).name('Progress');
+
 const ballGeometry = new IcosahedronGeometry(0.2, 5);
 const ballMaterial = new MeshStandardNodeMaterial({
   color: Colors.VIOLET3,
 });
+
+const random = mx_noise_float(positionLocal.mul(20)).mul(0.5).add(0.5);
+
+ballMaterial.colorNode = Fn(() => {
+  const c = materialColor.toVar();
+
+  If(random.lessThanEqual(progressUniform), () => Discard());
+  If(random.lessThanEqual(progressUniform.add(0.1)), () => {
+    c.assign(vec3(1.0));
+  });
+
+  return c;
+})();
 const ball = new Mesh(ballGeometry, ballMaterial);
 ball.position.y = 0.2;
 ball.castShadow = true;
