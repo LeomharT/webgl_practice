@@ -75,6 +75,9 @@ function renderLine() {
 function renderLabel() {
   ctx.save();
 
+  ctx.font = 'lighter 12px mono';
+  ctx.textBaseline = 'middle';
+
   // Pixel length
   const x1 = startCoord;
   const x2 = endCoord;
@@ -93,9 +96,6 @@ function renderLabel() {
 
   const c = Math.cos(theta);
   const s = Math.sin(theta);
-
-  ctx.font = 'lighter 30px';
-  ctx.textBaseline = 'middle';
 
   ctx.setTransform(
     c * sizes.pixelRatio,
