@@ -88,8 +88,8 @@ function renderLabel() {
   const textMet = ctx.measureText(lengthTxt);
 
   const center = {
-    x: (endCoord.x - startCoord.x) / 2 + startCoord.x,
-    y: (endCoord.y - startCoord.y) / 2 + startCoord.y,
+    x: (x2.x - x1.x) / 2 + x1.x,
+    y: (x2.y - x1.y) / 2 + x1.y,
   };
 
   let theta = Math.atan2(x2.y - x1.y, x2.x - x1.x);
